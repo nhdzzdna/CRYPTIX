@@ -83,6 +83,43 @@ Buka browser di `http://127.0.0.1:5000`.
 | 10 | Winamp integration + HTML5 fallback | `modules/media/winamp_integration.py` |
 | 11 | Key management (PBKDF2, session-only) | `modules/cryptography/key_management.py` |
 | 12 | Semua menu & halaman | `routes/` + `templates/` |
+| 13 | Security Assistant (rule-based) | `modules/assistant/security_agent.py` |
+
+---
+
+## Security Assistant
+
+CRYPTIX dilengkapi **Security Assistant** — sebuah agen berbasis aturan (*rule-based*) yang tampil sebagai antarmuka chat di sidebar.
+
+> ⚠️ **Security Assistant BUKAN Large Language Model (LLM) dan tidak menggunakan API eksternal apa pun.** Semua logika berjalan sepenuhnya lokal menggunakan pencocokan pola regex dan data metadata aplikasi.
+
+### Kemampuan
+
+| # | Kemampuan | Contoh Pertanyaan |
+|---|-----------|-------------------|
+| 1 | 🛡 **Status keamanan** | *"Bagaimana status keamanan akun saya?"* |
+| 2 | 🔐 **Rekomendasi enkripsi** | *"Bagaimana cara enkripsi file PDF saya?"* |
+| 3 | 🔑 **Cek kekuatan password** | *"Cek password: MyPass123!"* |
+| 4 | 📋 **Ringkasan log aktivitas** | *"Jelaskan log aktivitas saya."* |
+| 5 | ℹ️ **Panduan penggunaan fitur** | *"Cara pakai Steganografi?"* |
+
+### Cara Kerja
+
+1. Pesan pengguna diklasifikasi melalui **regex pattern matching** (tanpa NLP/ML).
+2. Handler yang sesuai membaca **metadata saja** dari database (jumlah file, status biometrik, aksi blockchain).
+3. **Tidak ada isi file, kunci enkripsi, atau password tersimpan** yang pernah dibaca oleh agent.
+4. Password yang dikirim untuk dicek hanya hidup di memori proses Python — tidak disimpan ke DB, log, atau hash chain.
+5. UI menampilkan tiga langkah berpikir bertahap (*"Memahami pertanyaan…"*, *"Membaca data aplikasi…"*, *"Menyusun jawaban…"*) sebelum jawaban muncul.
+6. Riwayat percakapan disimpan di **Flask session** (bukan database).
+
+### Batasan Security Assistant
+
+| Batasan | Keterangan |
+|---------|-----------|
+| Rule-based only | Tidak dapat menjawab pertanyaan di luar 5 kategori yang didukung. |
+| Tidak memahami konteks percakapan | Setiap pesan diproses secara independen. |
+| Jawaban deterministik | Tidak ada variasi jawaban — output konsisten untuk input yang sama. |
+| Cek password hanya skor sederhana | Tidak menggunakan database password bocor (HaveIBeenPwned). |
 
 ---
 
@@ -116,7 +153,8 @@ CRYPTIX/
 │   ├── cryptography/         # key management, 4 cipher, super enc, file enc, db enc
 │   ├── steganography/        # LSB
 │   ├── blockchain/           # hash chain
-│   └── media/                # winamp integration
+│   ├── media/                # winamp integration
+│   └── assistant/            # rule-based security agent
 ├── routes/                   # Blueprint Flask per fitur
 ├── templates/                # Jinja2 HTML
 ├── static/                   # CSS, JS, images

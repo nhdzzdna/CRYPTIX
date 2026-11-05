@@ -1,0 +1,523 @@
+{% extends "base.html" %}
+{% block title %}Security Assistant — CRYPTIX{% endblock %}
+{% block page_title %}Security Assistant{% endblock %}
+
+{% block content %}
+<div class="assistant-layout">
+
+  <!-- ── Chat window ──────────────────────────────────────────────────────── -->
+  <div class="chat-panel">
+
+    <!-- Header -->
+    <div class="chat-header">
+      <div class="chat-header-info">
+        <span class="agent-avatar">🤖</span>
+        <div>
+          <div class="agent-name">Security Assistant</div>
+          <div class="agent-desc">Rule-based · Tanpa LLM · Tidak ada API eksternal</div>
+        </div>
+      </div>
+      <form method="POST" action="{{ url_for('assistant.clear_history') }}" id="clear-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        <button type="button" class="btn btn-ghost btn-sm" onclick="clearChat()">🗑 Bersihkan</button>
+      </form>
+    </div>
+
+    <!-- Messages -->
+    <div class="chat-messages" id="chat-messages">
+      <!-- Welcome message -->
+      {% if not history %}
+      <div class="msg-row msg-agent">
+        <div class="msg-avatar">🤖</div>
+        <div class="msg-bubble agent-bubble">
+          <p>Halo! Saya <strong>Security Assistant</strong> CRYPTIX.</p>
+          <p>Saya adalah asisten berbasis aturan (rule-based) — bukan AI generatif.</p>
+          <p>Saya bisa membantu Anda dengan:</p>
+          <ul>
+            <li>🛡 Status keamanan akun</li>
+            <li>🔐 Rekomendasi enkripsi</li>
+            <li>🔑 Cek kekuatan password</li>
+            <li>📋 Ringkasan log aktivitas</li>
+            <li>ℹ️ Panduan penggunaan fitur</li>
+          </ul>
+          <p>Coba salah satu pertanyaan di bawah atau ketik sendiri!</p>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Existing history -->
+      {% for msg in history %}
+      <div class="msg-row {{ 'msg-user' if msg.role == 'user' else 'msg-agent' }}">
+        {% if msg.role == 'agent' %}
+        <div class="msg-avatar">🤖</div>
+        {% endif %}
+        <div class="msg-bubble {{ 'user-bubble' if msg.role == 'user' else 'agent-bubble' }}">
+          <div class="msg-content">{{ msg.content | safe_markdown }}</div>
+        </div>
+        {% if msg.role == 'user' %}
+        <div class="msg-avatar user-avatar">👤</div>
+        {% endif %}
+      </div>
+      {% endfor %}
+
+      <!-- Typing indicator (hidden by default) -->
+      <div id="thinking-indicator" class="msg-row msg-agent" style="display:none;">
+        <div class="msg-avatar">🤖</div>
+        <div class="msg-bubble agent-bubble thinking-bubble">
+          <span id="thinking-text" class="thinking-text">Memahami pertanyaan…</span>
+          <span class="thinking-dots"><span>.</span><span>.</span><span>.</span></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick suggestion buttons -->
+    <div class="quick-suggestions">
+      <button class="suggestion-btn" onclick="sendSuggestion('Bagaimana status keamanan akun saya?')">
+        🛡 Status Keamanan
+      </button>
+      <button class="suggestion-btn" onclick="sendSuggestion('Bagaimana cara enkripsi file PDF saya?')">
+        🔐 Rekomen Enkripsi
+      </button>
+      <button class="suggestion-btn" onclick="sendSuggestion('Jelaskan log aktivitas saya.')">
+        📋 Log Aktivitas
+      </button>
+      <button class="suggestion-btn" onclick="sendSuggestion('Bagaimana cara pakai Steganografi?')">
+        ℹ️ Panduan Fitur
+      </button>
+    </div>
+
+    <!-- Input area -->
+    <div class="chat-input-area">
+      <textarea
+        id="user-input"
+        class="chat-input"
+        placeholder="Ketik pertanyaan keamanan Anda… (Enter untuk kirim)"
+        rows="1"
+        maxlength="500"
+      ></textarea>
+      <button id="send-btn" class="btn btn-primary send-btn" onclick="sendMessage()">
+        ➤ Kirim
+      </button>
+    </div>
+    <div class="input-hint">
+      ⚠️ Jangan kirim kunci enkripsi atau password penting lewat kolom ini, kecuali untuk fitur Cek Kekuatan Password.
+    </div>
+
+  </div><!-- /chat-panel -->
+
+  <!-- ── Info sidebar ─────────────────────────────────────────────────────── -->
+  <div class="assistant-info-panel">
+    <div class="card">
+      <div class="card-header">🤖 Tentang Assistant</div>
+      <div class="card-body">
+        <p><strong>Jenis:</strong> Rule-based (berbasis aturan)</p>
+        <p><strong>LLM:</strong> Tidak digunakan</p>
+        <p><strong>API Eksternal:</strong> Tidak ada</p>
+        <p><strong>Data yang dibaca:</strong> Hanya metadata (jumlah file, status, log aksi)</p>
+        <hr />
+        <p class="text-muted small"><strong>Batasan keamanan:</strong><br>
+        Agent <em>tidak</em> membaca isi file, kunci enkripsi, atau password tersimpan.
+        Password yang dikirim untuk dicek hanya diproses di memori.</p>
+      </div>
+    </div>
+
+    <div class="card mt-3">
+      <div class="card-header">📋 Kemampuan</div>
+      <div class="card-body">
+        <ul class="capability-list">
+          <li><span class="cap-icon">🛡</span> Status keamanan akun</li>
+          <li><span class="cap-icon">🔐</span> Rekomendasi algoritma enkripsi</li>
+          <li><span class="cap-icon">🔑</span> Cek kekuatan password</li>
+          <li><span class="cap-icon">📋</span> Ringkasan log aktivitas</li>
+          <li><span class="cap-icon">ℹ️</span> Panduan penggunaan fitur</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /assistant-layout -->
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ── Helpers ────────────────────────────────────────────────────────────────
+const CSRF_TOKEN = "{{ csrf_token() }}";
+const messagesEl = document.getElementById('chat-messages');
+const inputEl    = document.getElementById('user-input');
+const thinkingEl = document.getElementById('thinking-indicator');
+const thinkTextEl= document.getElementById('thinking-text');
+
+// Auto-resize textarea
+inputEl.addEventListener('input', () => {
+  inputEl.style.height = 'auto';
+  inputEl.style.height = Math.min(inputEl.scrollHeight, 120) + 'px';
+});
+
+// Send on Enter (Shift+Enter for newline)
+inputEl.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+});
+
+function scrollToBottom() {
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+
+// ── Markdown renderer (minimal, no external libs) ─────────────────────────
+function renderMarkdown(text) {
+  return text
+    // headers
+    .replace(/^## (.+)$/gm, '<h3 class="msg-h3">$1</h3>')
+    .replace(/^# (.+)$/gm,  '<h2 class="msg-h2">$1</h2>')
+    // bold
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    // italic
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    // inline code
+    .replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>')
+    // blockquote
+    .replace(/^> (.+)$/gm, '<blockquote class="bq">$1</blockquote>')
+    // horizontal rule
+    .replace(/^---$/gm, '<hr class="msg-hr"/>')
+    // unordered list items
+    .replace(/^[•\-\*] (.+)$/gm, '<li>$1</li>')
+    // wrap consecutive <li> in <ul>
+    .replace(/(<li>.*<\/li>(\s*<li>.*<\/li>)*)/gs, '<ul class="msg-ul">$1</ul>')
+    // numbered list
+    .replace(/^\d+\. (.+)$/gm, '<li>$1</li>')
+    // double newline → paragraph break
+    .replace(/\n\n/g, '</p><p class="msg-p">')
+    // single newline → <br>
+    .replace(/\n/g, '<br>');
+}
+
+// ── Append message bubble to DOM ──────────────────────────────────────────
+function appendMessage(role, content) {
+  const row = document.createElement('div');
+  row.className = `msg-row msg-${role}`;
+
+  const avatar = document.createElement('div');
+  avatar.className = role === 'agent' ? 'msg-avatar' : 'msg-avatar user-avatar';
+  avatar.textContent = role === 'agent' ? '🤖' : '👤';
+
+  const bubble = document.createElement('div');
+  bubble.className = `msg-bubble ${role === 'agent' ? 'agent-bubble' : 'user-bubble'}`;
+
+  const inner = document.createElement('div');
+  inner.className = 'msg-content';
+  inner.innerHTML = role === 'agent' ? renderMarkdown(content) : escapeHtml(content);
+  bubble.appendChild(inner);
+
+  if (role === 'agent') {
+    row.appendChild(avatar);
+    row.appendChild(bubble);
+  } else {
+    row.appendChild(bubble);
+    row.appendChild(avatar);
+  }
+
+  // Insert before thinking indicator
+  messagesEl.insertBefore(row, thinkingEl);
+  scrollToBottom();
+}
+
+function escapeHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+          .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+// ── Thinking animation ────────────────────────────────────────────────────
+const THINKING_STEPS = [
+  "Memahami pertanyaan…",
+  "Membaca data aplikasi…",
+  "Menyusun jawaban…"
+];
+
+async function showThinkingSteps() {
+  thinkingEl.style.display = 'flex';
+  scrollToBottom();
+  for (const step of THINKING_STEPS) {
+    thinkTextEl.textContent = step;
+    await delay(600);
+  }
+}
+
+function hideThinking() {
+  thinkingEl.style.display = 'none';
+}
+
+function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ── Send message ──────────────────────────────────────────────────────────
+async function sendMessage() {
+  const message = inputEl.value.trim();
+  if (!message) return;
+
+  // Disable input
+  inputEl.value = '';
+  inputEl.style.height = 'auto';
+  inputEl.disabled = true;
+  document.getElementById('send-btn').disabled = true;
+
+  // Show user bubble
+  appendMessage('user', message);
+
+  // Show thinking animation
+  await showThinkingSteps();
+
+  try {
+    const resp = await fetch('/assistant/chat', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': CSRF_TOKEN,
+      },
+      body: JSON.stringify({ message }),
+    });
+
+    if (!resp.ok) throw new Error('Server error ' + resp.status);
+    const data = await resp.json();
+
+    hideThinking();
+    appendMessage('agent', data.answer);
+  } catch (err) {
+    hideThinking();
+    appendMessage('agent', '❌ Terjadi kesalahan. Silakan coba lagi.');
+  }
+
+  // Re-enable input
+  inputEl.disabled = false;
+  document.getElementById('send-btn').disabled = false;
+  inputEl.focus();
+}
+
+function sendSuggestion(text) {
+  inputEl.value = text;
+  sendMessage();
+}
+
+// ── Clear chat ─────────────────────────────────────────────────────────────
+async function clearChat() {
+  if (!confirm('Hapus seluruh riwayat percakapan?')) return;
+  await fetch('/assistant/clear', {
+    method: 'POST',
+    headers: { 'X-CSRFToken': CSRF_TOKEN },
+  });
+  window.location.reload();
+}
+
+// ── Initial scroll ─────────────────────────────────────────────────────────
+scrollToBottom();
+</script>
+
+<style>
+/* ── Assistant Layout ──────────────────────────────────────────────────── */
+.assistant-layout {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: 20px;
+  height: calc(100vh - 90px);
+}
+.chat-panel {
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+/* Header */
+.chat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  background: var(--surface-alt);
+  border-bottom: 1px solid var(--border);
+}
+.chat-header-info { display: flex; align-items: center; gap: 12px; }
+.agent-avatar { font-size: 1.8rem; }
+.agent-name   { font-weight: 600; font-size: .95rem; color: var(--text); }
+.agent-desc   { font-size: .75rem; color: var(--text-muted); }
+
+/* Messages */
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  scroll-behavior: smooth;
+}
+
+.msg-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  max-width: 92%;
+}
+.msg-user  { align-self: flex-end;  flex-direction: row-reverse; }
+.msg-agent { align-self: flex-start; }
+
+.msg-avatar {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: .95rem;
+  flex-shrink: 0;
+}
+.user-avatar { background: var(--accent); border-color: var(--accent-dark); }
+
+.msg-bubble {
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: .88rem;
+  line-height: 1.55;
+  max-width: 100%;
+  word-break: break-word;
+}
+.agent-bubble {
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  border-bottom-left-radius: 3px;
+}
+.user-bubble {
+  background: var(--accent);
+  color: #fff;
+  border-bottom-right-radius: 3px;
+}
+
+/* Thinking indicator */
+.thinking-bubble { display: flex; align-items: center; gap: 6px; opacity: .85; }
+.thinking-text  { color: var(--text-muted); font-style: italic; font-size: .83rem; }
+.thinking-dots  { display: flex; gap: 2px; }
+.thinking-dots span {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  animation: dot-bounce .9s infinite;
+}
+.thinking-dots span:nth-child(2) { animation-delay: .15s; }
+.thinking-dots span:nth-child(3) { animation-delay: .3s; }
+@keyframes dot-bounce {
+  0%, 80%, 100% { transform: translateY(0); }
+  40%           { transform: translateY(-5px); }
+}
+
+/* Markdown rendered content */
+.msg-content h3.msg-h3 { font-size: .95rem; color: var(--accent); margin: 6px 0 4px; }
+.msg-content .msg-ul   { padding-left: 18px; margin: 4px 0; }
+.msg-content .msg-ul li { margin: 2px 0; }
+.msg-content .msg-p    { margin: 4px 0; }
+.msg-content .msg-hr   { border: none; border-top: 1px solid var(--border); margin: 8px 0; }
+.msg-content .bq {
+  border-left: 3px solid var(--accent);
+  margin: 4px 0;
+  padding: 4px 10px;
+  color: var(--text-muted);
+  font-style: italic;
+  background: rgba(249,115,22,.06);
+  border-radius: 0 5px 5px 0;
+}
+.msg-content .inline-code {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-family: "Consolas", monospace;
+  font-size: .82rem;
+  color: var(--accent);
+}
+.user-bubble .msg-content strong { color: #fff; }
+.user-bubble .msg-content code   { background: rgba(0,0,0,.2); color: #fff; }
+
+/* Quick suggestions */
+.quick-suggestions {
+  display: flex;
+  gap: 6px;
+  padding: 8px 14px;
+  flex-wrap: wrap;
+  border-top: 1px solid var(--border);
+  background: var(--surface-alt);
+}
+.suggestion-btn {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-size: .78rem;
+  cursor: pointer;
+  transition: background .15s, color .15s, border-color .15s;
+  white-space: nowrap;
+}
+.suggestion-btn:hover {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+/* Input area */
+.chat-input-area {
+  display: flex;
+  gap: 8px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+  align-items: flex-end;
+}
+.chat-input {
+  flex: 1;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  padding: 9px 12px;
+  font-family: var(--font);
+  font-size: .88rem;
+  resize: none;
+  min-height: 38px;
+  max-height: 120px;
+  overflow-y: auto;
+  transition: border-color .15s;
+}
+.chat-input:focus { outline: none; border-color: var(--accent); }
+.send-btn { padding: 9px 16px; border-radius: 8px; flex-shrink: 0; }
+.input-hint {
+  padding: 4px 14px 8px;
+  font-size: .72rem;
+  color: var(--text-muted);
+  background: var(--surface);
+}
+
+/* Info panel */
+.assistant-info-panel { display: flex; flex-direction: column; gap: 0; }
+.capability-list { list-style: none; padding: 0; margin: 0; }
+.capability-list li {
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: .86rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.capability-list li:last-child { border: none; }
+.cap-icon { font-size: 1rem; }
+.small { font-size: .8rem; }
+
+@media (max-width: 768px) {
+  .assistant-layout {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+  .assistant-info-panel { display: none; }
+  .chat-panel { height: calc(100vh - 140px); }
+}
+</style>
+{% endblock %}

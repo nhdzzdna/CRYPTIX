@@ -43,6 +43,9 @@
       <a href="{{ url_for('security.index') }}"   class="nav-item {% if request.endpoint == 'security.index' %}active{% endif %}">
         <span class="nav-icon">🛡</span> Security Center
       </a>
+      <a href="{{ url_for('assistant.index') }}"  class="nav-item {% if request.endpoint == 'assistant.index' %}active{% endif %}">
+        <span class="nav-icon">🤖</span> Security Assistant
+      </a>
       <a href="{{ url_for('settings.index') }}"   class="nav-item {% if request.endpoint == 'settings.index' %}active{% endif %}">
         <span class="nav-icon">⚙</span> Settings
       </a>
