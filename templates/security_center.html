@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Security Center — CRYPTIX{% endblock %}
+{% block page_title %}Security Center{% endblock %}
+
+{% block content %}
+<div class="card mb-4">
+  <div class="card-header d-flex justify-between align-items-center">
+    <span>🛡 Blockchain Integrity</span>
+    <form method="POST" action="{{ url_for('security.verify') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+      <button type="submit" class="btn btn-primary">🔍 Verifikasi Integritas</button>
+    </form>
+  </div>
+  <div class="card-body">
+    <div class="stats-row">
+      <div class="stat-item">
+        <span class="stat-num">{{ stats.total_blocks or 0 }}</span>
+        <span class="stat-lbl">Total Blok</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-num">{{ stats.last_index or '-' }}</span>
+        <span class="stat-lbl">Indeks Terakhir</span>
+      </div>
+    </div>
+
+    {% if verified is not none %}
+      {% if tampered_count == 0 %}
+        <div class="alert alert-success mt-2">✅ Semua {{ stats.total_blocks }} blok valid. Rantai blockchain utuh.</div>
+      {% else %}
+        <div class="alert alert-danger mt-2">⚠ {{ tampered_count }} blok TERDETEKSI RUSAK / DIMANIPULASI!</div>
+      {% endif %}
+    {% endif %}
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">Log Aktivitas Blockchain</div>
+  <div class="card-body p-0">
+    {% if blocks %}
+    <table class="table table-sm">
+      <thead>
+        <tr>
+          <th>#</th><th>Waktu</th><th>User</th><th>Aksi</th>
+          <th>Asset Hash</th><th>Block Hash</th>
+          {% if verified is not none %}<th>Status</th>{% endif %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for blk in blocks %}
+        <tr class="{% if verified is not none and blk.get('tampered') %}row-danger{% endif %}">
+          <td>{{ blk.block_index }}</td>
+          <td>{{ blk.timestamp[:19] }}</td>
+          <td>{{ blk.user_id or '-' }}</td>
+          <td><span class="badge badge-{{ 'success' if blk.action == 'UPLOAD' else ('danger' if blk.action == 'DELETE' else 'info') }}">{{ blk.action }}</span></td>
+          <td class="mono text-truncate" style="max-width:120px;" title="{{ blk.asset_hash }}">{{ blk.asset_hash[:12] }}…</td>
+          <td class="mono text-truncate" style="max-width:120px;" title="{{ blk.block_hash }}">{{ blk.block_hash[:12] }}…</td>
+          {% if verified is not none %}
+          <td>
+            {% if blk.get('tampered') %}
+              <span class="badge badge-danger">⚠ RUSAK</span>
+            {% else %}
+              <span class="badge badge-success">✅ OK</span>
+            {% endif %}
+          </td>
+          {% endif %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="p-3 text-muted">Belum ada blok di blockchain.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

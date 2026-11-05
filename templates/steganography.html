@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}Steganography — CRYPTIX{% endblock %}
+{% block page_title %}Steganography LSB{% endblock %}
+
+{% block content %}
+<div class="card-grid-2">
+  <!-- Embed panel -->
+  <div class="card">
+    <div class="card-header">Sisipkan Pesan (Embed)</div>
+    <div class="card-body">
+      <form method="POST" action="{{ url_for('stego.embed') }}" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        <div class="form-group">
+          <label>Gambar Carrier (PNG/JPG/BMP)</label>
+          <input type="file" name="carrier_image" class="form-control"
+                 accept=".png,.jpg,.jpeg,.bmp" required />
+        </div>
+        <div class="form-group">
+          <label>Pesan Rahasia</label>
+          <textarea name="message" class="form-control" rows="4" required
+                    placeholder="Tulis pesan yang akan disembunyikan…"></textarea>
+        </div>
+        <div class="form-group form-check">
+          <input type="checkbox" id="use-enc" name="use_encryption" value="1" />
+          <label for="use-enc">Enkripsi pesan dengan Super Encryption</label>
+        </div>
+        <button type="submit" class="btn btn-primary">🖼 Sisipkan</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Info panel -->
+  <div class="card">
+    <div class="card-header">ℹ Cara Kerja LSB</div>
+    <div class="card-body">
+      <p>LSB (Least Significant Bit) menyembunyikan pesan dengan mengganti bit terakhir setiap channel warna (R, G, B) piksel.</p>
+      <ul>
+        <li>32 bit pertama = header panjang pesan.</li>
+        <li>Kapasitas ≈ <code>(W × H × 3 − 32) / 8</code> bytes.</li>
+        <li>Hasil disimpan sebagai PNG lossless.</li>
+        <li>Opsional: enkripsi pesan dengan Super Encryption sebelum disisipkan.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- Saved stego images -->
+<div class="card mt-4">
+  <div class="card-header">Stego Images Tersimpan ({{ images|length }})</div>
+  <div class="card-body p-0">
+    {% if images %}
+    <table class="table">
+      <thead>
+        <tr><th>Nama Asli</th><th>Enkripsi</th><th>Dibuat</th><th>Aksi</th></tr>
+      </thead>
+      <tbody>
+        {% for img in images %}
+        <tr>
+          <td>{{ img.original_name }}</td>
+          <td>{% if img.has_encryption %}<span class="badge badge-success">Ya</span>{% else %}<span class="badge badge-secondary">Tidak</span>{% endif %}</td>
+          <td>{{ img.created_at[:16] }}</td>
+          <td>
+            <!-- Extract -->
+            <form method="POST" action="{{ url_for('stego.extract', img_id=img.id) }}" style="display:inline">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+              <button type="submit" class="btn btn-sm btn-primary">🔍 Ekstrak</button>
+            </form>
+            <!-- Download -->
+            <a href="{{ url_for('stego.download', img_id=img.id) }}" class="btn btn-sm btn-success">⬇</a>
+            <!-- Delete -->
+            <form method="POST" action="{{ url_for('stego.delete', img_id=img.id) }}" style="display:inline"
+                  onsubmit="return confirm('Hapus?')">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+              <button type="submit" class="btn btn-sm btn-danger">🗑</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="p-3 text-muted">Belum ada stego image.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

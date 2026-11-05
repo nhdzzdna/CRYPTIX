@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Documents — CRYPTIX{% endblock %}
+{% block page_title %}Documents{% endblock %}
+
+{% block content %}
+<div class="card mb-4">
+  <div class="card-header">Upload Dokumen</div>
+  <div class="card-body">
+    <form method="POST" action="{{ url_for('vault.upload') }}" enctype="multipart/form-data">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+      <div class="form-row">
+        <input type="file" name="file" class="form-control"
+               accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt" required />
+        <button type="submit" class="btn btn-primary">🔒 Enkripsi & Upload</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">Dokumen Terenkripsi ({{ files|length }})</div>
+  <div class="card-body p-0">
+    {% if files %}
+    <table class="table">
+      <thead>
+        <tr><th>Nama File</th><th>Ukuran</th><th>Upload</th><th>Aksi</th></tr>
+      </thead>
+      <tbody>
+        {% for f in files %}
+        <tr>
+          <td>📄 {{ f.original_name }}</td>
+          <td>{{ "%.1f"|format(f.file_size / 1024) }} KB</td>
+          <td>{{ f.uploaded_at[:16] }}</td>
+          <td>
+            <a href="{{ url_for('vault.decrypt', file_id=f.id) }}" class="btn btn-sm btn-success">⬇ Unduh</a>
+            <form method="POST" action="{{ url_for('vault.delete', file_id=f.id) }}" style="display:inline"
+                  onsubmit="return confirm('Hapus?')">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+              <button type="submit" class="btn btn-sm btn-danger">🗑</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="p-3 text-muted">Belum ada dokumen.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login — CRYPTIX</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+</head>
+<body class="auth-page">
+  <div class="auth-container">
+    <div class="auth-card">
+      <div class="auth-logo">🔐 <span>CRYPTIX</span></div>
+      <h2 class="auth-title">Masuk ke Akun Anda</h2>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for cat, msg in messages %}
+            <div class="alert alert-{{ cat }}">{{ msg }}</div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      <form method="POST" enctype="multipart/form-data" id="login-form">
+        {{ csrf_token_field() if csrf_token_field is defined }}
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+
+        <div class="form-group">
+          <label for="username">Username</label>
+          <input type="text" id="username" name="username" class="form-control"
+                 placeholder="Masukkan username" required autofocus />
+        </div>
+
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password" class="form-control"
+                 placeholder="Masukkan password" required />
+        </div>
+
+        <!-- Fingerprint (optional) -->
+        <div class="form-group">
+          <label>Fingerprint (opsional)</label>
+          <input type="file" name="fingerprint_image" class="form-control"
+                 accept=".png,.jpg,.jpeg,.bmp" />
+          <small class="form-hint">Simulasi: unggah citra sidik jari yang sama saat registrasi.</small>
+        </div>
+
+        <!-- Face Recognition (optional) -->
+        <div class="form-group">
+          <label>Face Recognition (opsional)</label>
+          <div class="webcam-box" id="face-verify-box">
+            <video id="verify-video" autoplay playsinline style="display:none;width:100%;border-radius:8px;"></video>
+            <canvas id="verify-canvas" style="display:none;"></canvas>
+            <div class="webcam-buttons">
+              <button type="button" class="btn btn-secondary" onclick="startVerifyCamera()">📷 Buka Kamera</button>
+              <button type="button" class="btn btn-primary"   onclick="captureAndVerify()" id="btn-verify" style="display:none;">Verifikasi Wajah</button>
+            </div>
+            <p id="face-status" class="form-hint"></p>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-full">Masuk</button>
+        <p class="auth-link">Belum punya akun? <a href="{{ url_for('auth.register') }}">Daftar di sini</a></p>
+      </form>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+  <script>
+    let verifyStream = null;
+    function startVerifyCamera() {
+      navigator.mediaDevices.getUserMedia({video: true}).then(s => {
+        verifyStream = s;
+        const v = document.getElementById('verify-video');
+        v.srcObject = s;
+        v.style.display = 'block';
+        document.getElementById('btn-verify').style.display = 'inline-block';
+      }).catch(() => { document.getElementById('face-status').textContent = 'Kamera tidak tersedia.'; });
+    }
+    function captureAndVerify() {
+      const v = document.getElementById('verify-video');
+      const c = document.getElementById('verify-canvas');
+      c.width = v.videoWidth; c.height = v.videoHeight;
+      c.getContext('2d').drawImage(v, 0, 0);
+      const frame = c.toDataURL('image/jpeg');
+      const uname = document.getElementById('username').value;
+      fetch('/api/verify_face', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({username: uname, frame: frame})
+      }).then(r => r.json()).then(d => {
+        const st = document.getElementById('face-status');
+        if (d.verified) {
+          st.textContent = '✅ Wajah terverifikasi!';
+          st.style.color = '#22c55e';
+        } else {
+          st.textContent = '❌ Wajah tidak cocok.';
+          st.style.color = '#ef4444';
+        }
+        if (verifyStream) verifyStream.getTracks().forEach(t => t.stop());
+      });
+    }
+  </script>
+</body>
+</html>

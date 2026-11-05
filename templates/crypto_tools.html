@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block title %}Crypto Tools — CRYPTIX{% endblock %}
+{% block page_title %}Crypto Tools{% endblock %}
+
+{% block content %}
+<div class="card mb-4">
+  <div class="card-header">Uji Algoritma Kriptografi</div>
+  <div class="card-body">
+    <form method="POST">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+
+      <div class="form-grid-2">
+        <div class="form-group">
+          <label>Algoritma</label>
+          <select name="cipher" id="cipher-select" class="form-control" onchange="updateForm()">
+            <option value="super">Super Encryption (Semua Layer)</option>
+            <option value="vigenere">Vigenere Cipher</option>
+            <option value="playfair">Playfair Cipher</option>
+            <option value="chacha20">ChaCha20</option>
+            <option value="blowfish">Blowfish-CBC</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Aksi</label>
+          <select name="action" class="form-control">
+            <option value="encrypt">Enkripsi</option>
+            <option value="decrypt">Dekripsi</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Teks Input</label>
+        <textarea name="text" class="form-control mono" rows="4" required
+                  placeholder="Masukkan teks di sini…"></textarea>
+      </div>
+
+      <!-- Key field (for non-super) -->
+      <div class="form-group" id="key-field">
+        <label>Kunci</label>
+        <input type="text" name="key" class="form-control mono"
+               placeholder="Masukkan kunci (teks atau hex untuk modern)" />
+      </div>
+
+      <!-- Passphrase field (for super) -->
+      <div class="form-group" id="passphrase-field" style="display:none;">
+        <label>Passphrase (Super Encryption)</label>
+        <input type="text" name="passphrase" class="form-control"
+               placeholder="Masukkan passphrase rahasia" />
+        <small class="form-hint">Kunci turunan untuk keempat layer diderivasi dari passphrase ini.</small>
+      </div>
+
+      <button type="submit" class="btn btn-primary">⚙ Proses</button>
+    </form>
+  </div>
+</div>
+
+{% if error %}
+<div class="alert alert-danger">{{ error }}</div>
+{% endif %}
+
+{% if result is not none %}
+<div class="card">
+  <div class="card-header">Hasil</div>
+  <div class="card-body">
+    <pre class="output-box mono">{{ result }}</pre>
+    <button class="btn btn-sm btn-secondary mt-2" onclick="copyResult()">📋 Salin</button>
+  </div>
+</div>
+{% endif %}
+
+<!-- Algorithm info cards -->
+<div class="algo-info-grid mt-4">
+  <div class="algo-card">
+    <h4>🔤 Vigenere</h4>
+    <p>Cipher substitusi polyalphabetik klasik. Beroperasi pada ASCII printable (32–126). Kunci di-cycling per karakter.</p>
+  </div>
+  <div class="algo-card">
+    <h4>🔲 Playfair</h4>
+    <p>Cipher digram 5×5. Hanya huruf A–Z (I=J). Karakter non-huruf dilewati.</p>
+  </div>
+  <div class="algo-card">
+    <h4>⚡ ChaCha20</h4>
+    <p>Stream cipher modern. Nonce 16-byte acak. Output: <code>nonce_hex:ciphertext_b64</code>.</p>
+  </div>
+  <div class="algo-card">
+    <h4>🐡 Blowfish-CBC</h4>
+    <p>Block cipher CBC mode, PKCS#7 padding. IV 8-byte acak. Output: <code>iv_hex:ct_b64</code>.</p>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function updateForm() {
+  const c = document.getElementById('cipher-select').value;
+  document.getElementById('key-field').style.display        = c === 'super' ? 'none'  : 'block';
+  document.getElementById('passphrase-field').style.display = c === 'super' ? 'block' : 'none';
+}
+function copyResult() {
+  const pre = document.querySelector('.output-box');
+  navigator.clipboard.writeText(pre.textContent);
+}
+updateForm();
+</script>
+{% endblock %}

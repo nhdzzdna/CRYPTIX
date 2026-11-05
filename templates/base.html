@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}CRYPTIX{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+</head>
+<body class="layout-with-sidebar">
+
+  <!-- ── Sidebar ─────────────────────────────────────────────────────── -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <span class="logo-icon">🔐</span>
+      <span class="logo-text">CRYPTIX</span>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a href="{{ url_for('dashboard.index') }}"  class="nav-item {% if request.endpoint == 'dashboard.index' %}active{% endif %}">
+        <span class="nav-icon">⬛</span> Dashboard
+      </a>
+      <a href="{{ url_for('vault.index') }}"      class="nav-item {% if request.endpoint == 'vault.index' %}active{% endif %}">
+        <span class="nav-icon">🗄</span> My Vault
+      </a>
+      <a href="{{ url_for('account.index') }}"    class="nav-item {% if request.endpoint == 'account.index' %}active{% endif %}">
+        <span class="nav-icon">🔑</span> Account Vault
+      </a>
+      <a href="{{ url_for('documents.index') }}"  class="nav-item {% if request.endpoint == 'documents.index' %}active{% endif %}">
+        <span class="nav-icon">📄</span> Documents
+      </a>
+      <a href="{{ url_for('media.index') }}"      class="nav-item {% if request.endpoint == 'media.index' %}active{% endif %}">
+        <span class="nav-icon">🎵</span> Media Vault
+      </a>
+      <a href="{{ url_for('notes.index') }}"      class="nav-item {% if request.endpoint == 'notes.index' %}active{% endif %}">
+        <span class="nav-icon">📝</span> Secure Notes
+      </a>
+      <a href="{{ url_for('crypto.index') }}"     class="nav-item {% if request.endpoint == 'crypto.index' %}active{% endif %}">
+        <span class="nav-icon">⚙</span> Crypto Tools
+      </a>
+      <a href="{{ url_for('stego.index') }}"      class="nav-item {% if request.endpoint == 'stego.index' %}active{% endif %}">
+        <span class="nav-icon">🖼</span> Steganography
+      </a>
+      <a href="{{ url_for('security.index') }}"   class="nav-item {% if request.endpoint == 'security.index' %}active{% endif %}">
+        <span class="nav-icon">🛡</span> Security Center
+      </a>
+      <a href="{{ url_for('settings.index') }}"   class="nav-item {% if request.endpoint == 'settings.index' %}active{% endif %}">
+        <span class="nav-icon">⚙</span> Settings
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <span class="nav-user">{{ session.get('username', '') }}</span>
+      <a href="{{ url_for('auth.logout') }}" class="btn btn-sm btn-outline-danger">Logout</a>
+    </div>
+  </aside>
+
+  <!-- ── Main content ─────────────────────────────────────────────────── -->
+  <main class="main-content">
+    <header class="topbar">
+      <button class="sidebar-toggle" onclick="toggleSidebar()">☰</button>
+      <h1 class="page-title">{% block page_title %}{% endblock %}</h1>
+    </header>
+
+    <!-- Flash messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="flash-container">
+          {% for cat, msg in messages %}
+            <div class="alert alert-{{ cat }}">{{ msg }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <div class="content-area">
+      {% block content %}{% endblock %}
+    </div>
+  </main>
+
+  <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

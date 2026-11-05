@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}Account Vault — CRYPTIX{% endblock %}
+{% block page_title %}Account Vault{% endblock %}
+
+{% block content %}
+<div class="card mb-4">
+  <div class="card-header">Tambah Kredensial</div>
+  <div class="card-body">
+    <form method="POST" action="{{ url_for('account.add') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Nama Situs</label>
+          <input type="text" name="site_name" class="form-control" placeholder="Google, GitHub…" required />
+        </div>
+        <div class="form-group">
+          <label>Username / Email</label>
+          <input type="text" name="username" class="form-control" required />
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" name="password" class="form-control" required />
+        </div>
+        <div class="form-group">
+          <label>URL (opsional)</label>
+          <input type="url" name="url" class="form-control" placeholder="https://" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Catatan (opsional)</label>
+        <textarea name="notes" class="form-control" rows="2"></textarea>
+      </div>
+      <button type="submit" class="btn btn-primary">🔒 Simpan Terenkripsi</button>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">Kredensial Tersimpan ({{ entries|length }})</div>
+  <div class="card-body p-0">
+    {% if entries %}
+    <table class="table">
+      <thead>
+        <tr><th>Situs</th><th>Username</th><th>Password</th><th>URL</th><th>Aksi</th></tr>
+      </thead>
+      <tbody>
+        {% for e in entries %}
+        <tr>
+          <td>{{ e.site_name }}</td>
+          <td>{{ e.username }}</td>
+          <td>
+            <span class="password-mask" data-pw="{{ e.password }}">••••••••</span>
+            <button class="btn btn-sm btn-ghost" onclick="togglePw(this)">👁</button>
+          </td>
+          <td>{% if e.url %}<a href="{{ e.url }}" target="_blank" rel="noopener">🔗</a>{% endif %}</td>
+          <td>
+            <form method="POST" action="{{ url_for('account.delete', entry_id=e.id) }}" style="display:inline"
+                  onsubmit="return confirm('Hapus kredensial ini?')">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+              <button type="submit" class="btn btn-sm btn-danger">🗑</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="p-3 text-muted">Belum ada kredensial tersimpan.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function togglePw(btn) {
+  const span = btn.previousElementSibling;
+  span.textContent = span.textContent === '••••••••' ? span.dataset.pw : '••••••••';
+}
+</script>
+{% endblock %}

@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Register — CRYPTIX</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+</head>
+<body class="auth-page">
+  <div class="auth-container">
+    <div class="auth-card" style="max-width:540px;">
+      <div class="auth-logo">🔐 <span>CRYPTIX</span></div>
+      <h2 class="auth-title">Buat Akun Baru</h2>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for cat, msg in messages %}
+            <div class="alert alert-{{ cat }}">{{ msg }}</div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      <form method="POST" enctype="multipart/form-data" id="register-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+
+        <div class="form-group">
+          <label for="username">Username</label>
+          <input type="text" id="username" name="username" class="form-control" required autofocus />
+        </div>
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email" class="form-control" required />
+        </div>
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password" class="form-control" required minlength="8" />
+        </div>
+        <div class="form-group">
+          <label for="confirm_password">Konfirmasi Password</label>
+          <input type="password" id="confirm_password" name="confirm_password" class="form-control" required />
+        </div>
+
+        <!-- Face Registration -->
+        <div class="card mb-3">
+          <div class="card-header">📷 Face Registration (Opsional)</div>
+          <div class="card-body">
+            <video id="reg-video" autoplay playsinline style="display:none;width:100%;border-radius:8px;"></video>
+            <canvas id="reg-canvas" style="display:none;"></canvas>
+            <div class="webcam-buttons">
+              <button type="button" class="btn btn-secondary btn-sm" onclick="startRegCamera()">Buka Kamera</button>
+              <button type="button" class="btn btn-primary btn-sm" id="btn-capture" onclick="captureFrames()" style="display:none;">Ambil Sampel (30 frame)</button>
+            </div>
+            <p id="reg-face-status" class="form-hint"></p>
+          </div>
+        </div>
+
+        <!-- Fingerprint Registration -->
+        <div class="card mb-3">
+          <div class="card-header">🔏 Fingerprint Registration (Opsional — Simulasi)</div>
+          <div class="card-body">
+            <input type="file" name="fingerprint_image" class="form-control" accept=".png,.jpg,.jpeg,.bmp" />
+            <small class="form-hint">Unggah citra sidik jari sebagai referensi. Gunakan citra yang sama saat login.</small>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-full">Daftar</button>
+        <p class="auth-link">Sudah punya akun? <a href="{{ url_for('auth.login') }}">Masuk</a></p>
+      </form>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+  <script>
+    let regStream = null;
+    let capturedFrames = [];
+    function startRegCamera() {
+      navigator.mediaDevices.getUserMedia({video: true}).then(s => {
+        regStream = s;
+        const v = document.getElementById('reg-video');
+        v.srcObject = s; v.style.display = 'block';
+        document.getElementById('btn-capture').style.display = 'inline-block';
+      });
+    }
+    function captureFrames() {
+      const v = document.getElementById('reg-video');
+      const c = document.getElementById('reg-canvas');
+      const st = document.getElementById('reg-face-status');
+      c.width = v.videoWidth; c.height = v.videoHeight;
+      capturedFrames = [];
+      let count = 0;
+      st.textContent = 'Mengambil sampel wajah...';
+      const interval = setInterval(() => {
+        c.getContext('2d').drawImage(v, 0, 0);
+        capturedFrames.push(c.toDataURL('image/jpeg'));
+        count++;
+        st.textContent = `Sampel: ${count}/30`;
+        if (count >= 30) {
+          clearInterval(interval);
+          if (regStream) regStream.getTracks().forEach(t => t.stop());
+          // Send frames to server
+          fetch('/api/register_face', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({frames: capturedFrames})
+          }).then(r => r.json()).then(d => {
+            if (d.success) {
+              st.textContent = '✅ ' + d.message;
+              st.style.color = '#22c55e';
+            } else {
+              st.textContent = '❌ ' + d.error;
+              st.style.color = '#ef4444';
+            }
+          });
+        }
+      }, 100);
+    }
+  </script>
+</body>
+</html>

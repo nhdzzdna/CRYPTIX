@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — CRYPTIX{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-icon">🗄</div>
+    <div class="stat-value">{{ file_count }}</div>
+    <div class="stat-label">Total File</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon">🔑</div>
+    <div class="stat-value">{{ account_count }}</div>
+    <div class="stat-label">Kredensial</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon">📝</div>
+    <div class="stat-value">{{ note_count }}</div>
+    <div class="stat-label">Catatan</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon">🖼</div>
+    <div class="stat-value">{{ stego_count }}</div>
+    <div class="stat-label">Stego Image</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon">💾</div>
+    <div class="stat-value">{{ "%.1f"|format(total_bytes / 1024 / 1024) }} MB</div>
+    <div class="stat-label">Storage Terpakai</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon">⛓</div>
+    <div class="stat-value">{{ chain_stats.total_blocks or 0 }}</div>
+    <div class="stat-label">Blok Blockchain</div>
+  </div>
+</div>
+
+<div class="card mt-4">
+  <div class="card-header">Aktivitas Terbaru</div>
+  <div class="card-body p-0">
+    {% if recent_blocks %}
+    <table class="table">
+      <thead>
+        <tr><th>#</th><th>Waktu</th><th>Aksi</th><th>Asset Hash</th></tr>
+      </thead>
+      <tbody>
+        {% for blk in recent_blocks %}
+        <tr>
+          <td>{{ blk.block_index }}</td>
+          <td>{{ blk.timestamp[:19] }}</td>
+          <td><span class="badge badge-{{ 'success' if blk.action == 'UPLOAD' else ('danger' if blk.action == 'DELETE' else 'info') }}">{{ blk.action }}</span></td>
+          <td class="mono text-truncate" style="max-width:200px;" title="{{ blk.asset_hash }}">{{ blk.asset_hash[:16] }}…</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="p-3 text-muted">Belum ada aktivitas.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

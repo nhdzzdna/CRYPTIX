@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block title %}Settings — CRYPTIX{% endblock %}
+{% block page_title %}Settings{% endblock %}
+
+{% block content %}
+<div class="card-grid-2">
+
+  <!-- Profile / Change Password -->
+  <div class="card">
+    <div class="card-header">👤 Profil & Keamanan</div>
+    <div class="card-body">
+      <p><strong>Username:</strong> {{ user.username }}</p>
+      <p><strong>Email:</strong> {{ user.email }}</p>
+      <p><strong>Bergabung:</strong> {{ user.created_at[:16] }}</p>
+      <p><strong>Login Terakhir:</strong> {{ user.last_login[:16] if user.last_login else '—' }}</p>
+      <hr />
+      <h4>Ganti Password</h4>
+      <form method="POST" action="{{ url_for('settings.change_password') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        <div class="form-group">
+          <label>Password Saat Ini</label>
+          <input type="password" name="current_password" class="form-control" required />
+        </div>
+        <div class="form-group">
+          <label>Password Baru</label>
+          <input type="password" name="new_password" class="form-control" required minlength="8" />
+        </div>
+        <div class="form-group">
+          <label>Konfirmasi Password Baru</label>
+          <input type="password" name="confirm_password" class="form-control" required />
+        </div>
+        <button type="submit" class="btn btn-primary">Ganti Password</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Security -->
+  <div class="card">
+    <div class="card-header">🔐 Autentikasi Tambahan</div>
+    <div class="card-body">
+
+      <!-- USB Token -->
+      <h4>USB Token</h4>
+      <p class="text-muted">
+        Status: {% if user.usb_token_hmac %}
+          <span class="badge badge-success">✅ Terdaftar</span>
+        {% else %}
+          <span class="badge badge-warning">Belum terdaftar</span>
+        {% endif %}
+      </p>
+      <form method="POST" action="{{ url_for('settings.register_usb') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        <button type="submit" class="btn btn-secondary">🔌 Daftarkan USB Token</button>
+      </form>
+      <small class="form-hint mt-1">Pastikan flashdisk tercolok sebelum mendaftar.</small>
+
+      <hr />
+
+      <!-- Face Registration -->
+      <h4>Face Recognition</h4>
+      <p class="text-muted">
+        Status: {% if user.face_model_path %}
+          <span class="badge badge-success">✅ Model tersimpan</span>
+        {% else %}
+          <span class="badge badge-warning">Belum didaftarkan</span>
+        {% endif %}
+      </p>
+      <div class="webcam-buttons">
+        <video id="settings-video" autoplay playsinline style="display:none;width:100%;border-radius:8px;"></video>
+        <canvas id="settings-canvas" style="display:none;"></canvas>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="startSettingsCamera()">📷 Daftar Ulang Wajah</button>
+        <button type="button" class="btn btn-primary btn-sm" id="btn-settings-capture" onclick="captureSettingsFace()" style="display:none;">Ambil Sampel</button>
+      </div>
+      <p id="settings-face-status" class="form-hint"></p>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let settingsStream = null;
+function startSettingsCamera() {
+  navigator.mediaDevices.getUserMedia({video: true}).then(s => {
+    settingsStream = s;
+    const v = document.getElementById('settings-video');
+    v.srcObject = s; v.style.display = 'block';
+    document.getElementById('btn-settings-capture').style.display = 'inline-block';
+  });
+}
+function captureSettingsFace() {
+  const v = document.getElementById('settings-video');
+  const c = document.getElementById('settings-canvas');
+  const st = document.getElementById('settings-face-status');
+  c.width = v.videoWidth; c.height = v.videoHeight;
+  let frames = [];
+  let count = 0;
+  st.textContent = 'Mengambil sampel…';
+  const iv = setInterval(() => {
+    c.getContext('2d').drawImage(v, 0, 0);
+    frames.push(c.toDataURL('image/jpeg'));
+    count++;
+    st.textContent = `Sampel: ${count}/30`;
+    if (count >= 30) {
+      clearInterval(iv);
+      if (settingsStream) settingsStream.getTracks().forEach(t => t.stop());
+      fetch('/api/register_face', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({frames: frames})
+      }).then(r => r.json()).then(d => {
+        st.textContent = d.success ? '✅ ' + d.message : '❌ ' + d.error;
+        st.style.color = d.success ? '#22c55e' : '#ef4444';
+      });
+    }
+  }, 100);
+}
+</script>
+{% endblock %}
