@@ -22,7 +22,7 @@
         </div>
         <div class="form-group">
           <label>Aksi</label>
-          <select name="action" class="form-control">
+          <select name="action" id="action-select" class="form-control" onchange="updateForm()">
             <option value="encrypt">Enkripsi</option>
             <option value="decrypt">Dekripsi</option>
           </select>
@@ -47,7 +47,16 @@
         <label>Passphrase (Super Encryption)</label>
         <input type="text" name="passphrase" class="form-control"
                placeholder="Masukkan passphrase rahasia" />
-        <small class="form-hint">Kunci turunan untuk keempat layer diderivasi dari passphrase ini.</small>
+        <small class="form-hint">Kunci turunan untuk keempat layer diturunkan dengan PBKDF2-HMAC-SHA256 bersalt dari passphrase ini.</small>
+      </div>
+
+      <!-- Show-steps option (super encryption, encrypt only) -->
+      <div class="form-group" id="steps-field" style="display:none;">
+        <label>
+          <input type="checkbox" name="show_steps" value="1" id="show-steps" />
+          Tampilkan tahapan
+        </label>
+        <small class="form-hint">Menampilkan keluaran tiap layer Super Encryption untuk keperluan pembelajaran.</small>
       </div>
 
       <button type="submit" class="btn btn-primary">⚙ Proses</button>
@@ -65,6 +74,27 @@
   <div class="card-body">
     <pre class="output-box mono">{{ result }}</pre>
     <button class="btn btn-sm btn-secondary mt-2" onclick="copyResult()">📋 Salin</button>
+  </div>
+</div>
+{% endif %}
+
+{% if steps %}
+<div class="card mt-4">
+  <div class="card-header">Tahapan Super Encryption</div>
+  <div class="card-body">
+    {% set step_labels = {
+      "vigenere": "Layer 1 — Vigenere",
+      "playfair": "Layer 2 — Playfair",
+      "chacha20": "Layer 3 — ChaCha20",
+      "blowfish": "Layer 4 — Blowfish-CBC",
+      "final": "Keluaran Akhir (CXSE2 + HMAC-SHA256)"
+    } %}
+    {% for name, value in steps.items() %}
+    <div class="form-group">
+      <label>{{ step_labels.get(name, name) }}</label>
+      <pre class="output-box mono">{{ value }}</pre>
+    </div>
+    {% endfor %}
   </div>
 </div>
 {% endif %}
@@ -94,8 +124,10 @@
 <script>
 function updateForm() {
   const c = document.getElementById('cipher-select').value;
+  const a = document.getElementById('action-select').value;
   document.getElementById('key-field').style.display        = c === 'super' ? 'none'  : 'block';
   document.getElementById('passphrase-field').style.display = c === 'super' ? 'block' : 'none';
+  document.getElementById('steps-field').style.display      = (c === 'super' && a === 'encrypt') ? 'block' : 'none';
 }
 function copyResult() {
   const pre = document.querySelector('.output-box');

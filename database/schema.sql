@@ -20,30 +20,31 @@ CREATE TABLE IF NOT EXISTS users (
 );
 
 -- ── Vault Files ──────────────────────────────────────────────────────────────
+-- Enkripsi per chunk (file_encryption.py); header berkas memuat nonce GCM,
+-- sehingga kolom nonce/tag baris tidak diperlukan lagi.
 CREATE TABLE IF NOT EXISTS vault_files (
-    id              INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id         INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    original_name   TEXT    NOT NULL,
-    stored_name     TEXT    NOT NULL UNIQUE,   -- UUID-based safe filename
-    file_type       TEXT    NOT NULL,          -- mime category: image/audio/document/other
-    file_size       INTEGER NOT NULL,
-    nonce           TEXT    NOT NULL,          -- hex nonce for AES-GCM
-    tag             TEXT    NOT NULL,          -- hex GCM auth tag
-    uploaded_at     TEXT    NOT NULL DEFAULT (datetime('now')),
-    sha256_hash     TEXT    NOT NULL           -- hash of plaintext for blockchain
+    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id             INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    original_name       TEXT    NOT NULL,      -- terenkripsi: "v1:<nonce>:<ct>"
+    stored_name         TEXT    NOT NULL UNIQUE,   -- heksadesimal acak tanpa ekstensi asli
+    file_type           TEXT    NOT NULL,          -- mime category: image/audio/video/document
+    file_size           INTEGER NOT NULL,
+    uploaded_at         TEXT    NOT NULL DEFAULT (datetime('now')),
+    sha256_hash         TEXT    NOT NULL,      -- SHA-256 plaintext, verifikasi setelah dekripsi
+    sha256_ciphertext   TEXT    NOT NULL       -- SHA-256 berkas terenkripsi, verifikasi aset
 );
 
 -- ── Account Vault ─────────────────────────────────────────────────────────────
+-- Tiap field membawa nonce dan tag GCM-nya sendiri pada token "v1:...", sehingga
+-- kolom nonce/tag baris hanya berisi placeholder palsu dan dihapus.
 CREATE TABLE IF NOT EXISTS account_vault (
     id              INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id         INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    site_name_enc   TEXT    NOT NULL,   -- AES-GCM encrypted, base64
+    site_name_enc   TEXT    NOT NULL,   -- "v1:<nonce_hex>:<ciphertext_hex>"
     username_enc    TEXT    NOT NULL,
     password_enc    TEXT    NOT NULL,
     url_enc         TEXT,
     notes_enc       TEXT,
-    nonce           TEXT    NOT NULL,
-    tag             TEXT    NOT NULL,
     created_at      TEXT    NOT NULL DEFAULT (datetime('now')),
     updated_at      TEXT    NOT NULL DEFAULT (datetime('now'))
 );
@@ -52,10 +53,8 @@ CREATE TABLE IF NOT EXISTS account_vault (
 CREATE TABLE IF NOT EXISTS secure_notes (
     id              INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id         INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    title_enc       TEXT    NOT NULL,
+    title_enc       TEXT    NOT NULL,   -- "v1:<nonce_hex>:<ciphertext_hex>"
     content_enc     TEXT    NOT NULL,
-    nonce           TEXT    NOT NULL,
-    tag             TEXT    NOT NULL,
     created_at      TEXT    NOT NULL DEFAULT (datetime('now')),
     updated_at      TEXT    NOT NULL DEFAULT (datetime('now'))
 );
@@ -69,20 +68,25 @@ CREATE TABLE IF NOT EXISTS schema_meta (
 CREATE TABLE IF NOT EXISTS stego_images (
     id              INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id         INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    original_name   TEXT    NOT NULL,
+    original_name   TEXT    NOT NULL,   -- terenkripsi: "v1:<nonce>:<ct>"
     stored_name     TEXT    NOT NULL UNIQUE,
     has_encryption  INTEGER NOT NULL DEFAULT 0,   -- 1 if message was super-encrypted
     created_at      TEXT    NOT NULL DEFAULT (datetime('now'))
 );
 
 -- ── Blockchain Log ────────────────────────────────────────────────────────────
+-- Rantai hash ber-PoW: signature = HMAC-SHA256(kunci rantai, block_hash);
+-- kunci rantai disimpan di instance/chain.key, bukan di basis data.
 CREATE TABLE IF NOT EXISTS blockchain_log (
     id              INTEGER PRIMARY KEY AUTOINCREMENT,
-    block_index     INTEGER NOT NULL,
+    block_index     INTEGER NOT NULL UNIQUE,
     timestamp       TEXT    NOT NULL,
     user_id         INTEGER,
-    action          TEXT    NOT NULL,   -- UPLOAD / DECRYPT / MODIFY / DELETE / LOGIN
-    asset_hash      TEXT    NOT NULL,   -- SHA-256 of the asset at event time
+    action          TEXT    NOT NULL,   -- lihat modules/blockchain/blockchain.py ACTIONS
+    asset_ref       TEXT    NOT NULL DEFAULT '',   -- jenis:id, contoh "file:12"
+    asset_hash      TEXT    NOT NULL,   -- SHA-256 ciphertext atau HMAC isi aset
     previous_hash   TEXT    NOT NULL,
-    block_hash      TEXT    NOT NULL
+    nonce           INTEGER NOT NULL DEFAULT 0,    -- proof of work
+    block_hash      TEXT    NOT NULL,
+    signature       TEXT    NOT NULL    -- HMAC-SHA256(kunci rantai, block_hash)
 );

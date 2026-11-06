@@ -7,6 +7,7 @@ Encryption: AES-256-GCM (file_encryption.py).
 """
 
 import os
+import io
 import hashlib
 
 from flask import (
@@ -19,10 +20,10 @@ import config
 from modules.strings import MSG
 from routes.auth_routes import login_required
 from database.db import get_db
-from modules.cryptography.key_management import master_key_from_hex, get_file_encryption_key
+from modules.cryptography.key_management import master_key_from_hex, purpose_key
+from modules.cryptography.database_encryption import decrypt_field, encrypt_field, field_aad
 from modules.cryptography.file_encryption import (
-    encrypt_file, decrypt_file, save_encrypted_file,
-    load_encrypted_file, generate_stored_name,
+    encrypt_stream, decrypt_all, generate_stored_name, file_aad,
 )
 from modules.blockchain.blockchain import add_block
 
@@ -34,8 +35,27 @@ def _allowed_file(filename: str) -> bool:
 
 
 def _get_file_key() -> bytes:
+    """Kunci enkripsi berkas = purpose_key(master key sesi, "file")."""
     mk = master_key_from_hex(session["master_key_hex"])
-    return get_file_encryption_key(mk)
+    return purpose_key(mk, "file")
+
+
+def _get_db_key() -> bytes:
+    """Kunci field = purpose_key(master key sesi, "database")."""
+    mk = master_key_from_hex(session["master_key_hex"])
+    return purpose_key(mk, "database")
+
+
+def _name_aad(user_id) -> bytes:
+    return field_aad(user_id, "vault_files", "original_name")
+
+
+def _display_name(row, db_key: bytes) -> str:
+    """Buka nama asli berkas untuk daftar; token gagal ditandai aman."""
+    try:
+        return decrypt_field(row["original_name"], db_key, _name_aad(row["user_id"]))
+    except ValueError:
+        return "[Nama tidak terbaca]"
 
 
 # ── List files ────────────────────────────────────────────────────────────────
@@ -44,10 +64,17 @@ def _get_file_key() -> bytes:
 @login_required
 def index():
     with get_db() as db:
-        files = db.execute(
+        rows = db.execute(
             "SELECT * FROM vault_files WHERE user_id=? ORDER BY uploaded_at DESC",
             (session["user_id"],),
         ).fetchall()
+
+    db_key = _get_db_key()
+    files = []
+    for r in rows:
+        row = dict(r)
+        row["original_name"] = _display_name(r, db_key)
+        files.append(row)
     return render_template("vault.html", files=files)
 
 
@@ -82,23 +109,31 @@ def upload():
         file_type = "document"
 
     fkey = _get_file_key()
-    enc_result = encrypt_file(raw, fkey)
-    stored_name = generate_stored_name(filename)
-    save_encrypted_file(enc_result["ciphertext"], stored_name)
+    stored_name = generate_stored_name()
+    enc_result = encrypt_stream(
+        io.BytesIO(raw),
+        os.path.join(config.ENCRYPTED_FILES_DIR, stored_name),
+        fkey,
+        file_aad(session["user_id"], stored_name),
+    )
+    name_token = encrypt_field(filename, _get_db_key(), _name_aad(session["user_id"]))
 
     with get_db() as db:
-        db.execute(
+        cursor = db.execute(
             """INSERT INTO vault_files
-               (user_id, original_name, stored_name, file_type, file_size, nonce, tag, sha256_hash)
-               VALUES (?,?,?,?,?,?,?,?)""",
+               (user_id, original_name, stored_name, file_type, file_size,
+                sha256_hash, sha256_ciphertext)
+               VALUES (?,?,?,?,?,?,?)""",
             (
-                session["user_id"], filename, stored_name, file_type, len(raw),
-                enc_result["nonce_hex"], enc_result["tag_hex"], enc_result["sha256_hex"],
+                session["user_id"], name_token, stored_name, file_type, len(raw),
+                enc_result["sha256_plaintext"], enc_result["sha256_ciphertext"],
             ),
         )
+        file_id = cursor.lastrowid
         db.commit()
 
-    add_block(session["user_id"], "UPLOAD", enc_result["sha256_hex"])
+    add_block(session["user_id"], "UPLOAD", f"file:{file_id}",
+              enc_result["sha256_ciphertext"])
     flash(MSG.VAULT_UPLOAD_SUCCESS.format(filename=filename), "success")
     return redirect(url_for("vault.index"))
 
@@ -118,19 +153,29 @@ def decrypt(file_id: int):
         abort(404)
 
     try:
-        ciphertext = load_encrypted_file(row["stored_name"])
         fkey = _get_file_key()
-        plaintext = decrypt_file(ciphertext, row["nonce"], fkey)
+        db_key = _get_db_key()
+        path = os.path.join(config.ENCRYPTED_FILES_DIR, row["stored_name"])
+        plaintext = decrypt_all(path, fkey, file_aad(row["user_id"], row["stored_name"]))
+        if hashlib.sha256(plaintext).hexdigest() != row["sha256_hash"]:
+            raise ValueError("SHA-256 plaintext tidak cocok dengan nilai tercatat.")
+        original_name = decrypt_field(row["original_name"], db_key, _name_aad(row["user_id"]))
+    except OSError:
+        flash(MSG.VAULT_DECRYPT_FAILED, "danger")
+        return redirect(url_for("vault.index"))
     except Exception:
+        # Tag GCM gagal, struktur berkas tidak sah, atau hash plaintext beda.
+        add_block(session["user_id"], "TAMPER_DETECTED", f"file:{file_id}",
+                  row["sha256_ciphertext"])
         flash(MSG.VAULT_DECRYPT_FAILED, "danger")
         return redirect(url_for("vault.index"))
 
-    add_block(session["user_id"], "DECRYPT", row["sha256_hash"])
+    add_block(session["user_id"], "DOWNLOAD", f"file:{file_id}",
+              row["sha256_ciphertext"])
 
-    import io
     return send_file(
         io.BytesIO(plaintext),
-        download_name=row["original_name"],
+        download_name=original_name,
         as_attachment=True,
     )
 
@@ -155,6 +200,7 @@ def delete(file_id: int):
         db.execute("DELETE FROM vault_files WHERE id=?", (file_id,))
         db.commit()
 
-    add_block(session["user_id"], "DELETE", row["sha256_hash"])
+    add_block(session["user_id"], "DELETE", f"file:{file_id}",
+              row["sha256_ciphertext"])
     flash(MSG.VAULT_FILE_DELETED, "info")
     return redirect(url_for("vault.index"))

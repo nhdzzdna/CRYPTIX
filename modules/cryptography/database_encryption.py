@@ -1,115 +1,141 @@
 """
 modules/cryptography/database_encryption.py
-─────────────────────────────────────────────
-AES-256-GCM encryption for sensitive database fields.
+────────────────────────────────────────────
+Enkripsi AES-256-GCM untuk field sensitif basis data.
 
-Used by:
-  • Account Vault  (site_name, username, password, url, notes)
-  • Secure Notes   (title, content)
+Format tersimpan di kolom teks:
+  "v1:<nonce_hex>:<ciphertext_hex>"
+  • nonce 12 byte acak setiap kali field ditulis.
+  • ciphertext = keluaran AESGCM.encrypt (ciphertext ‖ tag 16 byte).
+  • AAD = "<user_id>:<tabel>:<kolom>" sehingga token tidak dapat dipindahkan
+    ke pengguna lain, tabel lain, maupun kolom lain.
 
-The DB encryption key is derived from the master key via a separate HKDF
-label (config.HKDF_SALT_DB_ENC) so it is independent from the file key.
+Kunci: purpose_key(dek, "database") dari key_management.
 
-Format stored in DB columns:
-  "<nonce_hex>:<tag_hex>:<ciphertext_b64>"
-  All in a single text field for simplicity.
-
-Row-level nonces: each field in a row shares the row nonce (stored in the
-nonce column) and the tag column stores only the outer tag.
-For multi-field rows we encrypt with a composite and store per the schema.
+Field yang dilindungi:
+  • account_vault  (site_name_enc, username_enc, password_enc, url_enc,
+                    notes_enc)
+  • secure_notes   (title_enc, content_enc)
+  • vault_files.original_name dan stego_images.original_name
+Metadata penyaringan (file_type, file_size) tetap polos.
 """
 
 import os
-import base64
 
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
+_VERSION = "v1"
+_NONCE_LENGTH = 12
 
-def encrypt_field(plaintext: str, db_key: bytes) -> str:
+
+def field_aad(user_id, table: str, column: str) -> bytes:
     """
-    Encrypt a single text field with AES-256-GCM.
+    AAD field = b"<user_id>:<tabel>:<kolom>".
+
+    Ikat token ke pemilik, tabel, dan kolom asalnya.
+    """
+    if not table or not column:
+        raise ValueError("Tabel dan kolom wajib diisi untuk AAD.")
+    return f"{user_id}:{table}:{column}".encode("utf-8")
+
+
+def encrypt_field(plaintext: str, key: bytes, aad: bytes) -> str:
+    """
+    Enkripsi satu field teks dengan AES-256-GCM.
 
     Parameters
     ----------
-    plaintext : str    The sensitive value to protect.
-    db_key    : bytes  32-byte derived key from key_management.get_db_encryption_key().
+    plaintext : str    Nilai sensitif yang akan dilindungi.
+    key       : bytes  Kunci 32 byte (purpose_key(dek, "database")).
+    aad       : bytes  Hasil field_aad() untuk field ini.
 
     Returns
     -------
-    str  "<nonce_hex>:<tag_hex>:<ciphertext_b64>" — safe to store in SQLite TEXT.
+    str  "v1:<nonce_hex>:<ciphertext_hex>" — aman disimpan di SQLite TEXT.
     """
-    if len(db_key) != 32:
-        raise ValueError("AES-256-GCM requires a 32-byte key.")
+    if len(key) != 32:
+        raise ValueError("AES-256-GCM memerlukan kunci 32 byte.")
+    if not isinstance(aad, bytes) or not aad:
+        raise ValueError("AAD wajib diisi agar token terikat pada kolomnya.")
 
-    nonce = os.urandom(12)
-    aesgcm = AESGCM(db_key)
-    ct_with_tag = aesgcm.encrypt(nonce, plaintext.encode("utf-8"), None)
-    ciphertext = ct_with_tag[:-16]
-    tag = ct_with_tag[-16:]
-
-    return (
-        f"{nonce.hex()}:{tag.hex()}:{base64.b64encode(ciphertext).decode()}"
-    )
+    nonce = os.urandom(_NONCE_LENGTH)
+    blob = AESGCM(key).encrypt(nonce, plaintext.encode("utf-8"), aad)
+    return f"{_VERSION}:{nonce.hex()}:{blob.hex()}"
 
 
-def decrypt_field(token: str, db_key: bytes) -> str:
+def decrypt_field(token: str, key: bytes, aad: bytes) -> str:
     """
-    Decrypt a field encrypted by encrypt_field().
+    Dekripsi field hasil encrypt_field().
 
     Parameters
     ----------
-    token  : str    "<nonce_hex>:<tag_hex>:<ciphertext_b64>"
-    db_key : bytes  Same 32-byte key.
+    token : str    "v1:<nonce_hex>:<ciphertext_hex>".
+    key   : bytes  Kunci yang sama dengan saat enkripsi.
+    aad   : bytes  field_aad() yang sama; berbeda berarti token dipindahkan.
 
     Returns
     -------
-    str  Decrypted plaintext.
+    str  Plaintext.
 
     Raises
     ------
-    cryptography.exceptions.InvalidTag  if the ciphertext was tampered.
+    ValueError  Jika format salah, versi tidak dikenal, kunci tidak cocok,
+                AAD tidak cocok, atau data dimodifikasi.
     """
-    parts = token.split(":", 2)
-    if len(parts) != 3:
-        raise ValueError("Invalid encrypted field format.")
+    if len(key) != 32:
+        raise ValueError("AES-256-GCM memerlukan kunci 32 byte.")
+    try:
+        version, nonce_hex, body_hex = token.split(":")
+    except (AttributeError, ValueError) as exc:
+        raise ValueError("Format field terenkripsi tidak valid.") from exc
+    if version != _VERSION:
+        raise ValueError("Versi field terenkripsi tidak dikenal.")
 
-    nonce_hex, tag_hex, ct_b64 = parts
-    nonce = bytes.fromhex(nonce_hex)
-    tag   = bytes.fromhex(tag_hex)
-    ct    = base64.b64decode(ct_b64)
+    try:
+        blob = AESGCM(key).decrypt(
+            bytes.fromhex(nonce_hex), bytes.fromhex(body_hex), aad
+        )
+    except Exception as exc:
+        raise ValueError(
+            "Field tidak dapat dibuka: kunci, AAD, atau datanya tidak cocok."
+        ) from exc
+    return blob.decode("utf-8")
 
-    aesgcm = AESGCM(db_key)
-    plaintext_bytes = aesgcm.decrypt(nonce, ct + tag, None)
-    return plaintext_bytes.decode("utf-8")
 
-
-def encrypt_record(fields: dict[str, str], db_key: bytes) -> dict[str, str]:
+def encrypt_record(fields: dict[str, str], key: bytes, user_id, table: str) -> dict[str, str]:
     """
-    Encrypt every string value in *fields* dict.
+    Enkripsi setiap nilai pada dict; kunci AAD memakai nama kolomnya.
 
     Parameters
     ----------
-    fields : dict  {'site_name': 'Google', 'username': 'alice', ...}
-    db_key : bytes
+    fields  : dict  {'site_name_enc': 'Contoh', ...} — nama kunci = nama kolom.
+    key     : bytes Kunci 32 byte.
+    user_id : int   Pemilik baris.
+    table   : str   Nama tabel asal.
 
     Returns
     -------
-    dict  Same keys, encrypted values.
+    dict  Kolom sama, nilai terenkripsi; nilai kosong tetap "".
     """
-    return {k: encrypt_field(v, db_key) if v else "" for k, v in fields.items()}
+    return {
+        column: encrypt_field(value, key, field_aad(user_id, table, column))
+        if value else ""
+        for column, value in fields.items()
+    }
 
 
-def decrypt_record(fields: dict[str, str], db_key: bytes) -> dict[str, str]:
+def decrypt_record(fields: dict[str, str], key: bytes, user_id, table: str) -> dict[str, str]:
     """
-    Decrypt every non-empty string value in *fields* dict.
+    Dekripsi setiap nilai pada dict hasil baris tabel.
 
-    Parameters
-    ----------
-    fields : dict  {'site_name_enc': '<token>', ...}
-    db_key : bytes
+    Nilai kosong atau NULL dilewatkan menjadi "".
 
-    Returns
-    -------
-    dict  Same keys, decrypted values.
+    Raises
+    ------
+    ValueError  Jika salah satu nilai tidak dapat dibuka.
     """
-    return {k: decrypt_field(v, db_key) if v else "" for k, v in fields.items()}
+    return {
+        column: decrypt_field(value, key, field_aad(user_id, table, column))
+        if value else ""
+        for column, value in fields.items()
+    }

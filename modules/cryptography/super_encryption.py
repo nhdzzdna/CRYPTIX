@@ -1,181 +1,198 @@
 """
 modules/cryptography/super_encryption.py
-─────────────────────────────────────────
-Super Encryption: layered cipher pipeline.
+────────────────────────────────────────
+Super Encryption: pipeline 4 layer.
 
-Encryption order (forward):
-  1. Vigenere  (classical_cipher_1) — operates on UTF-8 plaintext
-  2. Playfair  (classical_cipher_2) — operates on UPPERCASE letters only
-  3. ChaCha20  (modern_cipher_1)    — operates on UTF-8 string
-  4. Blowfish-CBC (modern_cipher_2) — operates on UTF-8 string
+Urutan enkripsi:
+  1. Vigenere       — keluaran diubah ke byte UTF-8 lalu nibble heksadesimal
+                      yang dipetakan ke 16 huruf "ABCDEFGHIKLMNOPQ"
+                      (tanpa J dan X) sehingga Playfair benar-benar
+                      mengubah huruf.
+  2. Playfair       — beroperasi pada huruf hasil pemetaan; filler X dibuang
+                      saat dekripsi lalu dipetakan kembali ke byte.
+  3. ChaCha20
+  4. Blowfish-CBC
 
-Decryption order (reverse):
-  4→3→2→1
+Dekripsi: 4 → 3 → 2 → 1, dengan verifikasi MAC terlebih dahulu.
 
-Inter-layer encoding strategy:
-  • Before Playfair  : encode Vigenere output as decimal byte values (each byte
-    as 3-digit decimal 000-255 → digits only, no letters).  Playfair passes all
-    digits through unchanged, so the cipher only operates on zero letters.
-    This is academically valid: Playfair's letter operations are vacuous here,
-    but the cipher still contributes to the pipeline structure.
-  • After Playfair   : decode 3-digit groups back to bytes → Vigenere ciphertext
-  • Between modern ciphers the token strings are already ASCII-safe
-
-Each sub-cipher uses an independent key derived from the master key via HKDF
-(see key_management.get_super_enc_subkey).
-
-When master_key is provided (bytes), sub-keys are derived via HKDF.
-When a plain passphrase string is provided (Crypto Tools page), sub-keys are
-derived from SHA-256 slices of the passphrase so each cipher gets independent
-key material.
+Keamanan:
+  • Format keluaran bertanda versi: "CXSE2.<salt_hex>.<token>.<mac_hex>".
+  • Salt acak 16 byte per pesan masuk ke HKDF sehingga kunci Vigenere,
+    Playfair, dan MAC berbeda tiap pesan; kunci Vigenere/Playfair dibentuk
+    dari byte HKDF, bukan heksadesimal polos.
+  • HMAC-SHA256 atas seluruh bagian (encrypt-then-MAC); diverifikasi dengan
+    compare_digest sebelum dekripsi.
+  • Kunci turunan dari passphrase memakai PBKDF2-HMAC-SHA256
+    (config.SUPER_ENC_PBKDF2_ITERATIONS) dengan salt dari keluaran.
 """
 
-import base64 as _b64
 import hashlib
+import hmac
+import os
+
+import config
+
+from cryptography.hazmat.primitives.kdf.hkdf import HKDF
+from cryptography.hazmat.primitives import hashes as _hashes
 
 from modules.cryptography.classical_cipher_1 import vigenere_encrypt, vigenere_decrypt
 from modules.cryptography.classical_cipher_2 import playfair_encrypt, playfair_decrypt
-from modules.cryptography.modern_cipher_1    import chacha20_encrypt, chacha20_decrypt
-from modules.cryptography.modern_cipher_2    import blowfish_encrypt, blowfish_decrypt
+from modules.cryptography.modern_cipher_1 import chacha20_encrypt, chacha20_decrypt
+from modules.cryptography.modern_cipher_2 import blowfish_encrypt, blowfish_decrypt
+from modules.cryptography.key_management import purpose_key
+
+_VERSION = "CXSE2"
+_NIBBLE_ALPHABET = "ABCDEFGHIKLMNOPQ"   # 16 huruf, tanpa J dan X
+_NIBBLE_INDEX = {c: i for i, c in enumerate(_NIBBLE_ALPHABET)}
+_COMPONENTS = ("vigenere", "playfair", "chacha20", "blowfish", "mac")
 
 
-def _derive_subkeys_from_passphrase(passphrase: str) -> dict:
-    """
-    Derive sub-keys from a plain passphrase for standalone Crypto Tools use.
-    Each cipher gets a different 32-byte slice.
-    """
-    h1 = hashlib.sha256(passphrase.encode("utf-8")).digest()
-    h2 = hashlib.sha256(h1).digest()
-    h3 = hashlib.sha256(h2).digest()
-    h4 = hashlib.sha256(h3).digest()
+def _hkdf(ikm: bytes, salt: bytes | None, info: bytes, length: int = 32) -> bytes:
+    """HKDF-SHA256 generik."""
+    return HKDF(
+        algorithm=_hashes.SHA256(), length=length, salt=salt, info=info
+    ).derive(ikm)
+
+
+def _base_keys(master_key: bytes | None, passphrase: str | None, salt: bytes) -> dict:
+    """Material dasar tiap komponen (belum diperkaya salt per pesan)."""
+    if master_key is not None:
+        return {name: purpose_key(master_key, name) for name in _COMPONENTS}
+    if passphrase is not None:
+        root = hashlib.pbkdf2_hmac(
+            config.PBKDF2_HASH_ALGO,
+            passphrase.encode("utf-8"),
+            salt,
+            config.SUPER_ENC_PBKDF2_ITERATIONS,
+            dklen=32,
+        )
+        return {
+            name: _hkdf(root, salt, f"cryptix-super-{name}-v1".encode("utf-8"))
+            for name in _COMPONENTS
+        }
+    raise ValueError("master_key atau passphrase wajib disediakan.")
+
+
+def _vigenere_key(raw: bytes) -> str:
+    """Bentuk kunci Vigenere dari byte HKDF (printable ASCII 32–126)."""
+    return "".join(chr(b % 95 + 32) for b in raw[:16])
+
+
+def _playfair_key(raw: bytes) -> str:
+    """Bentuk kunci Playfair dari byte HKDF (huruf A–Z)."""
+    return "".join(chr(b % 26 + 65) for b in raw[:10])
+
+
+def _message_keys(base: dict, salt: bytes) -> dict:
+    """Kunci per pesan: Vigenere, Playfair, dan MAC melalui HKDF(salt)."""
     return {
-        "vigenere": h1.hex()[:16],           # 16-char printable ASCII key
-        "playfair": h2.hex()[:10].upper(),   # 10-char uppercase letter+digit key
-        "chacha20": h3,                       # 32 bytes
-        "blowfish": h4,                       # 32 bytes
+        "vigenere": _vigenere_key(_hkdf(base["vigenere"], salt, b"cryptix-super-vigenere-v1")),
+        "playfair": _playfair_key(_hkdf(base["playfair"], salt, b"cryptix-super-playfair-v1")),
+        "chacha20": base["chacha20"],
+        "blowfish": base["blowfish"],
+        "mac": _hkdf(base["mac"], salt, b"cryptix-super-mac-v1"),
     }
 
 
-def _derive_subkeys_from_master(master_key: bytes) -> dict:
+def _bytes_to_nibbles(data: bytes) -> str:
+    """Byte → dua huruf nibble dari _NIBBLE_ALPHABET."""
+    out = []
+    for b in data:
+        out.append(_NIBBLE_ALPHABET[b >> 4])
+        out.append(_NIBBLE_ALPHABET[b & 0x0F])
+    return "".join(out)
+
+
+def _nibbles_to_bytes(letters: str) -> bytes:
+    """Huruf nibble (filler X sudah dibuang) → byte."""
+    if len(letters) % 2 != 0:
+        raise ValueError("Data nibble tidak valid.")
+    try:
+        return bytes(
+            (_NIBBLE_INDEX[letters[i]] << 4) | _NIBBLE_INDEX[letters[i + 1]]
+            for i in range(0, len(letters), 2)
+        )
+    except KeyError as exc:
+        raise ValueError("Data nibble tidak valid.") from exc
+
+
+def _mac_tag(mac_key: bytes, salt_hex: str, token: str) -> str:
+    """HMAC-SHA256 atas versi, salt, dan token."""
+    message = f"{_VERSION}.{salt_hex}.{token}".encode("utf-8")
+    return hmac.new(mac_key, message, hashlib.sha256).hexdigest()
+
+
+# ── API publik ───────────────────────────────────────────────────────────────
+
+def super_encrypt_steps(plaintext: str, master_key: bytes | None = None,
+                        passphrase: str | None = None) -> dict:
     """
-    Derive sub-keys from the user's session master key via HKDF.
+    Enkripsi penuh dan kembalikan keluaran tiap layer untuk tampilan edukasi.
+
+    Returns
+    -------
+    dict berisi "vigenere", "playfair", "chacha20", "blowfish", dan "final".
     """
-    from modules.cryptography.key_management import get_super_enc_subkey
-    vig_bytes = get_super_enc_subkey(master_key, "vigenere")
-    pf_bytes  = get_super_enc_subkey(master_key, "playfair")
-    cc_key    = get_super_enc_subkey(master_key, "chacha20")
-    bf_key    = get_super_enc_subkey(master_key, "blowfish")
+    salt = os.urandom(16)
+    keys = _message_keys(_base_keys(master_key, passphrase, salt), salt)
+
+    step1 = vigenere_encrypt(plaintext, keys["vigenere"])
+    step2 = playfair_encrypt(_bytes_to_nibbles(step1.encode("utf-8")), keys["playfair"])
+    step3 = chacha20_encrypt(step2, keys["chacha20"])
+    step4 = blowfish_encrypt(step3, keys["blowfish"])
+    salt_hex = salt.hex()
+    mac = _mac_tag(keys["mac"], salt_hex, step4)
+
     return {
-        "vigenere": vig_bytes.hex()[:16],
-        "playfair": pf_bytes.hex()[:10].upper(),
-        "chacha20": cc_key,
-        "blowfish": bf_key,
+        "vigenere": step1,
+        "playfair": step2,
+        "chacha20": step3,
+        "blowfish": step4,
+        "final": f"{_VERSION}.{salt_hex}.{step4}.{mac}",
     }
 
-
-# ── Public API ────────────────────────────────────────────────────────────────
 
 def super_encrypt(plaintext: str, master_key: bytes | None = None,
                   passphrase: str | None = None) -> str:
     """
-    Apply the full 4-layer encryption pipeline to *plaintext*.
-
-    Encryption order: Vigenere → Playfair → ChaCha20 → Blowfish-CBC
-
-    Inter-layer encoding:
-      • Vigenere output is hex-encoded before Playfair so only A-F chars
-        are treated as letters (digits 0-9 pass through unchanged).
-      • After Playfair, hex-decode restores the Vigenere ciphertext before
-        passing it as a UTF-8 string to ChaCha20.
-      • ChaCha20 output token → Blowfish input (both ASCII-safe strings).
-
-    Parameters
-    ----------
-    plaintext  : str    UTF-8 text to encrypt.
-    master_key : bytes  32-byte key from session (preferred for vault use).
-    passphrase : str    Plain text passphrase for Crypto Tools standalone use.
+    Terapkan pipeline 4 layer: Vigenere → Playfair → ChaCha20 → Blowfish-CBC.
 
     Returns
     -------
-    str  Final ciphertext after all 4 layers.
+    str  "CXSE2.<salt_hex>.<token>.<mac_hex>".
     """
-    if master_key is not None:
-        keys = _derive_subkeys_from_master(master_key)
-    elif passphrase is not None:
-        keys = _derive_subkeys_from_passphrase(passphrase)
-    else:
-        raise ValueError("Either master_key or passphrase must be provided.")
-
-    # ── Layer 1: Vigenere ──────────────────────────────────────────────────
-    step1 = vigenere_encrypt(plaintext, keys["vigenere"])
-
-    # ── Layer 2: Playfair ──────────────────────────────────────────────────
-    # Encode step1 as decimal byte values (digits only).
-    # Playfair is non-destructive on digit-only strings; its letter operations
-    # are vacuous, but it still acts as a pipeline stage.
-    step1_dec = _bytes_to_dec(step1.encode("utf-8"))
-    step2_pf  = playfair_encrypt(step1_dec, keys["playfair"])
-
-    # ── Layer 3: ChaCha20 ──────────────────────────────────────────────────
-    step3 = chacha20_encrypt(step2_pf, keys["chacha20"])
-
-    # ── Layer 4: Blowfish-CBC ──────────────────────────────────────────────
-    step4 = blowfish_encrypt(step3, keys["blowfish"])
-
-    return step4
+    return super_encrypt_steps(
+        plaintext, master_key=master_key, passphrase=passphrase
+    )["final"]
 
 
 def super_decrypt(ciphertext: str, master_key: bytes | None = None,
                   passphrase: str | None = None) -> str:
     """
-    Reverse the 4-layer pipeline: Blowfish → ChaCha20 → Playfair → Vigenere.
+    Balikan pipeline setelah verifikasi MAC (encrypt-then-MAC).
 
-    Parameters
-    ----------
-    ciphertext : str    Ciphertext from super_encrypt().
-    master_key : bytes  Same master key used for encryption.
-    passphrase : str    Same passphrase used for encryption.
-
-    Returns
-    -------
-    str  Recovered plaintext.
+    Raises
+    ------
+    ValueError  Jika format salah, MAC gagal, atau kunci salah.
     """
-    if master_key is not None:
-        keys = _derive_subkeys_from_master(master_key)
-    elif passphrase is not None:
-        keys = _derive_subkeys_from_passphrase(passphrase)
-    else:
-        raise ValueError("Either master_key or passphrase must be provided.")
+    parts = str(ciphertext).split(".")
+    if len(parts) != 4 or parts[0] != _VERSION:
+        raise ValueError("Format Super Encryption tidak dikenal.")
+    _, salt_hex, token, mac_hex = parts
+    try:
+        salt = bytes.fromhex(salt_hex)
+    except ValueError as exc:
+        raise ValueError("Format Super Encryption tidak dikenal.") from exc
+    if len(salt) != 16:
+        raise ValueError("Format Super Encryption tidak dikenal.")
 
-    # ── Reverse Layer 4: Blowfish ──────────────────────────────────────────
-    step1 = blowfish_decrypt(ciphertext, keys["blowfish"])
+    keys = _message_keys(_base_keys(master_key, passphrase, salt), salt)
+    expected = _mac_tag(keys["mac"], salt_hex, token)
+    if not hmac.compare_digest(expected, mac_hex):
+        raise ValueError("MAC tidak cocok: kunci salah atau data berubah.")
 
-    # ── Reverse Layer 3: ChaCha20 ──────────────────────────────────────────
-    step2_pf = chacha20_decrypt(step1, keys["chacha20"])
-
-    # ── Reverse Layer 2: Playfair ──────────────────────────────────────────
-    step1_dec_out = playfair_decrypt(step2_pf, keys["playfair"])
-    # Recover Vigenere ciphertext: strip any Playfair X fillers (none expected
-    # since the input is digits-only) then decode 3-digit groups.
-    vigenere_ct = _dec_to_str(step1_dec_out)
-
-    # ── Reverse Layer 1: Vigenere ──────────────────────────────────────────
-    plaintext = vigenere_decrypt(vigenere_ct, keys["vigenere"])
-    return plaintext
-
-
-def _bytes_to_dec(data: bytes) -> str:
-    """Encode bytes as concatenated 3-digit decimal values (000-255)."""
-    return "".join(f"{b:03d}" for b in data)
-
-
-def _dec_to_str(dec_str: str) -> str:
-    """
-    Decode a decimal-byte-encoded string back to UTF-8.
-    Strips any non-digit chars (e.g. Playfair X fillers, though none expected).
-    """
-    digits_only = "".join(c for c in dec_str if c.isdigit())
-    # Trim to multiple of 3
-    trimmed = digits_only[: (len(digits_only) // 3) * 3]
-    raw = bytes(int(trimmed[i:i+3]) for i in range(0, len(trimmed), 3))
-    return raw.decode("utf-8")
+    step = blowfish_decrypt(token, keys["blowfish"])
+    step = chacha20_decrypt(step, keys["chacha20"])
+    nibbles = playfair_decrypt(step, keys["playfair"]).replace("X", "")
+    vigenere_ct = _nibbles_to_bytes(nibbles).decode("utf-8")
+    return vigenere_decrypt(vigenere_ct, keys["vigenere"])

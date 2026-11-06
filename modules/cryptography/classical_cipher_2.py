@@ -5,6 +5,7 @@ Playfair Cipher (Classic Cipher #2)
 
 Standard 5×5 Playfair using A–Z (I and J merged).
 Input is uppercased; digits and spaces are passed through unchanged.
+Filler X disisipkan saat enkripsi dan dibuang saat dekripsi.
 """
 
 import re
@@ -33,37 +34,45 @@ def _find_position(table: list[list[str]], ch: str) -> tuple[int, int]:
     raise ValueError(f"Character '{ch}' not in Playfair table.")
 
 
-def _prepare_text(text: str) -> list[str]:
+def _letters_of(text: str) -> str:
+    """Ekstrak huruf: huruf besar, J→I, hanya A–Z."""
+    return re.sub(r"[^A-Za-z]", "", text).upper().replace("J", "I")
+
+
+def _prepare_text(letters: str) -> list[tuple[str, int]]:
     """
-    Clean text: uppercase, replace J→I, keep only A-Z, insert X fillers
-    between double-letters in a pair, and pad to even length.
+    Bentuk daftar pasangan siap-sandi dari urutan *letters*.
+
+    Mengembalikan tuple (huruf, indeks_huruf_asli). Huruf filler "X"
+    dimiliki oleh huruf asli yang mendahuluinya sehingga posisinya dapat
+    dipetakan kembali saat karakter non-huruf disisipkan pada hasil enkripsi.
     """
-    text = text.upper().replace("J", "I")
-    letters = re.sub(r"[^A-Z]", "", text)
-    pairs = []
+    prepared: list[tuple[str, int]] = []
     i = 0
     while i < len(letters):
         a = letters[i]
-        if i + 1 < len(letters):
-            b = letters[i + 1]
-            if a == b:
-                pairs.extend([a, "X"])
-                i += 1
-            else:
-                pairs.extend([a, b])
-                i += 2
-        else:
-            pairs.extend([a, "X"])
+        if i + 1 < len(letters) and letters[i + 1] == a:
+            prepared.append((a, i))
+            prepared.append(("X", i))
             i += 1
-    return pairs
+        elif i + 1 < len(letters):
+            prepared.append((a, i))
+            prepared.append((letters[i + 1], i + 1))
+            i += 2
+        else:
+            prepared.append((a, i))
+            prepared.append(("X", i))
+            i += 1
+    return prepared
 
 
 def playfair_encrypt(plaintext: str, key: str) -> str:
     """
     Encrypt *plaintext* with Playfair cipher.
 
-    Non-alphabetic characters are preserved in-place after the cipher
-    operates on the extracted letters.
+    Karakter non-huruf dipertahankan pada posisinya. Semua huruf hasil
+    pasangan (termasuk filler "X") ikut disertakan sehingga tidak ada
+    huruf yang hilang saat enkripsi.
 
     Parameters
     ----------
@@ -72,31 +81,36 @@ def playfair_encrypt(plaintext: str, key: str) -> str:
 
     Returns
     -------
-    str  Ciphertext (uppercase letters + original non-alpha chars).
+    str  Ciphertext (huruf A–Z + non-huruf asli, huruf besar).
     """
     table = _build_table(key)
-    letters_only = re.sub(r"[^A-Za-z]", "", plaintext).upper().replace("J", "I")
-    prepared = _prepare_text(letters_only)
+    prepared = _prepare_text(_letters_of(plaintext))
 
-    encrypted_letters = []
+    stream: list[str] = []
     for i in range(0, len(prepared), 2):
-        a, b = prepared[i], prepared[i + 1]
+        a, b = prepared[i][0], prepared[i + 1][0]
         ra, ca = _find_position(table, a)
         rb, cb = _find_position(table, b)
         if ra == rb:
-            encrypted_letters += [table[ra][(ca + 1) % 5], table[rb][(cb + 1) % 5]]
+            stream += [table[ra][(ca + 1) % 5], table[rb][(cb + 1) % 5]]
         elif ca == cb:
-            encrypted_letters += [table[(ra + 1) % 5][ca], table[(rb + 1) % 5][cb]]
+            stream += [table[(ra + 1) % 5][ca], table[(rb + 1) % 5][cb]]
         else:
-            encrypted_letters += [table[ra][cb], table[rb][ca]]
+            stream += [table[ra][cb], table[rb][ca]]
 
-    # Re-insert non-alpha characters at original positions
+    owners = [owner for _, owner in prepared]
+
+    # Sisipkan non-huruf di posisi aslinya; satu huruf asli dapat memancarkan
+    # lebih dari satu huruf sandi bila ada filler.
     result = []
-    enc_iter = iter(encrypted_letters)
+    enc_idx = 0
+    alpha_idx = 0
     for ch in plaintext.upper():
-        ch = "I" if ch == "J" else ch
-        if ch.isalpha():
-            result.append(next(enc_iter, ""))
+        if "A" <= ch <= "Z":
+            while enc_idx < len(stream) and owners[enc_idx] == alpha_idx:
+                result.append(stream[enc_idx])
+                enc_idx += 1
+            alpha_idx += 1
         else:
             result.append(ch)
     return "".join(result)
@@ -106,6 +120,9 @@ def playfair_decrypt(ciphertext: str, key: str) -> str:
     """
     Decrypt *ciphertext* produced by playfair_encrypt().
 
+    Filler "X" yang disisipkan saat enkripsi (huruf kembar dan panjang
+    ganjil) dibuang, sehingga keluaran hanya berisi huruf asli.
+
     Parameters
     ----------
     ciphertext : str
@@ -113,17 +130,17 @@ def playfair_decrypt(ciphertext: str, key: str) -> str:
 
     Returns
     -------
-    str  Plaintext (X fillers may still be present for even-length pairs).
+    str  Plaintext (huruf A–Z, non-alpha dipertahankan di tempatnya).
     """
     table = _build_table(key)
-    letters_only = re.sub(r"[^A-Za-z]", "", ciphertext).upper().replace("J", "I")
+    letters = _letters_of(ciphertext)
     # Must be even-length (was padded during encryption)
-    if len(letters_only) % 2 != 0:
-        letters_only += "X"
+    if len(letters) % 2 != 0:
+        letters += "X"
 
     decrypted_letters = []
-    for i in range(0, len(letters_only), 2):
-        a, b = letters_only[i], letters_only[i + 1]
+    for i in range(0, len(letters), 2):
+        a, b = letters[i], letters[i + 1]
         ra, ca = _find_position(table, a)
         rb, cb = _find_position(table, b)
         if ra == rb:
@@ -133,13 +150,14 @@ def playfair_decrypt(ciphertext: str, key: str) -> str:
         else:
             decrypted_letters += [table[ra][cb], table[rb][ca]]
 
-    # Re-insert non-alpha characters
+    # Re-insert non-alpha characters; drop X fillers aligned by position.
     result = []
     dec_iter = iter(decrypted_letters)
     for ch in ciphertext.upper():
-        ch = "I" if ch == "J" else ch
-        if ch.isalpha():
-            result.append(next(dec_iter, ""))
+        if "A" <= ch <= "Z":
+            dec_ch = next(dec_iter, "")
+            if dec_ch != "X":
+                result.append(dec_ch)
         else:
             result.append(ch)
     return "".join(result)

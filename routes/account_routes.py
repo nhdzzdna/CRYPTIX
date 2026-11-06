@@ -10,17 +10,17 @@ from werkzeug.utils import secure_filename
 from modules.strings import MSG
 from routes.auth_routes import login_required
 from database.db import get_db
-from modules.cryptography.key_management import master_key_from_hex, get_db_encryption_key
-from modules.cryptography.database_encryption import encrypt_field, decrypt_field
-from modules.blockchain.blockchain import add_block
-import hashlib
+from modules.cryptography.key_management import master_key_from_hex, purpose_key
+from modules.cryptography.database_encryption import decrypt_record, encrypt_record
+from modules.blockchain.blockchain import add_block, account_hash, content_hash
 
 account_bp = Blueprint("account", __name__)
 
 
 def _db_key() -> bytes:
+    """Kunci field = purpose_key(master key sesi, "database")."""
     mk = master_key_from_hex(session["master_key_hex"])
-    return get_db_encryption_key(mk)
+    return purpose_key(mk, "database")
 
 
 @account_bp.route("/account-vault")
@@ -33,22 +33,34 @@ def index():
         ).fetchall()
 
     key = _db_key()
+    uid = session["user_id"]
     entries = []
     for r in rows:
         try:
-            entries.append({
-                "id": r["id"],
-                "site_name": decrypt_field(r["site_name_enc"], key),
-                "username":  decrypt_field(r["username_enc"],  key),
-                "password":  decrypt_field(r["password_enc"],  key),
-                "url":       decrypt_field(r["url_enc"],       key) if r["url_enc"]   else "",
-                "notes":     decrypt_field(r["notes_enc"],     key) if r["notes_enc"] else "",
-                "updated_at": r["updated_at"],
-            })
+            dec = decrypt_record(
+                {
+                    "site_name_enc": r["site_name_enc"],
+                    "username_enc": r["username_enc"],
+                    "password_enc": r["password_enc"],
+                    "url_enc": r["url_enc"],
+                    "notes_enc": r["notes_enc"],
+                },
+                key, uid, "account_vault",
+            )
         except Exception:
             entries.append({"id": r["id"], "site_name": "[Decryption Error]",
                             "username": "", "password": "", "url": "", "notes": "",
                             "updated_at": r["updated_at"]})
+            continue
+        entries.append({
+            "id": r["id"],
+            "site_name": dec["site_name_enc"],
+            "username":  dec["username_enc"],
+            "password":  dec["password_enc"],
+            "url":       dec["url_enc"],
+            "notes":     dec["notes_enc"],
+            "updated_at": r["updated_at"],
+        })
     return render_template("account_vault.html", entries=entries)
 
 
@@ -65,27 +77,37 @@ def add():
         flash(MSG.ACCOUNT_FIELDS_REQUIRED, "danger")
         return redirect(url_for("account.index"))
 
-    import os as _os
     key = _db_key()
-    nonce_placeholder = _os.urandom(12).hex()   # stored per field in token
+    enc = encrypt_record(
+        {
+            "site_name_enc": site,
+            "username_enc": uname,
+            "password_enc": pwd,
+            "url_enc": url,
+            "notes_enc": notes,
+        },
+        key, session["user_id"], "account_vault",
+    )
     with get_db() as db:
-        db.execute(
+        cursor = db.execute(
             """INSERT INTO account_vault
-               (user_id, site_name_enc, username_enc, password_enc, url_enc, notes_enc, nonce, tag)
-               VALUES (?,?,?,?,?,?,?,?)""",
+               (user_id, site_name_enc, username_enc, password_enc, url_enc, notes_enc)
+               VALUES (?,?,?,?,?,?)""",
             (
                 session["user_id"],
-                encrypt_field(site,  key),
-                encrypt_field(uname, key),
-                encrypt_field(pwd,   key),
-                encrypt_field(url,   key) if url   else "",
-                encrypt_field(notes, key) if notes else "",
-                nonce_placeholder, "n/a",   # nonce/tag embedded in each field token
+                enc["site_name_enc"],
+                enc["username_enc"],
+                enc["password_enc"],
+                enc["url_enc"],
+                enc["notes_enc"],
             ),
         )
+        entry_id = cursor.lastrowid
         db.commit()
 
-    add_block(session["user_id"], "UPLOAD", hashlib.sha256(site.encode()).hexdigest())
+    add_block(session["user_id"], "UPLOAD", f"cred:{entry_id}",
+              account_hash(enc["site_name_enc"], enc["username_enc"],
+                           enc["password_enc"]))
     flash(MSG.ACCOUNT_ADDED, "success")
     return redirect(url_for("account.index"))
 
@@ -102,6 +124,7 @@ def delete(entry_id: int):
             abort(404)
         db.execute("DELETE FROM account_vault WHERE id=?", (entry_id,))
         db.commit()
-    add_block(session["user_id"], "DELETE", hashlib.sha256(str(entry_id).encode()).hexdigest())
+    add_block(session["user_id"], "DELETE", f"cred:{entry_id}",
+              content_hash(str(entry_id).encode("utf-8")))
     flash(MSG.ACCOUNT_DELETED, "info")
     return redirect(url_for("account.index"))

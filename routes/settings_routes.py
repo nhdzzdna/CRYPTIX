@@ -14,6 +14,7 @@ from database.db import get_db
 from modules.authentication.auth import get_user_by_id, update_usb_token
 from modules.authentication.password_hash import hash_password, verify_password
 from modules.authentication import usb_authentication as usb_mod
+from modules.blockchain.blockchain import add_block, content_hash
 
 settings_bp = Blueprint("settings", __name__)
 
@@ -49,6 +50,9 @@ def change_password():
         )
         db.commit()
 
+    add_block(session["user_id"], "PASSWORD_CHANGE", "auth:password",
+              content_hash(str(session["user_id"]).encode("utf-8")))
+
     # Force re-login so master key is re-derived with new salt
     session.clear()
     flash(MSG.SETTINGS_PASSWORD_CHANGED, "success")
@@ -64,5 +68,7 @@ def register_usb():
         flash(MSG.SETTINGS_USB_NO_DRIVE, "danger")
     else:
         update_usb_token(session["user_id"], result["hmac_hex"], result["volume_serial"])
+        add_block(session["user_id"], "DONGLE_REGISTER", "auth:usb",
+                  content_hash(str(session["user_id"]).encode("utf-8")))
         flash(MSG.SETTINGS_USB_REGISTERED, "success")
     return redirect(url_for("settings.index"))

@@ -6,39 +6,78 @@
 <div class="card-grid-2">
   <!-- Embed panel -->
   <div class="card">
-    <div class="card-header">Sisipkan Pesan (Embed)</div>
+    <div class="card-header">Sisipkan Muatan (Embed)</div>
     <div class="card-body">
-      <form method="POST" action="{{ url_for('stego.embed') }}" enctype="multipart/form-data">
+      <form method="POST" action="{{ url_for('stego.embed') }}" enctype="multipart/form-data" id="stego-embed-form">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
         <div class="form-group">
-          <label>Gambar Carrier (PNG/JPG/BMP)</label>
-          <input type="file" name="carrier_image" class="form-control"
+          <label>Gambar Carrier (PNG/JPG/BMP, maks 4000×4000)</label>
+          <input type="file" name="carrier_image" id="carrier-image" class="form-control"
                  accept=".png,.jpg,.jpeg,.bmp" required />
         </div>
         <div class="form-group">
+          <label>Jenis Muatan</label>
+          <div class="form-check">
+            <input type="radio" id="type-text" name="payload_type" value="text" checked
+                   onchange="stegoToggleType()" />
+            <label for="type-text">Teks</label>
+          </div>
+          <div class="form-check">
+            <input type="radio" id="type-file" name="payload_type" value="file"
+                   onchange="stegoToggleType()" />
+            <label for="type-file">Berkas</label>
+          </div>
+        </div>
+        <div class="form-group" id="message-group">
           <label>Pesan Rahasia</label>
-          <textarea name="message" class="form-control" rows="4" required
-                    placeholder="Tulis pesan yang akan disembunyikan…"></textarea>
+          <textarea name="message" id="stego-message" class="form-control" rows="4"
+                    placeholder="Tulis pesan yang akan disembunyikan…"
+                    oninput="stegoUpdateUsage()"></textarea>
+        </div>
+        <div class="form-group" id="payload-file-group" style="display:none;">
+          <label>Berkas Rahasia</label>
+          <input type="file" name="payload_file" id="payload-file" class="form-control"
+                 onchange="stegoUpdateUsage()" />
+        </div>
+        <div class="alert alert-info py-2" id="stego-capacity" aria-live="polite">
+          Pilih gambar pembawa untuk melihat kapasitas dan perkiraan penggunaan.
         </div>
         <div class="form-group form-check">
-          <input type="checkbox" id="use-enc" name="use_encryption" value="1" />
-          <label for="use-enc">Enkripsi pesan dengan Super Encryption</label>
+          <input type="hidden" name="use_encryption" value="0" />
+          <input type="checkbox" id="use-enc" name="use_encryption" value="1" checked />
+          <label for="use-enc">Enkripsi muatan (Super Encryption untuk teks, AES-256-GCM untuk berkas)</label>
         </div>
         <button type="submit" class="btn btn-primary">🖼 Sisipkan</button>
       </form>
+      <p class="text-muted mt-2 mb-0">
+        Hasil selalu berformat PNG. <strong>Menyimpan ulang gambar sebagai JPEG
+        akan merusak muatan</strong> karena kompresi mengubah bit LSB.
+      </p>
     </div>
   </div>
 
-  <!-- Info panel -->
+  <!-- Extract from uploaded image -->
   <div class="card">
-    <div class="card-header">ℹ Cara Kerja LSB</div>
+    <div class="card-header">Ekstrak dari Gambar Unggahan</div>
     <div class="card-body">
-      <p>LSB (Least Significant Bit) menyembunyikan pesan dengan mengganti bit terakhir setiap channel warna (R, G, B) piksel.</p>
-      <ul>
-        <li>32 bit pertama = header panjang pesan.</li>
-        <li>Kapasitas ≈ <code>(W × H × 3 − 32) / 8</code> bytes.</li>
-        <li>Hasil disimpan sebagai PNG lossless.</li>
-        <li>Opsional: enkripsi pesan dengan Super Encryption sebelum disisipkan.</li>
+      <form method="POST" action="{{ url_for('stego.extract_upload') }}" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        <div class="form-group">
+          <label>Gambar Stego (PNG)</label>
+          <input type="file" name="stego_image" class="form-control" accept=".png,.jpg,.jpeg,.bmp" required />
+        </div>
+        <div class="form-group">
+          <label>Passphrase (opsional)</label>
+          <input type="password" name="passphrase" class="form-control"
+                 placeholder="Kosongkan bila memakai kunci akun" autocomplete="off" />
+        </div>
+        <button type="submit" class="btn btn-primary">🔍 Ekstrak</button>
+      </form>
+      <ul class="text-muted mt-3 mb-0">
+        <li>Header ber-magic <code>CRXS</code> menyimpan versi, jenis muatan, panjang, dan CRC32.</li>
+        <li>Gambar tanpa pesan terdeteksi jelas dan ditolak.</li>
+        <li>Posisi bit diacak dengan PRNG yang diseed kunci steganografi.</li>
+        <li>Kapasitas ≈ <code>(W × H × 3 − 112) / 8</code> byte.</li>
       </ul>
     </div>
   </div>
@@ -83,4 +122,64 @@
     {% endif %}
   </div>
 </div>
+
+<script>
+(function () {
+  var csrf = document.querySelector('#stego-embed-form input[name="csrf_token"]').value;
+  var capacityBox = document.getElementById('stego-capacity');
+  var capacity = null;
+
+  window.stegoToggleType = function () {
+    var isFile = document.getElementById('type-file').checked;
+    document.getElementById('message-group').style.display = isFile ? 'none' : '';
+    document.getElementById('payload-file-group').style.display = isFile ? '' : 'none';
+    stegoUpdateUsage();
+  };
+
+  window.stegoUpdateUsage = function () {
+    var used;
+    if (document.getElementById('type-file').checked) {
+      var file = document.getElementById('payload-file').files[0];
+      used = file ? file.size + 64 : 0;
+    } else {
+      var text = document.getElementById('stego-message').value;
+      used = new TextEncoder().encode(text).length;
+    }
+    if (capacity === null) {
+      capacityBox.textContent = 'Perkiraan terpakai: ' + used +
+        ' byte (pilih gambar pembawa untuk kapasitas).';
+      return;
+    }
+    var sisa = capacity - used;
+    capacityBox.innerHTML = 'Kapasitas: <strong>' + capacity + '</strong> byte · ' +
+      'Perkiraan terpakai: <strong>' + used + '</strong> byte · ' +
+      (sisa >= 0
+        ? 'Sisa: ' + sisa + ' byte.'
+        : '<strong>Melebihi kapasitas.</strong>');
+  };
+
+  document.getElementById('carrier-image').addEventListener('change', function () {
+    var file = this.files[0];
+    if (!file) { return; }
+    var data = new FormData();
+    data.append('carrier_image', file);
+    data.append('csrf_token', csrf);
+    fetch('{{ url_for("stego.capacity") }}', { method: 'POST', body: data })
+      .then(function (resp) { return resp.json(); })
+      .then(function (info) {
+        if (info.error) {
+          capacity = null;
+          capacityBox.innerHTML = '<strong>' + info.error + '</strong>';
+          return;
+        }
+        capacity = info.capacity;
+        stegoUpdateUsage();
+      })
+      .catch(function () {
+        capacity = null;
+        capacityBox.textContent = 'Kapasitas gambar tidak dapat dibaca.';
+      });
+  });
+})();
+</script>
 {% endblock %}

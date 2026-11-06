@@ -43,7 +43,7 @@ def index():
             if os.path.isfile(fpath):
                 total_bytes += os.path.getsize(fpath)
 
-    recent_blocks = get_recent_blocks(limit=5)
+    recent_blocks = get_recent_blocks(user_id, limit=5)
     chain_stats   = get_chain_stats()
 
     return render_template(

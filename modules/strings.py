@@ -77,6 +77,16 @@ class MSG:
     STEGO_NO_MESSAGE         = "Tidak ditemukan pesan yang valid; gambar bukan gambar stego."
     STEGO_DECODE_FAILED      = "Muatan hasil ekstraksi tidak dapat dibaca sebagai teks UTF-8."
     STEGO_DECRYPT_FAILED     = "Dekripsi pesan gagal; kunci mungkin salah."
+    STEGO_NO_PAYLOAD_FILE     = "Silakan pilih berkas yang akan disisipkan."
+    STEGO_KEY_REQUIRED       = "Kunci steganografi wajib disediakan untuk menyisipkan atau mengekstrak muatan."
+    STEGO_IMAGE_TOO_LARGE    = "Dimensi gambar pembawa melebihi batas {max}x{max} piksel."
+    STEGO_TOO_LARGE          = "Muatan terlalu besar: {used} byte melebihi kapasitas {capacity} byte."
+    STEGO_TAMPERED           = "Muatan tidak cocok: kunci salah atau isi gambar telah berubah."
+    STEGO_VERSION_UNSUPPORTED = "Versi muatan steganografi tidak didukung."
+    STEGO_NOT_TEXT           = "Muatan dalam gambar berupa berkas, bukan teks."
+    STEGO_NOT_FILE           = "Muatan dalam gambar berupa teks, bukan berkas."
+    STEGO_PNG_WARNING        = "Gambar hasil disimpan sebagai PNG; menyimpan ulang sebagai JPEG akan merusak muatan."
+    STEGO_FILE_EXTRACTED     = "Berkas berhasil diekstrak dari gambar."
 
     # ── Crypto Tools ───────────────────────────────────────────────────────────
     CRYPTO_PASSPHRASE_REQUIRED = "Isi frasa sandi untuk Super Encryption."

@@ -4,23 +4,22 @@ routes/notes_routes.py
 Secure Notes: encrypted text notes stored in SQLite.
 """
 
-import os
-import hashlib
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash, abort
 
 from modules.strings import MSG
 from routes.auth_routes import login_required
 from database.db import get_db
-from modules.cryptography.key_management import master_key_from_hex, get_db_encryption_key
-from modules.cryptography.database_encryption import encrypt_field, decrypt_field
-from modules.blockchain.blockchain import add_block
+from modules.cryptography.key_management import master_key_from_hex, purpose_key
+from modules.cryptography.database_encryption import decrypt_record, encrypt_record
+from modules.blockchain.blockchain import add_block, content_hash
 
 notes_bp = Blueprint("notes", __name__)
 
 
 def _db_key() -> bytes:
+    """Kunci field = purpose_key(master key sesi, "database")."""
     mk = master_key_from_hex(session["master_key_hex"])
-    return get_db_encryption_key(mk)
+    return purpose_key(mk, "database")
 
 
 @notes_bp.route("/secure-notes")
@@ -33,18 +32,24 @@ def index():
         ).fetchall()
 
     key = _db_key()
+    uid = session["user_id"]
     notes = []
     for r in rows:
         try:
-            notes.append({
-                "id": r["id"],
-                "title":   decrypt_field(r["title_enc"],   key),
-                "content": decrypt_field(r["content_enc"], key),
-                "updated_at": r["updated_at"],
-            })
+            dec = decrypt_record(
+                {"title_enc": r["title_enc"], "content_enc": r["content_enc"]},
+                key, uid, "secure_notes",
+            )
         except Exception:
             notes.append({"id": r["id"], "title": "[Error]", "content": "",
                           "updated_at": r["updated_at"]})
+            continue
+        notes.append({
+            "id": r["id"],
+            "title": dec["title_enc"],
+            "content": dec["content_enc"],
+            "updated_at": r["updated_at"],
+        })
 
     return render_template("secure_notes.html", notes=notes)
 
@@ -58,20 +63,22 @@ def add():
         flash(MSG.NOTES_FIELDS_REQUIRED, "danger")
         return redirect(url_for("notes.index"))
 
-    import os as _os
     key = _db_key()
+    enc = encrypt_record(
+        {"title_enc": title, "content_enc": content},
+        key, session["user_id"], "secure_notes",
+    )
     with get_db() as db:
-        db.execute(
-            """INSERT INTO secure_notes (user_id, title_enc, content_enc, nonce, tag)
-               VALUES (?,?,?,?,?)""",
-            (session["user_id"],
-             encrypt_field(title, key),
-             encrypt_field(content, key),
-             _os.urandom(12).hex(), "n/a"),
+        cursor = db.execute(
+            """INSERT INTO secure_notes (user_id, title_enc, content_enc)
+               VALUES (?,?,?)""",
+            (session["user_id"], enc["title_enc"], enc["content_enc"]),
         )
+        note_id = cursor.lastrowid
         db.commit()
 
-    add_block(session["user_id"], "UPLOAD", hashlib.sha256(title.encode()).hexdigest())
+    add_block(session["user_id"], "UPLOAD", f"note:{note_id}",
+              content_hash(enc["content_enc"].encode("utf-8")))
     flash(MSG.NOTES_SAVED, "success")
     return redirect(url_for("notes.index"))
 
@@ -86,6 +93,10 @@ def edit(note_id: int):
         return redirect(url_for("notes.index"))
 
     key = _db_key()
+    enc = encrypt_record(
+        {"title_enc": title, "content_enc": content},
+        key, session["user_id"], "secure_notes",
+    )
     with get_db() as db:
         row = db.execute(
             "SELECT id FROM secure_notes WHERE id=? AND user_id=?",
@@ -97,11 +108,12 @@ def edit(note_id: int):
             """UPDATE secure_notes
                SET title_enc=?, content_enc=?, updated_at=datetime('now')
                WHERE id=?""",
-            (encrypt_field(title, key), encrypt_field(content, key), note_id),
+            (enc["title_enc"], enc["content_enc"], note_id),
         )
         db.commit()
 
-    add_block(session["user_id"], "MODIFY", hashlib.sha256(title.encode()).hexdigest())
+    add_block(session["user_id"], "MODIFY", f"note:{note_id}",
+              content_hash(enc["content_enc"].encode("utf-8")))
     flash(MSG.NOTES_UPDATED, "success")
     return redirect(url_for("notes.index"))
 
@@ -119,6 +131,7 @@ def delete(note_id: int):
         db.execute("DELETE FROM secure_notes WHERE id=?", (note_id,))
         db.commit()
 
-    add_block(session["user_id"], "DELETE", hashlib.sha256(str(note_id).encode()).hexdigest())
+    add_block(session["user_id"], "DELETE", f"note:{note_id}",
+              content_hash(str(note_id).encode("utf-8")))
     flash(MSG.NOTES_DELETED, "info")
     return redirect(url_for("notes.index"))

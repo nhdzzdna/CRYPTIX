@@ -24,8 +24,7 @@ from modules.authentication import face_recognition as face_mod
 from modules.authentication import fingerprint as fp_mod
 from modules.authentication import usb_authentication as usb_mod
 from modules.cryptography.key_management import derive_master_key, master_key_to_hex
-from modules.blockchain.blockchain import add_block
-import hashlib
+from modules.blockchain.blockchain import add_block, content_hash
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -83,8 +82,8 @@ def register():
                     flash(MSG.FINGERPRINT_REGISTERED, "success")
                 os.remove(tmp_path)
 
-        add_block(user_id, "REGISTER",
-                  hashlib.sha256(username.encode()).hexdigest())
+        add_block(user_id, "REGISTER", "auth:register",
+                  content_hash(username.encode("utf-8")))
         flash(MSG.REGISTER_SUCCESS, "success")
         return redirect(url_for("auth.login"))
 
@@ -125,6 +124,18 @@ def login():
             os.remove(fp_path)
 
         if not result["success"]:
+            # LOGIN_FAIL dicatat (dengan batas laju di modul rantai) agar
+            # percobaan gagal ikut teraudit tanpa membajak rantai.
+            from database.db import get_db as _get_db
+            with _get_db() as db:
+                pemilik = db.execute(
+                    "SELECT id FROM users WHERE username=?", (username,)
+                ).fetchone()
+            add_block(
+                pemilik["id"] if pemilik else None,
+                "LOGIN_FAIL", "auth:login",
+                content_hash(username.encode("utf-8")),
+            )
             flash(MSG.LOGIN_FAILED.format(error=result["error"]), "danger")
             return render_template("login.html")
 
@@ -135,8 +146,8 @@ def login():
         mk = derive_master_key(password, user["salt"])
         session["master_key_hex"] = master_key_to_hex(mk)
 
-        add_block(user["id"], "LOGIN",
-                  hashlib.sha256(username.encode()).hexdigest())
+        add_block(user["id"], "LOGIN", "auth:login",
+                  content_hash(username.encode("utf-8")))
         flash(MSG.LOGIN_SUCCESS.format(username=user['username']), "success")
         return redirect(url_for("dashboard.index"))
 
@@ -147,6 +158,10 @@ def login():
 
 @auth_bp.route("/logout")
 def logout():
+    user_id = session.get("user_id")
+    if user_id is not None:
+        add_block(user_id, "LOGOUT", "auth:logout",
+                  content_hash(str(user_id).encode("utf-8")))
     session.clear()
     flash(MSG.LOGOUT_SUCCESS, "info")
     return redirect(url_for("auth.login"))
@@ -183,6 +198,8 @@ def register_face():
     ok = face_mod.register_face_from_frames(user_id, frames)
     if ok:
         update_face_model_path(user_id, face_mod._model_path(user_id))
+        add_block(user_id, "BIOMETRIC_ENROLL", "auth:face",
+                  content_hash(str(user_id).encode("utf-8")))
         return jsonify({"success": True, "message": MSG.FACE_MODEL_SAVED})
     return jsonify({"success": False, "error": MSG.FACE_NOT_ENOUGH_SAMPLES})
 
@@ -225,4 +242,6 @@ def register_usb():
     if result is None:
         return jsonify({"success": False, "error": MSG.USB_NO_DRIVE})
     update_usb_token(session["user_id"], result["hmac_hex"], result["volume_serial"])
+    add_block(session["user_id"], "DONGLE_REGISTER", "auth:usb",
+              content_hash(str(session["user_id"]).encode("utf-8")))
     return jsonify({"success": True, "message": MSG.USB_REGISTERED})
