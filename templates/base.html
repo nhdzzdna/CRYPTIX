@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="csrf-token" content="{{ csrf_token() }}" />
   <title>{% block title %}CRYPTIX{% endblock %}</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
 </head>
@@ -53,7 +54,10 @@
 
     <div class="sidebar-footer">
       <span class="nav-user">{{ session.get('username', '') }}</span>
-      <a href="{{ url_for('auth.logout') }}" class="btn btn-sm btn-outline-danger">Logout</a>
+      <form method="POST" action="{{ url_for('auth.logout') }}" class="sidebar-logout">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        <button type="submit" class="btn btn-sm btn-outline-danger">Logout</button>
+      </form>
     </div>
   </aside>
 
@@ -80,6 +84,7 @@
     </div>
   </main>
 
+  <script src="{{ url_for('static', filename='js/api.js') }}"></script>
   <script src="{{ url_for('static', filename='js/script.js') }}"></script>
   {% block scripts %}{% endblock %}
 </body>

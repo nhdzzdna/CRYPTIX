@@ -10,7 +10,8 @@ from werkzeug.utils import secure_filename
 from modules.strings import MSG
 from routes.auth_routes import login_required
 from database.db import get_db
-from modules.cryptography.key_management import master_key_from_hex, purpose_key
+from modules.cryptography import session_keys
+from modules.cryptography.key_management import purpose_key
 from modules.cryptography.database_encryption import decrypt_record, encrypt_record
 from modules.blockchain.blockchain import add_block, account_hash, content_hash
 
@@ -18,9 +19,11 @@ account_bp = Blueprint("account", __name__)
 
 
 def _db_key() -> bytes:
-    """Kunci field = purpose_key(master key sesi, "database")."""
-    mk = master_key_from_hex(session["master_key_hex"])
-    return purpose_key(mk, "database")
+    """Kunci field = purpose_key(DEK sesi, "database")."""
+    dek = session_keys.get(session.get("session_id", ""))
+    if dek is None:
+        abort(403)
+    return purpose_key(dek, "database")
 
 
 @account_bp.route("/account-vault")

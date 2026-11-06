@@ -81,6 +81,13 @@ SESSION_ABSOLUTE_MINUTES: int  = int(os.environ.get("SESSION_ABSOLUTE_MINUTES", 
 # Legacy alias used in app.py
 SESSION_LIFETIME_MINUTES: int  = SESSION_ABSOLUTE_MINUTES
 
+# ── Cookie sesi ───────────────────────────────────────────────────────────────
+SESSION_COOKIE_HTTPONLY: bool = True
+SESSION_COOKIE_SAMESITE: str  = "Lax"
+SESSION_COOKIE_SECURE: bool   = os.environ.get(
+    "SESSION_COOKIE_SECURE", "False"
+).lower() == "true"
+
 # ── Proof-of-Work ─────────────────────────────────────────────────────────────
 POW_DIFFICULTY: int = int(os.environ.get("POW_DIFFICULTY", 3))
 

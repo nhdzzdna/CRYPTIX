@@ -22,17 +22,25 @@ from database.db import get_db
 from modules.steganography.lsb import (
     embed_file, embed_message, extract_payload, image_capacity,
 )
-from modules.cryptography.key_management import master_key_from_hex, purpose_key
+from modules.cryptography import session_keys
+from modules.cryptography.key_management import purpose_key
 from modules.cryptography.database_encryption import decrypt_field, encrypt_field, field_aad
 from modules.blockchain.blockchain import add_block
 
 stego_bp = Blueprint("stego", __name__)
 
 
+def _dek() -> bytes:
+    """DEK sesi; 403 bila kunci sudah hilang (timeout, logout, restart)."""
+    dek = session_keys.get(session.get("session_id", ""))
+    if dek is None:
+        abort(403)
+    return dek
+
+
 def _db_key() -> bytes:
-    """Kunci field = purpose_key(master key sesi, "database")."""
-    mk = master_key_from_hex(session["master_key_hex"])
-    return purpose_key(mk, "database")
+    """Kunci field = purpose_key(DEK sesi, "database")."""
+    return purpose_key(_dek(), "database")
 
 
 def _name_aad(user_id) -> bytes:
@@ -141,7 +149,7 @@ def embed():
     out_path = os.path.join(config.STEGO_IMAGES_DIR, stored_name)
     os.makedirs(config.STEGO_IMAGES_DIR, exist_ok=True)
 
-    mk = master_key_from_hex(session["master_key_hex"])
+    mk = _dek()
     tmp_payload = None
     try:
         if payload_type == "file":
@@ -221,7 +229,7 @@ def extract(img_id: int):
         abort(404)
 
     img_path = os.path.join(config.STEGO_IMAGES_DIR, row["stored_name"])
-    mk = master_key_from_hex(session["master_key_hex"])
+    mk = _dek()
     result = extract_payload(img_path, master_key=mk)
 
     if result["success"]:
@@ -246,7 +254,7 @@ def extract_upload():
         return redirect(url_for("stego.index"))
 
     passphrase = request.form.get("passphrase", "").strip()
-    mk = master_key_from_hex(session["master_key_hex"])
+    mk = _dek()
 
     os.makedirs(config.TEMPORARY_FILES_DIR, exist_ok=True)
     tmp_path = os.path.join(

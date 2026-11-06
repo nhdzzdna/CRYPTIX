@@ -14,6 +14,7 @@ from database.db import get_db
 from modules.authentication.auth import get_user_by_id, update_usb_token
 from modules.authentication.password_hash import hash_password, verify_password
 from modules.authentication import usb_authentication as usb_mod
+from modules.cryptography import session_keys
 from modules.blockchain.blockchain import add_block, content_hash
 
 settings_bp = Blueprint("settings", __name__)
@@ -54,6 +55,7 @@ def change_password():
               content_hash(str(session["user_id"]).encode("utf-8")))
 
     # Force re-login so master key is re-derived with new salt
+    session_keys.drop(session.get("session_id", ""))
     session.clear()
     flash(MSG.SETTINGS_PASSWORD_CHANGED, "success")
     return redirect(url_for("auth.login"))

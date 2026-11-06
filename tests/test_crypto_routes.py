@@ -11,6 +11,7 @@ import re
 import pytest
 
 from app import create_app
+from modules.cryptography import session_keys
 
 PASSPHRASE = "passphrase-rute-uji-42"
 
@@ -28,6 +29,9 @@ def client(app):
     with c.session_transaction() as sess:
         sess["user_id"] = 1
         sess["username"] = "pengujian"
+        sid = session_keys.create_session_id()
+        sess["session_id"] = sid
+        session_keys.put(sid, b"\x5a" * 32)
     return c
 
 

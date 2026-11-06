@@ -19,6 +19,7 @@ import numpy as np
 
 import config
 from modules.strings import MSG
+from modules.cryptography import session_keys
 from modules.steganography.lsb import (
     HEADER_BITS, MAGIC, VERSION,
     _payload_positions,
@@ -177,9 +178,6 @@ class TestLSBUnit:
 
 # ── Rute web ─────────────────────────────────────────────────────────────────
 
-MASTER_HEX = DEK.hex()
-
-
 @pytest.fixture()
 def app(tmp_path, monkeypatch):
     monkeypatch.setattr(config, "DATABASE_PATH", str(tmp_path / "stego_uji.db"))
@@ -208,7 +206,9 @@ def client(app):
     with c.session_transaction() as sess:
         sess["user_id"] = 1
         sess["username"] = "penguji"
-        sess["master_key_hex"] = MASTER_HEX
+        sid = session_keys.create_session_id()
+        sess["session_id"] = sid
+        session_keys.put(sid, DEK)
     return c
 
 

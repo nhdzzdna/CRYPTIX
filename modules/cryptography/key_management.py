@@ -269,13 +269,3 @@ def get_super_enc_subkey(master_key: bytes, cipher_name: str) -> bytes:
     if label is None:
         raise ValueError(f"Unknown Super Encryption cipher: {cipher_name}")
     return derive_purpose_key(master_key, label)
-
-
-def master_key_to_hex(master_key: bytes) -> str:
-    """DEPRECATED: jangan serialisasi kunci ke cookie/session/log. Hapus pada T8/T11."""
-    return master_key.hex()
-
-
-def master_key_from_hex(hex_str: str) -> bytes:
-    """DEPRECATED: kunci tidak boleh disimpan sebagai hex di session. Hapus pada T8/T11."""
-    return bytes.fromhex(hex_str)

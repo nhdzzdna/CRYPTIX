@@ -5,11 +5,12 @@ Documents: view encrypted documents stored in My Vault.
 Filters vault_files to file_type = 'document'.
 """
 
-from flask import Blueprint, render_template, session
+from flask import Blueprint, render_template, session, abort
 
 from routes.auth_routes import login_required
 from database.db import get_db
-from modules.cryptography.key_management import master_key_from_hex, purpose_key
+from modules.cryptography import session_keys
+from modules.cryptography.key_management import purpose_key
 from modules.cryptography.database_encryption import decrypt_field, field_aad
 
 document_bp = Blueprint("documents", __name__)
@@ -35,8 +36,10 @@ def index():
             (session["user_id"],),
         ).fetchall()
 
-    mk = master_key_from_hex(session["master_key_hex"])
-    db_key = purpose_key(mk, "database")
+    dek = session_keys.get(session.get("session_id", ""))
+    if dek is None:
+        abort(403)
+    db_key = purpose_key(dek, "database")
     files = []
     for r in rows:
         row = dict(r)

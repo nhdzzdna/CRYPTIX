@@ -105,7 +105,7 @@ function captureSettingsFace() {
     if (count >= 30) {
       clearInterval(iv);
       if (settingsStream) settingsStream.getTracks().forEach(t => t.stop());
-      fetch('/api/register_face', {
+      apiFetch('/api/register_face', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({frames: frames})

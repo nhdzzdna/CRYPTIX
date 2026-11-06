@@ -23,19 +23,25 @@ from modules.authentication.auth import (
 from modules.authentication import face_recognition as face_mod
 from modules.authentication import fingerprint as fp_mod
 from modules.authentication import usb_authentication as usb_mod
-from modules.cryptography.key_management import derive_master_key, master_key_to_hex
+from modules.cryptography.key_management import derive_master_key
+from modules.cryptography import session_keys
 from modules.blockchain.blockchain import add_block, content_hash
 
 auth_bp = Blueprint("auth", __name__)
 
 
 def login_required(f):
-    """Decorator: redirect to login if not authenticated."""
+    """Decorator: tolak bila belum masuk atau kunci sesi sudah habis."""
     from functools import wraps
     @wraps(f)
     def decorated(*args, **kwargs):
         if "user_id" not in session:
             flash(MSG.LOGIN_REQUIRED, "warning")
+            return redirect(url_for("auth.login"))
+        if session_keys.get(session.get("session_id", "")) is None:
+            # Timeout diam/mutlak atau server pernah restart: kunci hilang.
+            session.clear()
+            flash(MSG.SESSION_EXPIRED, "warning")
             return redirect(url_for("auth.login"))
         return f(*args, **kwargs)
     return decorated
@@ -140,11 +146,16 @@ def login():
             return render_template("login.html")
 
         user = result["user"]
+        # Cookie hanya memuat session id acak, user_id, dan username;
+        # DEK disimpan sementara di penyimpanan kunci sisi server.
+        session_keys.drop(session.get("session_id", ""))
+        session.clear()
         session["user_id"]   = user["id"]
         session["username"]  = user["username"]
-        # Derive and store master key in session (hex-encoded)
-        mk = derive_master_key(password, user["salt"])
-        session["master_key_hex"] = master_key_to_hex(mk)
+        session.permanent    = True
+        sid = session_keys.create_session_id()
+        session["session_id"] = sid
+        session_keys.put(sid, derive_master_key(password, user["salt"]))
 
         add_block(user["id"], "LOGIN", "auth:login",
                   content_hash(username.encode("utf-8")))
@@ -156,12 +167,14 @@ def login():
 
 # ── Logout ────────────────────────────────────────────────────────────────────
 
-@auth_bp.route("/logout")
+@auth_bp.route("/logout", methods=["POST"])
 def logout():
+    """Keluar sesi: buang DEK server-side dan hapus cookie (wajib POST + CSRF)."""
     user_id = session.get("user_id")
     if user_id is not None:
         add_block(user_id, "LOGOUT", "auth:logout",
                   content_hash(str(user_id).encode("utf-8")))
+    session_keys.drop(session.get("session_id", ""))
     session.clear()
     flash(MSG.LOGOUT_SUCCESS, "info")
     return redirect(url_for("auth.login"))

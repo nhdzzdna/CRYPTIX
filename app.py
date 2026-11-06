@@ -7,12 +7,13 @@ Run with:  python app.py
 import os
 from datetime import timedelta
 
-from flask import Flask, redirect, render_template, request, url_for
-from flask_wtf.csrf import CSRFProtect
+from flask import Flask, jsonify, redirect, render_template, request, url_for
+from flask_wtf.csrf import CSRFProtect, CSRFError
 
 import config
 from database.db import init_db
 from modules.logger import get_logger
+from modules.strings import MSG
 
 _logger = get_logger(__name__)
 
@@ -29,6 +30,9 @@ def create_app() -> Flask:
     app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(
         minutes=config.SESSION_LIFETIME_MINUTES
     )
+    app.config["SESSION_COOKIE_HTTPONLY"]   = config.SESSION_COOKIE_HTTPONLY
+    app.config["SESSION_COOKIE_SAMESITE"]   = config.SESSION_COOKIE_SAMESITE
+    app.config["SESSION_COOKIE_SECURE"]     = config.SESSION_COOKIE_SECURE
 
     # ── CSRF ──────────────────────────────────────────────────────────────────
     csrf = CSRFProtect(app)
@@ -70,6 +74,25 @@ def create_app() -> Flask:
 
     for _status in (400, 403, 404, 413, 429, 500):
         _register_error_handler(_status)
+
+    # ── CSRF: JSON untuk permintaan API, halaman untuk sisanya ────────────────
+    def _wants_json() -> bool:
+        if request.path.startswith("/api/") or request.is_json:
+            return True
+        penerima = request.accept_mimetypes
+        return (
+            penerima.best_match(["text/html", "application/json"]) == "application/json"
+            and penerima["application/json"] > penerima["text/html"]
+        )
+
+    @app.errorhandler(CSRFError)
+    def _csrf_error(_err):
+        if _wants_json():
+            return jsonify({"success": False, "error": MSG.CSRF_INVALID}), 400
+        title, description = _ERROR_TEXT[400]
+        return render_template(
+            "error.html", code=400, title=title, description=description
+        ), 400
 
     # ── Ensure storage dirs exist ─────────────────────────────────────────────
     for d in [

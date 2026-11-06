@@ -141,7 +141,6 @@
 {% block scripts %}
 <script>
 // ── Helpers ────────────────────────────────────────────────────────────────
-const CSRF_TOKEN = "{{ csrf_token() }}";
 const messagesEl = document.getElementById('chat-messages');
 const inputEl    = document.getElementById('user-input');
 const thinkingEl = document.getElementById('thinking-indicator');
@@ -268,11 +267,10 @@ async function sendMessage() {
   await showThinkingSteps();
 
   try {
-    const resp = await fetch('/assistant/chat', {
+    const resp = await apiFetch('/assistant/chat', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-CSRFToken': CSRF_TOKEN,
       },
       body: JSON.stringify({ message }),
     });
@@ -301,9 +299,8 @@ function sendSuggestion(text) {
 // ── Clear chat ─────────────────────────────────────────────────────────────
 async function clearChat() {
   if (!confirm('Hapus seluruh riwayat percakapan?')) return;
-  await fetch('/assistant/clear', {
+  await apiFetch('/assistant/clear', {
     method: 'POST',
-    headers: { 'X-CSRFToken': CSRF_TOKEN },
   });
   window.location.reload();
 }

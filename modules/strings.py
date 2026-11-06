@@ -26,6 +26,8 @@ class MSG:
     LOGIN_FAILED            = "{error}"   # error string comes from auth module
     LOGIN_SUCCESS           = "Selamat datang, {username}!"
     LOGOUT_SUCCESS          = "Anda telah keluar dari sistem."
+    SESSION_EXPIRED         = "Sesi Anda telah berakhir. Silakan masuk kembali."
+    CSRF_INVALID            = "Token keamanan tidak valid atau telah kedaluwarsa. Muat ulang halaman lalu coba kembali."
 
     # ── Authentication module errors ──────────────────────────────────────────
     AUTH_INVALID_CREDENTIALS = "Nama pengguna atau kata sandi tidak valid."

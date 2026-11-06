@@ -9,7 +9,8 @@ from flask import Blueprint, render_template, request, redirect, url_for, sessio
 from modules.strings import MSG
 from routes.auth_routes import login_required
 from database.db import get_db
-from modules.cryptography.key_management import master_key_from_hex, purpose_key
+from modules.cryptography import session_keys
+from modules.cryptography.key_management import purpose_key
 from modules.cryptography.database_encryption import decrypt_record, encrypt_record
 from modules.blockchain.blockchain import add_block, content_hash
 
@@ -17,9 +18,11 @@ notes_bp = Blueprint("notes", __name__)
 
 
 def _db_key() -> bytes:
-    """Kunci field = purpose_key(master key sesi, "database")."""
-    mk = master_key_from_hex(session["master_key_hex"])
-    return purpose_key(mk, "database")
+    """Kunci field = purpose_key(DEK sesi, "database")."""
+    dek = session_keys.get(session.get("session_id", ""))
+    if dek is None:
+        abort(403)
+    return purpose_key(dek, "database")
 
 
 @notes_bp.route("/secure-notes")

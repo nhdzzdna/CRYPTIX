@@ -17,7 +17,8 @@ import config
 from modules.strings import MSG
 from routes.auth_routes import login_required
 from database.db import get_db
-from modules.cryptography.key_management import master_key_from_hex, purpose_key
+from modules.cryptography import session_keys
+from modules.cryptography.key_management import purpose_key
 from modules.cryptography.database_encryption import decrypt_field, field_aad
 from modules.cryptography.file_encryption import decrypt_all, file_aad
 from modules.media.winamp_integration import (
@@ -29,15 +30,19 @@ media_bp = Blueprint("media", __name__)
 
 
 def _file_key() -> bytes:
-    """Kunci enkripsi berkas = purpose_key(master key sesi, "file")."""
-    mk = master_key_from_hex(session["master_key_hex"])
-    return purpose_key(mk, "file")
+    """Kunci enkripsi berkas = purpose_key(DEK sesi, "file")."""
+    dek = session_keys.get(session.get("session_id", ""))
+    if dek is None:
+        abort(403)
+    return purpose_key(dek, "file")
 
 
 def _db_key() -> bytes:
-    """Kunci field = purpose_key(master key sesi, "database")."""
-    mk = master_key_from_hex(session["master_key_hex"])
-    return purpose_key(mk, "database")
+    """Kunci field = purpose_key(DEK sesi, "database")."""
+    dek = session_keys.get(session.get("session_id", ""))
+    if dek is None:
+        abort(403)
+    return purpose_key(dek, "database")
 
 
 def _display_name(row, db_key: bytes) -> str:

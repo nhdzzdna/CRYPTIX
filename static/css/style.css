@@ -95,6 +95,7 @@ html, body {
   justify-content: space-between;
   font-size: .82rem;
 }
+.sidebar-logout { margin: 0; }
 .nav-user { color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* ── Main Content ───────────────────────────────────────────────────────────── */

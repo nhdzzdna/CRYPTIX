@@ -16,6 +16,7 @@ from PIL import Image
 import config
 from app import create_app
 from database.db import get_db, init_db
+from modules.cryptography import session_keys
 
 MASTER_HEX = hashlib.sha256(b"kunci-sesi-uji").hexdigest()
 KATA_SANDI = "kata-sandi-uji-tersimpan"
@@ -49,7 +50,9 @@ def client(app):
     with c.session_transaction() as sess:
         sess["user_id"] = 1
         sess["username"] = "pengujingsatu"
-        sess["master_key_hex"] = MASTER_HEX
+        sid = session_keys.create_session_id()
+        sess["session_id"] = sid
+        session_keys.put(sid, bytes.fromhex(MASTER_HEX))
     return c
 
 
