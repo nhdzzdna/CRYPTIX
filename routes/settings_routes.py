@@ -5,11 +5,10 @@ User settings: profile, change password, USB token, biometrics.
 """
 
 import os
-import sys
 import hashlib
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+from modules.strings import MSG
 from routes.auth_routes import login_required
 from database.db import get_db
 from modules.authentication.auth import get_user_by_id, update_usb_token
@@ -35,27 +34,24 @@ def change_password():
 
     user = get_user_by_id(session["user_id"])
     if not verify_password(current, user["password_hash"], user["salt"]):
-        flash("Current password is incorrect.", "danger")
+        flash(MSG.SETTINGS_WRONG_PASSWORD, "danger")
         return redirect(url_for("settings.index"))
 
     if new_pwd != confirm:
-        flash("New passwords do not match.", "danger")
+        flash(MSG.SETTINGS_PASSWORD_MISMATCH, "danger")
         return redirect(url_for("settings.index"))
 
     new_hash, new_salt = hash_password(new_pwd)
-    db = get_db()
-    try:
+    with get_db() as db:
         db.execute(
             "UPDATE users SET password_hash=?, salt=? WHERE id=?",
             (new_hash, new_salt, session["user_id"]),
         )
         db.commit()
-    finally:
-        db.close()
 
     # Force re-login so master key is re-derived with new salt
     session.clear()
-    flash("Password changed. Please log in again.", "success")
+    flash(MSG.SETTINGS_PASSWORD_CHANGED, "success")
     return redirect(url_for("auth.login"))
 
 
@@ -65,8 +61,8 @@ def register_usb():
     from flask import current_app
     result = usb_mod.register_usb_token(current_app.config["SECRET_KEY"])
     if result is None:
-        flash("No removable drive detected.", "danger")
+        flash(MSG.SETTINGS_USB_NO_DRIVE, "danger")
     else:
         update_usb_token(session["user_id"], result["hmac_hex"], result["volume_serial"])
-        flash("USB token registered successfully.", "success")
+        flash(MSG.SETTINGS_USB_REGISTERED, "success")
     return redirect(url_for("settings.index"))

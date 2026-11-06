@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ title }} — CRYPTIX</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+</head>
+<body class="auth-page">
+  <div class="auth-container">
+    <div class="auth-card">
+      <div class="auth-logo">🔐 <span>CRYPTIX</span></div>
+      <h1 class="auth-title">{{ code }} — {{ title }}</h1>
+      <p class="auth-link">{{ description }}</p>
+      <div class="auth-link" style="margin-top: 24px;">
+        <a href="{{ url_for('auth.login') }}" class="btn btn-primary btn-full">Kembali ke Halaman Masuk</a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

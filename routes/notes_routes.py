@@ -5,11 +5,10 @@ Secure Notes: encrypted text notes stored in SQLite.
 """
 
 import os
-import sys
 import hashlib
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash, abort
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+from modules.strings import MSG
 from routes.auth_routes import login_required
 from database.db import get_db
 from modules.cryptography.key_management import master_key_from_hex, get_db_encryption_key
@@ -27,14 +26,11 @@ def _db_key() -> bytes:
 @notes_bp.route("/secure-notes")
 @login_required
 def index():
-    db = get_db()
-    try:
+    with get_db() as db:
         rows = db.execute(
             "SELECT * FROM secure_notes WHERE user_id=? ORDER BY updated_at DESC",
             (session["user_id"],),
         ).fetchall()
-    finally:
-        db.close()
 
     key = _db_key()
     notes = []
@@ -59,13 +55,12 @@ def add():
     title   = request.form.get("title",   "").strip()
     content = request.form.get("content", "").strip()
     if not title or not content:
-        flash("Title and content are required.", "danger")
+        flash(MSG.NOTES_FIELDS_REQUIRED, "danger")
         return redirect(url_for("notes.index"))
 
-    key = _db_key()
     import os as _os
-    db = get_db()
-    try:
+    key = _db_key()
+    with get_db() as db:
         db.execute(
             """INSERT INTO secure_notes (user_id, title_enc, content_enc, nonce, tag)
                VALUES (?,?,?,?,?)""",
@@ -75,11 +70,9 @@ def add():
              _os.urandom(12).hex(), "n/a"),
         )
         db.commit()
-    finally:
-        db.close()
 
     add_block(session["user_id"], "UPLOAD", hashlib.sha256(title.encode()).hexdigest())
-    flash("Note saved.", "success")
+    flash(MSG.NOTES_SAVED, "success")
     return redirect(url_for("notes.index"))
 
 
@@ -89,12 +82,11 @@ def edit(note_id: int):
     title   = request.form.get("title",   "").strip()
     content = request.form.get("content", "").strip()
     if not title or not content:
-        flash("Title and content are required.", "danger")
+        flash(MSG.NOTES_FIELDS_REQUIRED, "danger")
         return redirect(url_for("notes.index"))
 
     key = _db_key()
-    db = get_db()
-    try:
+    with get_db() as db:
         row = db.execute(
             "SELECT id FROM secure_notes WHERE id=? AND user_id=?",
             (note_id, session["user_id"]),
@@ -108,19 +100,16 @@ def edit(note_id: int):
             (encrypt_field(title, key), encrypt_field(content, key), note_id),
         )
         db.commit()
-    finally:
-        db.close()
 
     add_block(session["user_id"], "MODIFY", hashlib.sha256(title.encode()).hexdigest())
-    flash("Note updated.", "success")
+    flash(MSG.NOTES_UPDATED, "success")
     return redirect(url_for("notes.index"))
 
 
 @notes_bp.route("/secure-notes/delete/<int:note_id>", methods=["POST"])
 @login_required
 def delete(note_id: int):
-    db = get_db()
-    try:
+    with get_db() as db:
         row = db.execute(
             "SELECT id FROM secure_notes WHERE id=? AND user_id=?",
             (note_id, session["user_id"]),
@@ -129,9 +118,7 @@ def delete(note_id: int):
             abort(404)
         db.execute("DELETE FROM secure_notes WHERE id=?", (note_id,))
         db.commit()
-    finally:
-        db.close()
 
     add_block(session["user_id"], "DELETE", hashlib.sha256(str(note_id).encode()).hexdigest())
-    flash("Note deleted.", "info")
+    flash(MSG.NOTES_DELETED, "info")
     return redirect(url_for("notes.index"))

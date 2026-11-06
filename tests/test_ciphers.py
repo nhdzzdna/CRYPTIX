@@ -4,9 +4,6 @@ tests/test_ciphers.py
 Unit tests for all four individual ciphers.
 """
 
-import sys, os
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-
 import hashlib
 from modules.cryptography.classical_cipher_1 import vigenere_encrypt, vigenere_decrypt
 from modules.cryptography.classical_cipher_2 import playfair_encrypt, playfair_decrypt

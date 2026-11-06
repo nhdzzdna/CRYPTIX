@@ -11,9 +11,6 @@ Tests cover:
   5. Answer content correctness for each intent
 """
 
-import sys, os
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-
 import pytest
 from modules.assistant.security_agent import (
     classify_intent,

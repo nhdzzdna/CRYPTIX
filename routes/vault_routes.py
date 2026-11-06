@@ -7,7 +7,6 @@ Encryption: AES-256-GCM (file_encryption.py).
 """
 
 import os
-import sys
 import hashlib
 
 from flask import (
@@ -16,8 +15,8 @@ from flask import (
 )
 from werkzeug.utils import secure_filename
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 import config
+from modules.strings import MSG
 from routes.auth_routes import login_required
 from database.db import get_db
 from modules.cryptography.key_management import master_key_from_hex, get_file_encryption_key
@@ -44,14 +43,11 @@ def _get_file_key() -> bytes:
 @vault_bp.route("/vault")
 @login_required
 def index():
-    db = get_db()
-    try:
+    with get_db() as db:
         files = db.execute(
             "SELECT * FROM vault_files WHERE user_id=? ORDER BY uploaded_at DESC",
             (session["user_id"],),
         ).fetchall()
-    finally:
-        db.close()
     return render_template("vault.html", files=files)
 
 
@@ -62,17 +58,17 @@ def index():
 def upload():
     f = request.files.get("file")
     if not f or not f.filename:
-        flash("No file selected.", "warning")
+        flash(MSG.VAULT_NO_FILE_SELECTED, "warning")
         return redirect(url_for("vault.index"))
 
     filename = secure_filename(f.filename)
     if not _allowed_file(filename):
-        flash("File type not allowed.", "danger")
+        flash(MSG.VAULT_FILE_TYPE_DENIED, "danger")
         return redirect(url_for("vault.index"))
 
     raw = f.read()
     if len(raw) > config.MAX_CONTENT_LENGTH:
-        flash("File exceeds maximum size limit.", "danger")
+        flash(MSG.VAULT_FILE_TOO_LARGE, "danger")
         return redirect(url_for("vault.index"))
 
     ext = os.path.splitext(filename)[1].lower()
@@ -90,8 +86,7 @@ def upload():
     stored_name = generate_stored_name(filename)
     save_encrypted_file(enc_result["ciphertext"], stored_name)
 
-    db = get_db()
-    try:
+    with get_db() as db:
         db.execute(
             """INSERT INTO vault_files
                (user_id, original_name, stored_name, file_type, file_size, nonce, tag, sha256_hash)
@@ -102,11 +97,9 @@ def upload():
             ),
         )
         db.commit()
-    finally:
-        db.close()
 
     add_block(session["user_id"], "UPLOAD", enc_result["sha256_hex"])
-    flash(f'"{filename}" encrypted and uploaded successfully.', "success")
+    flash(MSG.VAULT_UPLOAD_SUCCESS.format(filename=filename), "success")
     return redirect(url_for("vault.index"))
 
 
@@ -115,14 +108,11 @@ def upload():
 @vault_bp.route("/vault/decrypt/<int:file_id>")
 @login_required
 def decrypt(file_id: int):
-    db = get_db()
-    try:
+    with get_db() as db:
         row = db.execute(
             "SELECT * FROM vault_files WHERE id=? AND user_id=?",
             (file_id, session["user_id"]),
         ).fetchone()
-    finally:
-        db.close()
 
     if not row:
         abort(404)
@@ -132,7 +122,7 @@ def decrypt(file_id: int):
         fkey = _get_file_key()
         plaintext = decrypt_file(ciphertext, row["nonce"], fkey)
     except Exception:
-        flash("Decryption failed — file may be corrupted.", "danger")
+        flash(MSG.VAULT_DECRYPT_FAILED, "danger")
         return redirect(url_for("vault.index"))
 
     add_block(session["user_id"], "DECRYPT", row["sha256_hash"])
@@ -150,8 +140,7 @@ def decrypt(file_id: int):
 @vault_bp.route("/vault/delete/<int:file_id>", methods=["POST"])
 @login_required
 def delete(file_id: int):
-    db = get_db()
-    try:
+    with get_db() as db:
         row = db.execute(
             "SELECT * FROM vault_files WHERE id=? AND user_id=?",
             (file_id, session["user_id"]),
@@ -165,9 +154,7 @@ def delete(file_id: int):
 
         db.execute("DELETE FROM vault_files WHERE id=?", (file_id,))
         db.commit()
-    finally:
-        db.close()
 
     add_block(session["user_id"], "DELETE", row["sha256_hash"])
-    flash("File deleted.", "info")
+    flash(MSG.VAULT_FILE_DELETED, "info")
     return redirect(url_for("vault.index"))

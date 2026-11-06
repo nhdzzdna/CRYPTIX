@@ -5,7 +5,6 @@ Steganography: embed and extract LSB messages in PNG images.
 """
 
 import os
-import sys
 import uuid
 import hashlib
 from flask import (
@@ -14,8 +13,8 @@ from flask import (
 )
 from werkzeug.utils import secure_filename
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 import config
+from modules.strings import MSG
 from routes.auth_routes import login_required
 from database.db import get_db
 from modules.steganography.lsb import embed_message, extract_message
@@ -28,14 +27,11 @@ stego_bp = Blueprint("stego", __name__)
 @stego_bp.route("/steganography")
 @login_required
 def index():
-    db = get_db()
-    try:
+    with get_db() as db:
         images = db.execute(
             "SELECT * FROM stego_images WHERE user_id=? ORDER BY created_at DESC",
             (session["user_id"],),
         ).fetchall()
-    finally:
-        db.close()
     return render_template("steganography.html", images=images)
 
 
@@ -47,16 +43,16 @@ def embed():
     use_enc = request.form.get("use_encryption") == "1"
 
     if not carrier or not carrier.filename:
-        flash("Please upload a carrier image.", "warning")
+        flash(MSG.STEGO_NO_CARRIER, "warning")
         return redirect(url_for("stego.index"))
     if not message:
-        flash("Message cannot be empty.", "warning")
+        flash(MSG.STEGO_EMPTY_MESSAGE, "warning")
         return redirect(url_for("stego.index"))
 
     fname = secure_filename(carrier.filename)
     ext   = os.path.splitext(fname)[1].lower()
     if ext not in {".png", ".jpg", ".jpeg", ".bmp"}:
-        flash("Carrier must be PNG/JPG/BMP.", "danger")
+        flash(MSG.STEGO_INVALID_CARRIER, "danger")
         return redirect(url_for("stego.index"))
 
     tmp_in = os.path.join(config.TEMPORARY_FILES_DIR, f"stego_in_{uuid.uuid4().hex}{ext}")
@@ -74,35 +70,29 @@ def embed():
     os.remove(tmp_in)
 
     if not result["success"]:
-        flash(f"Embedding failed: {result.get('error')}", "danger")
+        flash(MSG.STEGO_EMBED_FAILED.format(error=result.get('error')), "danger")
         return redirect(url_for("stego.index"))
 
-    db = get_db()
-    try:
+    with get_db() as db:
         db.execute(
             "INSERT INTO stego_images (user_id, original_name, stored_name, has_encryption) VALUES (?,?,?,?)",
             (session["user_id"], fname, stored_name, int(use_enc)),
         )
         db.commit()
-    finally:
-        db.close()
 
     add_block(session["user_id"], "UPLOAD", hashlib.sha256(message.encode()).hexdigest())
-    flash("Message embedded successfully.", "success")
+    flash(MSG.STEGO_EMBED_SUCCESS, "success")
     return redirect(url_for("stego.index"))
 
 
 @stego_bp.route("/steganography/extract/<int:img_id>", methods=["POST"])
 @login_required
 def extract(img_id: int):
-    db = get_db()
-    try:
+    with get_db() as db:
         row = db.execute(
             "SELECT * FROM stego_images WHERE id=? AND user_id=?",
             (img_id, session["user_id"]),
         ).fetchone()
-    finally:
-        db.close()
 
     if not row:
         abort(404)
@@ -114,9 +104,9 @@ def extract(img_id: int):
 
     result = extract_message(img_path, master_key=mk_arg)
     if not result["success"]:
-        flash(f"Extraction failed: {result.get('error')}", "danger")
+        flash(MSG.STEGO_EXTRACT_FAILED.format(error=result.get('error')), "danger")
     else:
-        flash(f"Extracted message: {result['message']}", "success")
+        flash(MSG.STEGO_EXTRACT_SUCCESS.format(message=result['message']), "success")
 
     return redirect(url_for("stego.index"))
 
@@ -124,14 +114,11 @@ def extract(img_id: int):
 @stego_bp.route("/steganography/download/<int:img_id>")
 @login_required
 def download(img_id: int):
-    db = get_db()
-    try:
+    with get_db() as db:
         row = db.execute(
             "SELECT * FROM stego_images WHERE id=? AND user_id=?",
             (img_id, session["user_id"]),
         ).fetchone()
-    finally:
-        db.close()
 
     if not row:
         abort(404)
@@ -143,8 +130,7 @@ def download(img_id: int):
 @stego_bp.route("/steganography/delete/<int:img_id>", methods=["POST"])
 @login_required
 def delete(img_id: int):
-    db = get_db()
-    try:
+    with get_db() as db:
         row = db.execute(
             "SELECT * FROM stego_images WHERE id=? AND user_id=?",
             (img_id, session["user_id"]),
@@ -156,8 +142,6 @@ def delete(img_id: int):
             os.remove(img_path)
         db.execute("DELETE FROM stego_images WHERE id=?", (img_id,))
         db.commit()
-    finally:
-        db.close()
 
-    flash("Stego image deleted.", "info")
+    flash(MSG.STEGO_DELETED, "info")
     return redirect(url_for("stego.index"))

@@ -4,9 +4,6 @@ tests/test_super_encryption.py
 Round-trip tests for the 4-layer Super Encryption pipeline.
 """
 
-import sys, os
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-
 from modules.cryptography.super_encryption import super_encrypt, super_decrypt
 
 

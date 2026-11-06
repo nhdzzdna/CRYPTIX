@@ -5,18 +5,16 @@ Run with:  python app.py
 """
 
 import os
-import sys
 from datetime import timedelta
 
-from flask import Flask, redirect, url_for
+from flask import Flask, redirect, render_template, request, url_for
 from flask_wtf.csrf import CSRFProtect
-
-# ── Path setup ────────────────────────────────────────────────────────────────
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, BASE_DIR)
 
 import config
 from database.db import init_db
+from modules.logger import get_logger
+
+_logger = get_logger(__name__)
 
 # ── App factory ───────────────────────────────────────────────────────────────
 
@@ -35,12 +33,49 @@ def create_app() -> Flask:
     # ── CSRF ──────────────────────────────────────────────────────────────────
     csrf = CSRFProtect(app)
 
+    # ── Force localhost origin (WebAuthn requires the localhost origin) ───────
+    @app.before_request
+    def _redirect_to_localhost():
+        host = request.host
+        if host.startswith("127.0.0.1"):
+            target = request.path
+            if request.query_string:
+                target += "?" + request.query_string.decode("utf-8", "replace")
+            new_host = "localhost" + host[len("127.0.0.1"):]
+            return redirect(f"{request.scheme}://{new_host}{target}", code=307)
+
+    # ── Error handlers ────────────────────────────────────────────────────────
+    _ERROR_TEXT = {
+        400: ("Permintaan Tidak Valid",
+              "Permintaan Anda tidak dapat diproses. Periksa kembali input yang dikirim."),
+        403: ("Akses Ditolak",
+              "Anda tidak memiliki izin untuk mengakses sumber daya ini."),
+        404: ("Halaman Tidak Ditemukan",
+              "Halaman atau sumber daya yang Anda minta tidak ditemukan."),
+        413: ("File Terlalu Besar",
+              "Ukuran file melebihi batas maksimum yang diizinkan."),
+        429: ("Terlalu Banyak Permintaan",
+              "Anda terlalu sering mengirim permintaan. Silakan tunggu beberapa saat lalu coba kembali."),
+        500: ("Kesalahan Sistem",
+              "Terjadi kesalahan internal. Silakan coba kembali beberapa saat lagi."),
+    }
+
+    def _register_error_handler(code: int) -> None:
+        def handler(_err):
+            title, description = _ERROR_TEXT[code]
+            return render_template(
+                "error.html", code=code, title=title, description=description
+            ), code
+        app.register_error_handler(code, handler)
+
+    for _status in (400, 403, 404, 413, 429, 500):
+        _register_error_handler(_status)
+
     # ── Ensure storage dirs exist ─────────────────────────────────────────────
     for d in [
         config.ENCRYPTED_FILES_DIR,
         config.TEMPORARY_FILES_DIR,
         config.STEGO_IMAGES_DIR,
-        os.path.join(BASE_DIR, "storage", "face_data"),
     ]:
         os.makedirs(d, exist_ok=True)
 
@@ -102,8 +137,5 @@ if __name__ == "__main__":
     init_db()
 
     app = create_app()
-    print("=" * 55)
-    print("  CRYPTIX — Digital Archive Security Platform")
-    print("  http://127.0.0.1:5000")
-    print("=" * 55)
-    app.run(host="127.0.0.1", port=5000, debug=config.DEBUG)
+    _logger.info("CRYPTIX starting — http://localhost:5000")
+    app.run(host="127.0.0.1", port=5000, debug=config.DEBUG, use_reloader=False)

@@ -5,8 +5,8 @@ Unit tests for LSB steganography.
 Creates real PNG images in a temp directory.
 """
 
-import sys, os, tempfile
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+import os
+import tempfile
 
 import pytest
 from PIL import Image
@@ -45,7 +45,7 @@ class TestLSBSteganography:
         long_msg = "A" * 500   # way over capacity
         result = embed_message(src, long_msg, out)
         assert result["success"] is False
-        assert "too large" in result["error"].lower()
+        assert "terlalu besar" in result["error"].lower()
 
     def test_embed_and_extract_with_encryption(self):
         import hashlib

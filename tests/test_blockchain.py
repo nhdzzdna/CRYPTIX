@@ -5,8 +5,7 @@ Unit tests for the blockchain hash-chain.
 Uses a fresh temp SQLite DB per test via a custom fixture.
 """
 
-import sys, os, sqlite3, tempfile, json, hashlib
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+import sqlite3, tempfile, json, hashlib
 
 import pytest
 

@@ -14,13 +14,12 @@ HTML5 <audio> player in the template.
 """
 
 import os
-import sys
 import subprocess
 import threading
 import time
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 import config
+from modules.strings import MSG
 
 
 def _schedule_delete(path: str, delay_seconds: int = 60) -> None:
@@ -57,7 +56,7 @@ def play_with_winamp(decrypted_audio_path: str) -> dict:
         return {
             "success": False,
             "winamp_available": False,
-            "error": "Winamp not found at configured path.",
+            "error": MSG.WINAMP_NOT_FOUND,
         }
 
     try:
@@ -65,8 +64,8 @@ def play_with_winamp(decrypted_audio_path: str) -> dict:
         # Schedule the temp file for deletion after 60 s
         _schedule_delete(decrypted_audio_path, delay_seconds=60)
         return {"success": True, "winamp_available": True}
-    except Exception as exc:
-        return {"success": False, "winamp_available": True, "error": str(exc)}
+    except Exception:
+        return {"success": False, "winamp_available": True, "error": MSG.WINAMP_START_FAILED}
 
 
 def save_temp_audio(decrypted_bytes: bytes, filename: str) -> str:

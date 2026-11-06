@@ -4,12 +4,10 @@ routes/account_routes.py
 Account Vault: store and retrieve encrypted credentials.
 """
 
-import os
-import sys
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash, abort
 from werkzeug.utils import secure_filename
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+from modules.strings import MSG
 from routes.auth_routes import login_required
 from database.db import get_db
 from modules.cryptography.key_management import master_key_from_hex, get_db_encryption_key
@@ -28,14 +26,11 @@ def _db_key() -> bytes:
 @account_bp.route("/account-vault")
 @login_required
 def index():
-    db = get_db()
-    try:
+    with get_db() as db:
         rows = db.execute(
             "SELECT * FROM account_vault WHERE user_id=? ORDER BY created_at DESC",
             (session["user_id"],),
         ).fetchall()
-    finally:
-        db.close()
 
     key = _db_key()
     entries = []
@@ -67,14 +62,13 @@ def add():
     notes = request.form.get("notes", "")
 
     if not site or not uname or not pwd:
-        flash("Site, username, and password are required.", "danger")
+        flash(MSG.ACCOUNT_FIELDS_REQUIRED, "danger")
         return redirect(url_for("account.index"))
 
+    import os as _os
     key = _db_key()
-    db = get_db()
-    try:
-        import os as _os
-        nonce_placeholder = _os.urandom(12).hex()   # stored per field in token
+    nonce_placeholder = _os.urandom(12).hex()   # stored per field in token
+    with get_db() as db:
         db.execute(
             """INSERT INTO account_vault
                (user_id, site_name_enc, username_enc, password_enc, url_enc, notes_enc, nonce, tag)
@@ -90,19 +84,16 @@ def add():
             ),
         )
         db.commit()
-    finally:
-        db.close()
 
     add_block(session["user_id"], "UPLOAD", hashlib.sha256(site.encode()).hexdigest())
-    flash("Credential added.", "success")
+    flash(MSG.ACCOUNT_ADDED, "success")
     return redirect(url_for("account.index"))
 
 
 @account_bp.route("/account-vault/delete/<int:entry_id>", methods=["POST"])
 @login_required
 def delete(entry_id: int):
-    db = get_db()
-    try:
+    with get_db() as db:
         row = db.execute(
             "SELECT * FROM account_vault WHERE id=? AND user_id=?",
             (entry_id, session["user_id"]),
@@ -111,8 +102,6 @@ def delete(entry_id: int):
             abort(404)
         db.execute("DELETE FROM account_vault WHERE id=?", (entry_id,))
         db.commit()
-    finally:
-        db.close()
     add_block(session["user_id"], "DELETE", hashlib.sha256(str(entry_id).encode()).hexdigest())
-    flash("Credential deleted.", "info")
+    flash(MSG.ACCOUNT_DELETED, "info")
     return redirect(url_for("account.index"))

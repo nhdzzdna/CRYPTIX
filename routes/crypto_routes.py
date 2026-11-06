@@ -5,12 +5,10 @@ Crypto Tools: test each cipher individually and Super Encryption.
 Pure Python, no file I/O needed.
 """
 
-import os
-import sys
 from flask import Blueprint, render_template, request, session
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from routes.auth_routes import login_required
+from modules.strings import MSG
 from modules.cryptography.classical_cipher_1 import vigenere_encrypt, vigenere_decrypt
 from modules.cryptography.classical_cipher_2 import playfair_encrypt, playfair_decrypt
 from modules.cryptography.modern_cipher_1    import chacha20_encrypt, chacha20_decrypt
@@ -56,7 +54,7 @@ def index():
 
             elif cipher == "super":
                 if not passphrase:
-                    error = "Passphrase is required for Super Encryption."
+                    error = MSG.CRYPTO_PASSPHRASE_REQUIRED
                 else:
                     result = (
                         super_encrypt(text, passphrase=passphrase)
@@ -64,8 +62,8 @@ def index():
                         else super_decrypt(text, passphrase=passphrase)
                     )
             else:
-                error = f"Unknown cipher: {cipher}"
-        except Exception as exc:
-            error = str(exc)
+                error = MSG.CRYPTO_UNKNOWN_CIPHER
+        except Exception:
+            error = MSG.CRYPTO_OPERATION_FAILED
 
     return render_template("crypto_tools.html", result=result, error=error)

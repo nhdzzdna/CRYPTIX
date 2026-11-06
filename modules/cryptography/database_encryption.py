@@ -21,9 +21,6 @@ For multi-field rows we encrypt with a composite and store per the schema.
 
 import os
 import base64
-import sys
-
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 

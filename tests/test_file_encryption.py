@@ -9,9 +9,7 @@ Tests include:
   • SHA-256 of plaintext is correct.
 """
 
-import sys, os
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-
+import os
 import hashlib
 from cryptography.exceptions import InvalidTag
 

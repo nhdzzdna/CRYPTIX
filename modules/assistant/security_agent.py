@@ -27,11 +27,7 @@ Security constraints
 from __future__ import annotations
 
 import re
-import sys
-import os
 from typing import Any
-
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
 
 # ── Thinking steps (shown incrementally in the UI) ───────────────────────────
@@ -277,8 +273,7 @@ def _read_security_metadata(user_id: int) -> dict:
     from database.db import get_db
     from modules.blockchain.blockchain import verify_chain
 
-    db = get_db()
-    try:
+    with get_db() as db:
         user_row = db.execute(
             "SELECT face_model_path, fingerprint_path, usb_token_hmac FROM users WHERE id=?",
             (user_id,),
@@ -295,8 +290,6 @@ def _read_security_metadata(user_id: int) -> dict:
         account_count = db.execute(
             "SELECT COUNT(*) FROM account_vault WHERE user_id=?", (user_id,)
         ).fetchone()[0]
-    finally:
-        db.close()
 
     chain = verify_chain()
     tampered = sum(1 for b in chain if b.get("tampered"))
@@ -316,16 +309,13 @@ def _read_security_metadata(user_id: int) -> dict:
 def _read_recent_log(user_id: int, limit: int = 5) -> list[dict]:
     """Return the most recent *limit* blockchain blocks for *user_id*."""
     from database.db import get_db
-    db = get_db()
-    try:
+    with get_db() as db:
         rows = db.execute(
             "SELECT block_index, timestamp, action, asset_hash FROM blockchain_log "
             "WHERE user_id=? ORDER BY block_index DESC LIMIT ?",
             (user_id, limit),
         ).fetchall()
         return [dict(r) for r in rows]
-    finally:
-        db.close()
 
 
 # ── Intent handlers ───────────────────────────────────────────────────────────

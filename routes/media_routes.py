@@ -5,7 +5,6 @@ Media Vault: encrypted audio/video files with Winamp/HTML5 playback.
 """
 
 import os
-import sys
 import io
 
 from flask import (
@@ -13,8 +12,8 @@ from flask import (
     session, flash, send_file, abort, jsonify
 )
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 import config
+from modules.strings import MSG
 from routes.auth_routes import login_required
 from database.db import get_db
 from modules.cryptography.key_management import master_key_from_hex, get_file_encryption_key
@@ -35,14 +34,11 @@ def _file_key() -> bytes:
 @media_bp.route("/media-vault")
 @login_required
 def index():
-    db = get_db()
-    try:
+    with get_db() as db:
         files = db.execute(
             "SELECT * FROM vault_files WHERE user_id=? AND file_type IN ('audio','video') ORDER BY uploaded_at DESC",
             (session["user_id"],),
         ).fetchall()
-    finally:
-        db.close()
     return render_template("media_vault.html", files=files, winamp_available=is_winamp_available())
 
 
@@ -50,14 +46,11 @@ def index():
 @login_required
 def play(file_id: int):
     """Decrypt and play in Winamp (if available) or return audio for HTML5."""
-    db = get_db()
-    try:
+    with get_db() as db:
         row = db.execute(
             "SELECT * FROM vault_files WHERE id=? AND user_id=? AND file_type IN ('audio','video')",
             (file_id, session["user_id"]),
         ).fetchone()
-    finally:
-        db.close()
 
     if not row:
         abort(404)
@@ -67,7 +60,7 @@ def play(file_id: int):
         fkey = _file_key()
         plaintext = decrypt_file(ciphertext, row["nonce"], fkey)
     except Exception:
-        flash("Decryption failed.", "danger")
+        flash(MSG.MEDIA_DECRYPT_FAILED, "danger")
         return redirect(url_for("media.index"))
 
     add_block(session["user_id"], "DECRYPT", row["sha256_hash"])
@@ -78,10 +71,10 @@ def play(file_id: int):
         tmp_path = save_temp_audio(plaintext, row["original_name"])
         result = play_with_winamp(tmp_path)
         if result["success"]:
-            flash("Opened in Winamp. Temporary file will be deleted automatically.", "success")
+            flash(MSG.MEDIA_WINAMP_OPENED, "success")
         else:
             cleanup_temp_file(tmp_path)
-            flash(f"Winamp error: {result.get('error')}", "danger")
+            flash(MSG.MEDIA_WINAMP_ERROR.format(error=result.get('error')), "danger")
         return redirect(url_for("media.index"))
     else:
         # Serve decrypted bytes for HTML5 <audio>/<video>

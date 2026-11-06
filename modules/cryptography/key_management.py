@@ -15,9 +15,7 @@ Design:
 
 import hashlib
 import os
-import sys
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 import config
 
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF

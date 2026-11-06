@@ -19,11 +19,8 @@ Integrity verification:
 
 import hashlib
 import json
-import sys
-import os
 from datetime import datetime, timezone
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 from database.db import get_db
 import config
 
@@ -78,8 +75,7 @@ def add_block(
     -------
     int  The new block's index.
     """
-    db = get_db()
-    try:
+    with get_db() as db:
         last = db.execute(
             "SELECT block_index, block_hash FROM blockchain_log ORDER BY block_index DESC LIMIT 1"
         ).fetchone()
@@ -104,8 +100,6 @@ def add_block(
         )
         db.commit()
         return block_index
-    finally:
-        db.close()
 
 
 def verify_chain() -> list[dict]:
@@ -117,13 +111,10 @@ def verify_chain() -> list[dict]:
     list of dicts, one per block, each with all block fields plus
     ``is_valid`` bool and ``tampered`` bool.
     """
-    db = get_db()
-    try:
+    with get_db() as db:
         rows = db.execute(
             "SELECT * FROM blockchain_log ORDER BY block_index ASC"
         ).fetchall()
-    finally:
-        db.close()
 
     results = []
     expected_previous = _genesis_hash()
@@ -150,23 +141,17 @@ def verify_chain() -> list[dict]:
 
 def get_recent_blocks(limit: int = 20) -> list[dict]:
     """Return the most recent *limit* blocks (newest first)."""
-    db = get_db()
-    try:
+    with get_db() as db:
         rows = db.execute(
             "SELECT * FROM blockchain_log ORDER BY block_index DESC LIMIT ?", (limit,)
         ).fetchall()
         return [dict(r) for r in rows]
-    finally:
-        db.close()
 
 
 def get_chain_stats() -> dict:
     """Return summary statistics about the chain."""
-    db = get_db()
-    try:
+    with get_db() as db:
         row = db.execute(
             "SELECT COUNT(*) as total, MAX(block_index) as last_index FROM blockchain_log"
         ).fetchone()
         return {"total_blocks": row["total"], "last_index": row["last_index"]}
-    finally:
-        db.close()

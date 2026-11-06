@@ -4,11 +4,8 @@ routes/security_routes.py
 Security Center: blockchain integrity verification and activity log.
 """
 
-import os
-import sys
 from flask import Blueprint, render_template, session
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from routes.auth_routes import login_required
 from modules.blockchain.blockchain import verify_chain, get_recent_blocks, get_chain_stats
 

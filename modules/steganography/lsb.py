@@ -18,11 +18,10 @@ extraction.
 """
 
 import os
-import sys
 import struct
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 import config
+from modules.strings import MSG
 
 from PIL import Image
 import numpy as np
@@ -74,7 +73,7 @@ def embed_message(
     if msg_len > capacity:
         return {
             "success": False,
-            "error": f"Message too large: {msg_len} bytes > capacity {capacity} bytes.",
+            "error": f"Pesan terlalu besar: {msg_len} byte melebihi kapasitas {capacity} byte.",
         }
 
     pixels = np.array(img, dtype=np.uint8)
@@ -136,7 +135,7 @@ def extract_message(
 
     capacity = _capacity_bytes(img)
     if msg_len <= 0 or msg_len > capacity:
-        return {"success": False, "error": "No valid message found or image not a stego image."}
+        return {"success": False, "error": MSG.STEGO_NO_MESSAGE}
 
     # Read message bits
     msg_bits = [int(flat[32 + i] & 1) for i in range(msg_len * 8)]
@@ -152,14 +151,14 @@ def extract_message(
     try:
         payload = payload_bytes.decode("utf-8")
     except UnicodeDecodeError:
-        return {"success": False, "error": "Failed to decode extracted bytes as UTF-8."}
+        return {"success": False, "error": MSG.STEGO_DECODE_FAILED}
 
     # Decrypt if keys provided
     if master_key is not None or passphrase is not None:
         try:
             from modules.cryptography.super_encryption import super_decrypt
             payload = super_decrypt(payload, master_key=master_key, passphrase=passphrase)
-        except Exception as exc:
-            return {"success": False, "error": f"Decryption failed: {exc}"}
+        except Exception:
+            return {"success": False, "error": MSG.STEGO_DECRYPT_FAILED}
 
     return {"success": True, "message": payload}

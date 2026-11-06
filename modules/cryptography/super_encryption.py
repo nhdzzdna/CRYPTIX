@@ -32,10 +32,6 @@ key material.
 
 import base64 as _b64
 import hashlib
-import os
-import sys
-
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
 from modules.cryptography.classical_cipher_1 import vigenere_encrypt, vigenere_decrypt
 from modules.cryptography.classical_cipher_2 import playfair_encrypt, playfair_decrypt

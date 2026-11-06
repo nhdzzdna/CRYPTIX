@@ -1,0 +1,33 @@
+﻿# CRYPTIX — .gitignore
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Database
+database/*.db
+
+# Instance directory (secret keys, chain keys)
+instance/
+
+# Storage content (keep only .gitkeep markers)
+storage/*
+!storage/**/.gitkeep
+
+# Environment secrets
+.env
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# IDE
+.vscode/
+
+# Virtual environments
+venv/
+.venv/
+
+# Pytest cache
+.pytest_cache/
+
+AGENTS.md
+PROMPT_PERBAIKAN.md

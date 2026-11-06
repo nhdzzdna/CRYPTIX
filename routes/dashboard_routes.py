@@ -5,10 +5,9 @@ Dashboard overview page.
 """
 
 import os
-import sys
+
 from flask import Blueprint, render_template, session
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from routes.auth_routes import login_required
 from database.db import get_db
 from modules.blockchain.blockchain import get_recent_blocks, get_chain_stats
@@ -21,8 +20,7 @@ dashboard_bp = Blueprint("dashboard", __name__)
 @login_required
 def index():
     user_id = session["user_id"]
-    db = get_db()
-    try:
+    with get_db() as db:
         file_count = db.execute(
             "SELECT COUNT(*) FROM vault_files WHERE user_id=?", (user_id,)
         ).fetchone()[0]
@@ -35,8 +33,6 @@ def index():
         stego_count = db.execute(
             "SELECT COUNT(*) FROM stego_images WHERE user_id=?", (user_id,)
         ).fetchone()[0]
-    finally:
-        db.close()
 
     # Disk usage of encrypted files
     enc_dir = config.ENCRYPTED_FILES_DIR

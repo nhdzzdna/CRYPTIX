@@ -4,9 +4,6 @@ tests/test_auth.py
 Unit tests for password hashing and key derivation.
 """
 
-import sys, os
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-
 from modules.authentication.password_hash import hash_password, verify_password
 from modules.cryptography.key_management  import (
     derive_master_key, derive_purpose_key,

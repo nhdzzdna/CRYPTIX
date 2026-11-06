@@ -11,11 +11,10 @@ thinking steps before showing the answer.
 """
 
 import os
-import sys
 
 from flask import Blueprint, render_template, request, session, jsonify
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+from modules.strings import MSG
 from routes.auth_routes import login_required
 from modules.assistant.security_agent import process_message, THINKING_STEPS
 
@@ -52,7 +51,7 @@ def chat():
     message = (data.get("message") or "").strip()
 
     if not message:
-        return jsonify({"error": "Empty message."}), 400
+        return jsonify({"error": MSG.ASSISTANT_EMPTY_MESSAGE}), 400
 
     user_id = session["user_id"]
 

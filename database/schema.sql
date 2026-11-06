@@ -60,6 +60,11 @@ CREATE TABLE IF NOT EXISTS secure_notes (
     updated_at      TEXT    NOT NULL DEFAULT (datetime('now'))
 );
 
+-- ── Schema Version ────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS schema_meta (
+    version     INTEGER NOT NULL
+);
+
 -- ── Stego Images ──────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS stego_images (
     id              INTEGER PRIMARY KEY AUTOINCREMENT,
