@@ -124,6 +124,10 @@ def create_app() -> Flask:
     ]:
         app.register_blueprint(bp)
 
+    # ── Sesi H: blueprint autentikasi ulang (step-up) ─────────────────────────
+    from routes.reauth_routes import reauth_bp
+    app.register_blueprint(reauth_bp)
+
     # ── Jinja2 custom filters ─────────────────────────────────────────────
     import markupsafe
 
