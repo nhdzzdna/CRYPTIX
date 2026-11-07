@@ -16,6 +16,8 @@ from PIL import Image
 import config
 from app import create_app
 from database.db import get_db, init_db
+from modules.authentication import reauth
+from modules.blockchain.blockchain import account_hash
 from modules.cryptography import session_keys
 
 MASTER_HEX = hashlib.sha256(b"kunci-sesi-uji").hexdigest()
@@ -156,7 +158,8 @@ class TestAccountVault:
 
         body = client.get("/account-vault").get_data(as_text=True)
         assert "Situs Uji Kredensial" in body
-        assert "pengguna-rahasia" in body
+        assert "pengguna-rahasia" not in body
+        assert KATA_SANDI not in body
 
 
 def _unggah(client, nama: str, isi: bytes):
@@ -265,3 +268,217 @@ class TestStegoOriginalName:
         unduhan = client.get(f"/steganography/download/{row['id']}")
         assert unduhan.status_code == 200
         assert "gambar-pribadi.png" in unduhan.headers.get("Content-Disposition", "")
+
+
+def _token_grant(client, scope: str, resource_id: int) -> str:
+    with client.session_transaction() as sess:
+        sid = sess["session_id"]
+    return reauth.issue_grant(sid, scope, resource_id)["token"]
+
+
+def _client_pengguna(app, user_id: int, username: str):
+    c = app.test_client()
+    with c.session_transaction() as sess:
+        sess["user_id"] = user_id
+        sess["username"] = username
+        sid = session_keys.create_session_id()
+        sess["session_id"] = sid
+        session_keys.put(sid, bytes.fromhex(MASTER_HEX))
+    return c
+
+
+def _tambah_kredensial(client, site="Situs Rahasia", username="rahasia-pengguna",
+                       password=KATA_SANDI) -> dict:
+    token = _csrf(client, "/account-vault")
+    resp = client.post("/account-vault/add", data={
+        "csrf_token": token,
+        "site_name": site,
+        "username": username,
+        "password": password,
+        "url": "https://rahasia.test",
+        "notes": "catatan rahasia",
+    })
+    assert resp.status_code == 302
+    with get_db() as db:
+        row = db.execute(
+            "SELECT * FROM account_vault WHERE user_id=? ORDER BY id DESC LIMIT 1",
+            (1,),
+        ).fetchone()
+    return dict(row)
+
+
+def _baris_kredensial(entry_id: int) -> dict | None:
+    with get_db() as db:
+        row = db.execute(
+            "SELECT * FROM account_vault WHERE id=?", (entry_id,)
+        ).fetchone()
+    return dict(row) if row else None
+
+
+class TestAccountVaultSesiI:
+    def test_reveal_tanpa_grant_ditolak(self, client):
+        baris = _tambah_kredensial(client)
+        token = _csrf(client, "/account-vault")
+        resp = client.post(
+            f"/account-vault/reveal/{baris['id']}",
+            headers={"X-CSRFToken": token},
+        )
+        assert resp.status_code == 401
+        assert resp.get_json()["success"] is False
+        assert resp.get_json()["reason"] == "missing"
+        assert "REVEAL" not in _blok()
+
+    def test_reveal_dengan_grant_mengembalikan_json_dan_mencatat_blok(self, client):
+        baris = _tambah_kredensial(client)
+        grant = _token_grant(client, "account.reveal", baris["id"])
+        token = _csrf(client, "/account-vault")
+        resp = client.post(
+            f"/account-vault/reveal/{baris['id']}",
+            headers={"X-CSRFToken": token, "X-Reauth-Grant": grant},
+        )
+        assert resp.status_code == 200
+        data = resp.get_json()
+        assert data["success"] is True
+        assert data["username"] == "rahasia-pengguna"
+        assert data["password"] == KATA_SANDI
+
+        with get_db() as db:
+            blok = db.execute(
+                "SELECT * FROM blockchain_log WHERE action='REVEAL' "
+                "AND asset_ref=?",
+                (f"cred:{baris['id']}",),
+            ).fetchall()
+        assert len(blok) == 1
+        assert blok[0]["asset_hash"] == account_hash(
+            baris["site_name_enc"], baris["username_enc"], baris["password_enc"]
+        )
+
+    def test_reveal_scope_salah_ditolak(self, client):
+        baris = _tambah_kredensial(client)
+        grant = _token_grant(client, "item.delete", baris["id"])
+        token = _csrf(client, "/account-vault")
+        resp = client.post(
+            f"/account-vault/reveal/{baris['id']}",
+            headers={"X-CSRFToken": token, "X-Reauth-Grant": grant},
+        )
+        assert resp.status_code == 403
+        assert resp.get_json()["reason"] == "scope"
+
+    def test_reveal_resource_lain_ditolak(self, client):
+        baris = _tambah_kredensial(client)
+        grant = _token_grant(client, "account.reveal", baris["id"] + 99)
+        token = _csrf(client, "/account-vault")
+        resp = client.post(
+            f"/account-vault/reveal/{baris['id']}",
+            headers={"X-CSRFToken": token, "X-Reauth-Grant": grant},
+        )
+        assert resp.status_code == 403
+        assert resp.get_json()["reason"] == "resource"
+
+    def test_reveal_idor_pengguna_lain(self, app, client):
+        baris = _tambah_kredensial(client)
+        lain = _client_pengguna(app, 2, "pengujingdua")
+        grant = _token_grant(lain, "account.reveal", baris["id"])
+        token = _csrf(lain, "/account-vault")
+        resp = lain.post(
+            f"/account-vault/reveal/{baris['id']}",
+            headers={"X-CSRFToken": token, "X-Reauth-Grant": grant},
+        )
+        assert resp.status_code == 404
+        assert "REVEAL" not in _blok()
+
+    def test_edit_memerlukan_grant_dan_mencatat_modify(self, client):
+        baris = _tambah_kredensial(client)
+        token = _csrf(client, "/account-vault")
+        tanpa_grant = client.post(
+            f"/account-vault/edit/{baris['id']}",
+            data={"csrf_token": token, "site_name": "Situs Baru",
+                  "username": "pengguna-baru", "password": "sandi-baru"},
+        )
+        assert tanpa_grant.status_code == 401
+        assert _baris_kredensial(baris["id"]) == baris
+
+        grant = _token_grant(client, "account.reveal", baris["id"])
+        resp = client.post(
+            f"/account-vault/edit/{baris['id']}",
+            data={
+                "csrf_token": token,
+                "reauth_grant": grant,
+                "site_name": "Situs Baru",
+                "username": "pengguna-baru",
+                "password": "sandi-baru",
+                "url": "https://baru.test",
+                "notes": "catatan baru",
+            },
+        )
+        assert resp.status_code == 302
+
+        baru = _baris_kredensial(baris["id"])
+        assert baru["site_name_enc"] != baris["site_name_enc"]
+        assert "pengguna-baru" not in baru["username_enc"]
+        assert "sandi-baru" not in baru["password_enc"]
+        with get_db() as db:
+            blok = db.execute(
+                "SELECT * FROM blockchain_log WHERE action='MODIFY' "
+                "AND asset_ref=?",
+                (f"cred:{baris['id']}",),
+            ).fetchall()
+        assert len(blok) == 1
+        assert blok[0]["asset_hash"] == account_hash(
+            baru["site_name_enc"], baru["username_enc"], baru["password_enc"]
+        )
+
+    def test_edit_idor_pengguna_lain(self, app, client):
+        baris = _tambah_kredensial(client)
+        lain = _client_pengguna(app, 2, "pengujingdua")
+        grant = _token_grant(lain, "account.reveal", baris["id"])
+        token = _csrf(lain, "/account-vault")
+        resp = lain.post(
+            f"/account-vault/edit/{baris['id']}",
+            data={
+                "csrf_token": token,
+                "reauth_grant": grant,
+                "site_name": "Dibajak",
+                "username": "penyusup",
+                "password": "sandi-penyusup",
+            },
+        )
+        assert resp.status_code == 404
+        assert _baris_kredensial(baris["id"]) == baris
+
+    def test_hapus_memerlukan_item_delete(self, client):
+        baris = _tambah_kredensial(client)
+        token = _csrf(client, "/account-vault")
+        tanpa_grant = client.post(
+            f"/account-vault/delete/{baris['id']}",
+            data={"csrf_token": token},
+        )
+        assert tanpa_grant.status_code == 401
+        assert _baris_kredensial(baris["id"]) is not None
+
+        grant = _token_grant(client, "item.delete", baris["id"])
+        resp = client.post(
+            f"/account-vault/delete/{baris['id']}",
+            data={"csrf_token": token, "reauth_grant": grant},
+        )
+        assert resp.status_code == 302
+        assert _baris_kredensial(baris["id"]) is None
+        with get_db() as db:
+            blok = db.execute(
+                "SELECT * FROM blockchain_log WHERE action='DELETE' "
+                "AND asset_ref=?",
+                (f"cred:{baris['id']}",),
+            ).fetchall()
+        assert len(blok) == 1
+
+    def test_hapus_idor_pengguna_lain(self, app, client):
+        baris = _tambah_kredensial(client)
+        lain = _client_pengguna(app, 2, "pengujingdua")
+        grant = _token_grant(lain, "item.delete", baris["id"])
+        token = _csrf(lain, "/account-vault")
+        resp = lain.post(
+            f"/account-vault/delete/{baris['id']}",
+            data={"csrf_token": token, "reauth_grant": grant},
+        )
+        assert resp.status_code == 404
+        assert _baris_kredensial(baris["id"]) is not None
