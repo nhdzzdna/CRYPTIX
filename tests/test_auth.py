@@ -1,14 +1,11 @@
 """
 tests/test_auth.py
-───────────────────
-Unit tests for password hashing and key derivation.
+──────────────────
+Unit tests for password hashing (fungsi turunan kunci lama dihapus
+bersama alur login dua tahap — lihat tests/test_two_stage_login.py).
 """
 
 from modules.authentication.password_hash import hash_password, verify_password
-from modules.cryptography.key_management  import (
-    derive_master_key, derive_purpose_key,
-    get_file_encryption_key, get_db_encryption_key,
-)
 
 
 class TestPasswordHash:
@@ -39,31 +36,16 @@ class TestPasswordHash:
         assert verify_password("x", h, s) is False
 
 
-class TestKeyDerivation:
-    def setup_method(self):
-        self.pw = "test_password_42"
-        _, self.salt_hex = hash_password(self.pw)
-        self.mk = derive_master_key(self.pw, self.salt_hex)
+def test_fungsi_turunan_kunci_lama_dihapus():
+    """Alur login dua tahap memakai unlock_dek; turunan lama dihapus."""
+    from modules.cryptography import key_management
+    for nama in ("derive_master_key", "derive_purpose_key",
+                 "get_file_encryption_key", "get_db_encryption_key"):
+        assert not hasattr(key_management, nama), nama
 
-    def test_master_key_is_32_bytes(self):
-        assert len(self.mk) == 32
 
-    def test_master_key_is_bytes(self):
-        assert isinstance(self.mk, bytes)
-
-    def test_derived_file_key_is_32_bytes(self):
-        fk = get_file_encryption_key(self.mk)
-        assert len(fk) == 32
-
-    def test_derived_db_key_is_32_bytes(self):
-        dk = get_db_encryption_key(self.mk)
-        assert len(dk) == 32
-
-    def test_file_and_db_keys_are_different(self):
-        fk = get_file_encryption_key(self.mk)
-        dk = get_db_encryption_key(self.mk)
-        assert fk != dk
-
-    def test_derivation_is_deterministic(self):
-        mk2 = derive_master_key(self.pw, self.salt_hex)
-        assert mk2 == self.mk
+def test_autentikasi_lama_dihapus():
+    """authenticate_user digantikan verifikasi_tahap_satu (tahap 1)."""
+    from modules.authentication import auth as auth_mod
+    assert not hasattr(auth_mod, "authenticate_user")
+    assert callable(auth_mod.verifikasi_tahap_satu)

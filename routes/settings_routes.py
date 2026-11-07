@@ -14,6 +14,7 @@ from database.db import get_db
 from modules.authentication.auth import get_user_by_id, store_usb_token
 from modules.authentication.password_hash import hash_password, verify_password
 from modules.authentication import usb_authentication as usb_mod
+from modules.authentication import webauthn
 from modules.cryptography import session_keys
 from modules.blockchain.blockchain import add_block, content_hash
 
@@ -24,7 +25,11 @@ settings_bp = Blueprint("settings", __name__)
 @login_required
 def index():
     user = get_user_by_id(session["user_id"])
-    return render_template("settings.html", user=user)
+    return render_template(
+        "settings.html",
+        user=user,
+        webauthn_terdaftar=webauthn.ada_kredensial(user["id"]),
+    )
 
 
 @settings_bp.route("/settings/change-password", methods=["POST"])

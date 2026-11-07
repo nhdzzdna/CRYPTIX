@@ -221,38 +221,3 @@ def _parse_recovery_key(text: str) -> bytes:
         return base64.b32decode(cleaned)
     except Exception as exc:
         raise ValueError("Format kunci pemulihan tidak valid.") from exc
-
-
-# ── API lama (DEPRECATED — dihapus pada tugas T8 dan T11) ────────────────────
-
-def derive_master_key(password: str, salt_hex: str) -> bytes:
-    """DEPRECATED: gunakan create_key_bundle()/unlock_dek(). PBKDF2 dari salt autentikasi."""
-    salt = bytes.fromhex(salt_hex)
-    return hashlib.pbkdf2_hmac(
-        config.PBKDF2_HASH_ALGO,
-        password.encode("utf-8"),
-        salt,
-        config.PBKDF2_ITERATIONS,
-        dklen=32,
-    )
-
-
-def derive_purpose_key(master_key: bytes, label: bytes, length: int = 32) -> bytes:
-    """DEPRECATED: gunakan purpose_key(dek, label). HKDF lama berbasis label."""
-    hkdf = HKDF(
-        algorithm=_hashes.SHA256(),
-        length=length,
-        salt=label,
-        info=b"cryptix-key-derivation",
-    )
-    return hkdf.derive(master_key)
-
-
-def get_file_encryption_key(master_key: bytes) -> bytes:
-    """DEPRECATED: gunakan purpose_key(dek, "file"). Kunci enkripsi file lama."""
-    return derive_purpose_key(master_key, config.HKDF_SALT_FILE_ENC)
-
-
-def get_db_encryption_key(master_key: bytes) -> bytes:
-    """DEPRECATED: gunakan purpose_key(dek, "database"). Kunci field basis data lama."""
-    return derive_purpose_key(master_key, config.HKDF_SALT_DB_ENC)

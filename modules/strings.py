@@ -21,8 +21,6 @@ class MSG:
     LOGIN_REQUIRED          = "Silakan masuk terlebih dahulu untuk mengakses halaman ini."
     REGISTER_FIELDS_REQUIRED = "Semua kolom harus diisi."
     REGISTER_PASSWORD_MISMATCH = "Kata sandi tidak cocok."
-    REGISTER_FAILED         = "Pendaftaran gagal: {error}"
-    REGISTER_SUCCESS        = "Akun berhasil dibuat! Silakan masuk."
     REGISTER_USERNAME_INVALID = "Nama pengguna harus 3–32 karakter dan hanya boleh memuat huruf, angka, garis bawah, atau titik."
     REGISTER_EMAIL_INVALID  = "Format surel tidak valid."
     REGISTER_PASSWORD_TOO_SHORT = "Kata sandi minimal 12 karakter."
@@ -55,7 +53,6 @@ class MSG:
 
     # ── Biometrics ────────────────────────────────────────────────────────────
     FINGERPRINT_INVALID_FORMAT   = "Gambar sidik jari harus berformat PNG/JPG/BMP."
-    FINGERPRINT_REGISTERED       = "Sidik jari berhasil didaftarkan."
     FACE_NO_FRAMES               = "Tidak ada bingkai yang diterima."
     FACE_MODEL_SAVED             = "Model wajah berhasil disimpan."
     FACE_NOT_ENOUGH_SAMPLES      = "Tidak cukup sampel wajah yang terdeteksi."
@@ -131,6 +128,17 @@ class MSG:
     # ── Assistant ────────────────────────────────────────────────────────────
     ASSISTANT_EMPTY_MESSAGE  = "Pesan tidak boleh kosong."
 
+    # ── Sesi F: login dua tahap (butir 2.4) ──────────────────────────────────
+    LOGIN_STAGE1_FAILED   = "Login gagal. Periksa kredensial Anda dan pastikan dongle terpasang"
+    LOGIN_STAGE_ORDER     = "Permintaan tidak sesuai urutan tahap login. Muat ulang halaman lalu coba kembali."
+    LOGIN_PENDING_EXPIRED = "Proses masuk kedaluwarsa. Silakan mulai kembali dari awal."
+    LOGIN_BIOMETRIC_NONE  = "Belum ada metode biometrik terdaftar untuk akun ini. Selesaikan penyiapan keamanan terlebih dahulu."
+    LOGIN_BIOMETRIC_FAILED = "Verifikasi biometrik gagal. Coba sekali lagi."
+    WEBAUTHN_REGISTER_FAILED = "Pendaftaran WebAuthn gagal. Gunakan perangkat platform lalu coba lagi."
+    WEBAUTHN_DUPLICATE    = "Kredensial WebAuthn tersebut sudah terdaftar."
+    WEBAUTHN_CHALLENGE_EXPIRED = "Tantangan WebAuthn kedaluwarsa. Muat ulang halaman lalu coba lagi."
+    WEBAUTHN_NO_CREDENTIAL = "Kredensial WebAuthn tidak ditemukan untuk akun ini."
+    WEBAUTHN_FAILED       = "Verifikasi WebAuthn gagal. Coba sekali lagi."
     # ── Sesi H: autentikasi ulang / step-up ───────────────────────────────────
     REAUTH_REQUIRED           = "Autentikasi ulang diperlukan untuk melanjutkan."
     REAUTH_INVALID            = "Grant autentikasi ulang tidak valid atau sudah kedaluwarsa."
