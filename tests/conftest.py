@@ -18,3 +18,14 @@ def _kunci_sesi_bersih():
     yield
     session_keys.clear()
     usb_mod.lupakan_cache()
+
+
+# ── Sesi F: login dua tahap ───────────────────────────────────────────────────
+
+@pytest.fixture(autouse=True)
+def _pending_sesi_bersih():
+    """Buang DEK tahap 1 yang tertahan antar test."""
+    from modules.cryptography import pending_keys
+    pending_keys.kosongkan()
+    yield
+    pending_keys.kosongkan()

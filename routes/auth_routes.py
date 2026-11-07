@@ -19,14 +19,14 @@ import config
 from modules.strings import MSG
 from modules.authentication.auth import (
     create_account, validate_registration,
-    authenticate_user, get_user_by_id,
+    verifikasi_tahap_satu, get_user_by_id,
     store_usb_token, update_face_model_path, update_fingerprint_path,
 )
+from modules.authentication import biometrics
 from modules.authentication import face_recognition as face_mod
 from modules.authentication import fingerprint as fp_mod
 from modules.authentication import usb_authentication as usb_mod
-from modules.cryptography.key_management import derive_master_key
-from modules.cryptography import session_keys
+from modules.cryptography import pending_keys, session_keys
 from modules.blockchain.blockchain import add_block, content_hash
 
 auth_bp = Blueprint("auth", __name__)
@@ -238,72 +238,172 @@ def setup():
     return render_template("setup.html")
 
 
-# ── Login ─────────────────────────────────────────────────────────────────────
+# ── Login dua tahap (butir 2.4) ──────────────────────────────────────────────
+
+def _isian_masuk() -> dict:
+    """Terima badan JSON maupun form; kembalikan dict isian permintaan."""
+    data = request.get_json(silent=True)
+    if isinstance(data, dict):
+        return data
+    return request.form.to_dict()
+
+
+def _galat_masuk(pesan: str, status: int = 401):
+    """Balasan galat tahap login sebagai JSON."""
+    return jsonify({"success": False, "error": pesan}), status
+
+
+def _hentikan_tahap_masuk() -> None:
+    """Buang tahap yang tertunda (permintaan ulang lewat GET atau kedaluwarsa)."""
+    token = session.pop("login_pending", None)
+    session.pop("login_stage", None)
+    if token:
+        pending_keys.buang(token)
+
+
+def _finalisasi_masuk(user: dict, dek: bytes) -> None:
+    """
+    Setelah kedua tahap lulus: session.clear(), session id baru, isi
+    user_id, dan pindahkan DEK ke penyimpanan kunci aktif.
+    """
+    session.clear()
+    sid = session_keys.create_session_id()
+    session["user_id"]   = user["id"]
+    session["username"]  = user["username"]
+    session.permanent    = True
+    session["session_id"] = sid
+    session_keys.put(sid, dek)
+
+    from database.db import get_db as _get_db
+    with _get_db() as db:
+        db.execute(
+            "UPDATE users SET last_login = datetime('now') WHERE id = ?",
+            (user["id"],),
+        )
+        db.commit()
+    add_block(user["id"], "LOGIN", "auth:login",
+              content_hash(user["username"].encode("utf-8")))
+    flash(MSG.LOGIN_SUCCESS.format(username=user["username"]), "success")
+
+
+@auth_bp.route("/api/dongle/status", methods=["GET"])
+def dongle_status():
+    """Status dongle pada mesin ini saja: "terdeteksi atau tidak", tanpa username."""
+    terdeteksi = any(
+        os.path.isdir(d["mountpoint"]) for d in usb_mod.daftar_drive()
+    )
+    return jsonify({"detected": terdeteksi})
+
 
 @auth_bp.route("/login", methods=["GET", "POST"])
 @auth_bp.route("/", methods=["GET", "POST"])
 def login():
     if "user_id" in session:
+        if request.method == "POST":
+            # Sudah masuk: tahap 1 tidak boleh diulang.
+            return _galat_masuk(MSG.LOGIN_STAGE_ORDER, 400)
         return redirect(url_for("dashboard.index"))
 
-    if request.method == "POST":
-        username = request.form.get("username", "").strip()
-        password = request.form.get("password", "")
+    if request.method == "GET":
+        # Permintaan ulang halaman membatalkan tahap yang tertunda sehingga
+        # pengguna dapat memulai dari awal dengan akun berbeda.
+        _hentikan_tahap_masuk()
+        return render_template("login.html")
 
-        # ── Optional fingerprint probe ────────────────────────────────────
-        fp_path = None
-        fp_file = request.files.get("fingerprint_image")
-        if fp_file and fp_file.filename:
-            fname = secure_filename(fp_file.filename)
-            ext = os.path.splitext(fname)[1].lower()
-            tmp_dir = config.TEMPORARY_FILES_DIR
-            os.makedirs(tmp_dir, exist_ok=True)
-            fp_path = os.path.join(tmp_dir, f"fp_login_{fname}")
-            fp_file.save(fp_path)
+    # ── Tahap 1: password dan dongle dalam satu permintaan ───────────────────
+    if session.get("login_stage") == 1:
+        return _galat_masuk(MSG.LOGIN_STAGE_ORDER, 400)
 
-        result = authenticate_user(
-            username, password,
-            fingerprint_path=fp_path,
+    isian = _isian_masuk()
+    username = str(isian.get("username", "")).strip()
+    password = str(isian.pop("password", ""))
+
+    hasil = verifikasi_tahap_satu(username, password)
+    del password          # referensi password dibuang sebelum melangkah
+    isian.clear()
+
+    if not hasil["success"]:
+        # LOGIN_FAIL dicatat (dengan batas laju di modul rantai) agar
+        # percobaan gagal ikut teraudit tanpa membajak rantai.
+        from database.db import get_db as _get_db
+        with _get_db() as db:
+            pemilik = db.execute(
+                "SELECT id FROM users WHERE username=?", (username,)
+            ).fetchone()
+        add_block(
+            pemilik["id"] if pemilik else None,
+            "LOGIN_FAIL", "auth:login",
+            content_hash(username.encode("utf-8")),
+        )
+        return _galat_masuk(
+            MSG.LOGIN_FAILED.format(error=hasil["error"])
         )
 
-        # Clean up temp fingerprint
-        if fp_path and os.path.exists(fp_path):
-            os.remove(fp_path)
+    user = hasil.pop("user")
+    dek = hasil.pop("dek")
+    token_pending = pending_keys.letakkan(user["id"], dek)
+    del dek
 
-        if not result["success"]:
-            # LOGIN_FAIL dicatat (dengan batas laju di modul rantai) agar
-            # percobaan gagal ikut teraudit tanpa membajak rantai.
-            from database.db import get_db as _get_db
-            with _get_db() as db:
-                pemilik = db.execute(
-                    "SELECT id FROM users WHERE username=?", (username,)
-                ).fetchone()
-            add_block(
-                pemilik["id"] if pemilik else None,
-                "LOGIN_FAIL", "auth:login",
-                content_hash(username.encode("utf-8")),
-            )
-            flash(MSG.LOGIN_FAILED.format(error=result["error"]), "danger")
-            return render_template("login.html")
+    # Cookie hanya berisi token acak penunjuk DEK yang tertahan di server.
+    # Token CSRF dipertahankan agar tahap 2 tetap boleh memakai halaman yang
+    # sama tanpa dimuat ulang.
+    csrf_lama = {k: v for k, v in session.items() if "csrf" in k}
+    session.clear()
+    session.update(csrf_lama)
+    session["login_stage"] = 1
+    session["login_pending"] = token_pending
 
-        user = result["user"]
-        # Cookie hanya memuat session id acak, user_id, dan username;
-        # DEK disimpan sementara di penyimpanan kunci sisi server.
-        session_keys.drop(session.get("session_id", ""))
-        session.clear()
-        session["user_id"]   = user["id"]
-        session["username"]  = user["username"]
-        session.permanent    = True
-        sid = session_keys.create_session_id()
-        session["session_id"] = sid
-        session_keys.put(sid, derive_master_key(password, user["salt"]))
+    return jsonify({
+        "success": True,
+        "pending": token_pending,
+        "metode": biometrics.metode_untuk_pengguna(user["id"]),
+        "kebijakan": config.BIOMETRIC_POLICY,
+    })
 
-        add_block(user["id"], "LOGIN", "auth:login",
-                  content_hash(username.encode("utf-8")))
-        flash(MSG.LOGIN_SUCCESS.format(username=user['username']), "success")
-        return redirect(url_for("dashboard.index"))
 
-    return render_template("login.html")
+@auth_bp.route("/login/biometric", methods=["POST"])
+def login_biometric():
+    """
+    Tahap 2: verifikasi seluruh metode biometrik terdaftar sesuai
+    BIOMETRIC_POLICY, lalu pindahkan DEK ke penyimpanan kunci aktif.
+    """
+    if "user_id" in session:
+        return _galat_masuk(MSG.LOGIN_STAGE_ORDER, 400)
+
+    isian = _isian_masuk()
+    token = str(isian.get("pending", ""))
+    if (session.get("login_stage") != 1 or not token
+            or session.get("login_pending") != token):
+        return _galat_masuk(MSG.LOGIN_STAGE_ORDER, 400)
+
+    entri = pending_keys.periksa(token)
+    if entri is None:
+        _hentikan_tahap_masuk()
+        return _galat_masuk(MSG.LOGIN_PENDING_EXPIRED)
+
+    user_id, _dek = entri
+    if not biometrics.metode_biometrik_terdaftar(user_id):
+        return _galat_masuk(MSG.LOGIN_BIOMETRIC_NONE)
+
+    hasil = biometrics.verifikasi_tahap_biometrik(
+        user_id, isian.get("bukti")
+    )
+    if not biometrics.kebijakan_dipenuhi(hasil):
+        return _galat_masuk(MSG.LOGIN_BIOMETRIC_FAILED)
+
+    entri = pending_keys.ambil(token)
+    if entri is None:
+        return _galat_masuk(MSG.LOGIN_STAGE_ORDER, 400)
+    user_id, dek = entri
+
+    user = get_user_by_id(user_id)
+    if user is None:
+        del dek
+        return _galat_masuk(MSG.LOGIN_STAGE_ORDER, 400)
+
+    _finalisasi_masuk(user, dek)
+    del dek
+    return jsonify({"success": True, "redirect": url_for("dashboard.index")})
 
 
 # ── Logout ────────────────────────────────────────────────────────────────────
