@@ -363,7 +363,7 @@ class TestKebijakanBiometrik:
 # ── Registry metode biometrik ────────────────────────────────────────────────
 
 class TestRegistryMetode:
-    def test_metode_biometrik_terdaftar_hanya_untuk_pemiliknya(self):
+    def test_metode_biometrik_terdaftar_hanya_untuk_pemiliknya(self, app):
         biometrics.tambah_metode(
             "milik_42", "Milik 42",
             terdaftar=lambda user_id: user_id == 42,
@@ -375,7 +375,7 @@ class TestRegistryMetode:
         finally:
             biometrics.hapus_metode("milik_42")
 
-    def test_metode_untuk_pengguna_membawa_label(self):
+    def test_metode_untuk_pengguna_membawa_label(self, app):
         biometrics.tambah_metode(
             "berlabel", "Metode Berlabel",
             terdaftar=lambda user_id: True,
@@ -388,7 +388,7 @@ class TestRegistryMetode:
         finally:
             biometrics.hapus_metode("berlabel")
 
-    def test_bukti_hilang_atau_verifikasi_gagal_jadi_false(self):
+    def test_bukti_hilang_atau_verifikasi_gagal_jadi_false(self, app):
         biometrics.tambah_metode(
             "pecah", "Metode Pecah",
             terdaftar=lambda user_id: True,

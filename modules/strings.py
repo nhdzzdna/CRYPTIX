@@ -134,3 +134,8 @@ class MSG:
     LOGIN_PENDING_EXPIRED = "Proses masuk kedaluwarsa. Silakan mulai kembali dari awal."
     LOGIN_BIOMETRIC_NONE  = "Belum ada metode biometrik terdaftar untuk akun ini. Selesaikan penyiapan keamanan terlebih dahulu."
     LOGIN_BIOMETRIC_FAILED = "Verifikasi biometrik gagal. Coba sekali lagi."
+    WEBAUTHN_REGISTER_FAILED = "Pendaftaran WebAuthn gagal. Gunakan perangkat platform lalu coba lagi."
+    WEBAUTHN_DUPLICATE    = "Kredensial WebAuthn tersebut sudah terdaftar."
+    WEBAUTHN_CHALLENGE_EXPIRED = "Tantangan WebAuthn kedaluwarsa. Muat ulang halaman lalu coba lagi."
+    WEBAUTHN_NO_CREDENTIAL = "Kredensial WebAuthn tidak ditemukan untuk akun ini."
+    WEBAUTHN_FAILED       = "Verifikasi WebAuthn gagal. Coba sekali lagi."

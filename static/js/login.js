@@ -62,6 +62,8 @@ document.addEventListener("DOMContentLoaded", function () {
           return;
         }
         tahap = data;
+        // Tantangan WebAuthn tahap 2 (ada bila metode ini terdaftar).
+        window.CryptixBiometrik.opsiMasuk = data.webauthn_options || null;
         form.hidden = true;
         stage2.hidden = false;
         daftarMetode.innerHTML = "";

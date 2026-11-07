@@ -94,3 +94,13 @@ CREATE TABLE IF NOT EXISTS blockchain_log (
     block_hash      TEXT    NOT NULL,
     signature       TEXT    NOT NULL    -- HMAC-SHA256(kunci rantai, block_hash)
 );
+
+-- === Sesi F: kredensial WebAuthn (butir 2.5) ===--------------------------------------------------------
+CREATE TABLE IF NOT EXISTS webauthn_credentials (
+    user_id       INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    credential_id TEXT    NOT NULL UNIQUE,
+    public_key    TEXT    NOT NULL,
+    sign_count    INTEGER NOT NULL DEFAULT 0,
+    nama          TEXT    NOT NULL DEFAULT '',
+    dibuat        TEXT    NOT NULL DEFAULT (datetime('now'))
+);

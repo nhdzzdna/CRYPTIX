@@ -261,6 +261,8 @@ def update_face_model_path(user_id: int, path: str) -> None:
         db.commit()
 
 
+# DEPRECATED (T8/T11): pemanggilnya (unggah citra sidik jari) dihapus pada
+# butir 2.5; status biometrik kini dicatat pada tabel webauthn_credentials.
 def update_fingerprint_path(user_id: int, path: str) -> None:
     with get_db() as db:
         db.execute("UPDATE users SET fingerprint_path=? WHERE id=?", (path, user_id))

@@ -24,8 +24,11 @@ def _kunci_sesi_bersih():
 
 @pytest.fixture(autouse=True)
 def _pending_sesi_bersih():
-    """Buang DEK tahap 1 yang tertahan antar test."""
+    """Buang DEK tahap 1 dan tantangan WebAuthn yang tertahan antar test."""
     from modules.cryptography import pending_keys
+    from modules.authentication import webauthn
     pending_keys.kosongkan()
+    webauthn.kosongkan_tantangan()
     yield
     pending_keys.kosongkan()
+    webauthn.kosongkan_tantangan()

@@ -13,19 +13,19 @@ from flask import (
     Blueprint, render_template, request, redirect, url_for,
     session, flash, jsonify, make_response
 )
-from werkzeug.utils import secure_filename
 
 import config
 from modules.strings import MSG
 from modules.authentication.auth import (
     create_account, validate_registration,
     verifikasi_tahap_satu, get_user_by_id,
-    store_usb_token, update_face_model_path, update_fingerprint_path,
+    store_usb_token, update_face_model_path,
 )
 from modules.authentication import biometrics
 from modules.authentication import face_recognition as face_mod
 from modules.authentication import fingerprint as fp_mod
 from modules.authentication import usb_authentication as usb_mod
+from modules.authentication import webauthn
 from modules.cryptography import pending_keys, session_keys
 from modules.blockchain.blockchain import add_block, content_hash
 
@@ -160,7 +160,10 @@ def _biometrik_terdaftar(user_id: int) -> bool:
     return face_mod.has_face_model(user_id) or fp_mod.has_fingerprint(user_id)
 
 
-_IZIN_PENYIAPAN = frozenset({"static", "auth.setup", "auth.register_face"})
+_IZIN_PENYIAPAN = frozenset({
+    "static", "auth.setup", "auth.register_face",
+    "auth.webauthn_register_options", "auth.webauthn_register_complete",
+})
 
 
 @auth_bp.before_app_request
@@ -191,11 +194,11 @@ def _gerbang_dongle_sesi():
     return redirect(url_for("auth.login"))
 
 
-@auth_bp.route("/setup", methods=["GET", "POST"])
+@auth_bp.route("/setup", methods=["GET"])
 def setup():
     """
     Wizard penyiapan keamanan: pengguna wajib mendaftarkan minimal satu
-    biometrik sebelum halaman lain dapat diakses.
+    biometrik (wajah atau WebAuthn) sebelum halaman lain dapat diakses.
     """
     user_id = session.get("setup_user_id") or session.get("user_id")
     if user_id is None:
@@ -208,34 +211,65 @@ def setup():
             flash(MSG.SETUP_COMPLETE, "success")
         return redirect(url_for("auth.login"))
 
-    if request.method == "POST":
-        fp_file = request.files.get("fingerprint_image")
-        if not fp_file or not fp_file.filename:
-            flash(MSG.SETUP_FP_REQUIRED, "danger")
-            return render_template("setup.html")
-        ext = os.path.splitext(secure_filename(fp_file.filename))[1].lower()
-        if ext not in {".png", ".jpg", ".jpeg", ".bmp"}:
-            flash(MSG.FINGERPRINT_INVALID_FORMAT, "warning")
-            return render_template("setup.html")
-        os.makedirs(config.TEMPORARY_FILES_DIR, exist_ok=True)
-        tmp_path = os.path.join(config.TEMPORARY_FILES_DIR, f"fp_setup_{user_id}{ext}")
-        fp_file.save(tmp_path)
-        try:
-            terdaftar = fp_mod.register_fingerprint(user_id, tmp_path)
-        finally:
-            if os.path.exists(tmp_path):
-                os.remove(tmp_path)
-        if not terdaftar:
-            flash(MSG.SETUP_FP_FAILED, "danger")
-            return render_template("setup.html")
-        update_fingerprint_path(user_id, fp_mod._fp_path(user_id))
-        add_block(user_id, "BIOMETRIC_ENROLL", "auth:fingerprint",
-                  content_hash(str(user_id).encode("utf-8")))
-        session.pop("setup_user_id", None)
-        flash(MSG.SETUP_COMPLETE, "success")
-        return redirect(url_for("auth.login"))
-
     return render_template("setup.html")
+
+
+# ── WebAuthn (butir 2.5) ─────────────────────────────────────────────────────
+
+def _pengguna_webauthn() -> int | None:
+    """user_id untuk pendaftaran WebAuthn: sesi login atau sesi penyiapan."""
+    return session.get("user_id") or session.get("setup_user_id")
+
+
+@auth_bp.route("/api/webauthn/register/options", methods=["POST"])
+def webauthn_register_options():
+    """Opsi navigator.credentials.create() untuk pendaftaran kredensial."""
+    user_id = _pengguna_webauthn()
+    if user_id is None:
+        return jsonify({"success": False, "error": MSG.LOGIN_REQUIRED}), 401
+    user = get_user_by_id(user_id)
+    if user is None:
+        return jsonify({"success": False, "error": MSG.LOGIN_REQUIRED}), 401
+    try:
+        opsi = webauthn.buat_opsi_pendaftaran(user["id"], user["username"])
+    except Exception:
+        return jsonify({
+            "success": False, "error": MSG.WEBAUTHN_REGISTER_FAILED,
+        }), 500
+    return jsonify({"success": True, "options": opsi})
+
+
+@auth_bp.route("/api/webauthn/register/complete", methods=["POST"])
+def webauthn_register_complete():
+    """Verifikasi respons navigator.credentials.create() lalu simpan."""
+    user_id = _pengguna_webauthn()
+    if user_id is None:
+        return jsonify({"success": False, "error": MSG.LOGIN_REQUIRED}), 401
+
+    data = request.get_json(silent=True) or {}
+    respons = data.get("response")
+    if not isinstance(respons, dict):
+        return jsonify({
+            "success": False, "error": MSG.WEBAUTHN_REGISTER_FAILED,
+        })
+
+    hasil = webauthn.daftarkan_kredensial(
+        user_id, respons, str(data.get("nama", ""))
+    )
+    if not hasil["success"]:
+        return jsonify({"success": False, "error": hasil["error"]})
+
+    add_block(user_id, "BIOMETRIC_ENROLL", "auth:webauthn",
+              content_hash(str(user_id).encode("utf-8")))
+    selesai_penyiapan = (
+        session.get("setup_user_id") == user_id
+        and session.pop("setup_user_id", None) is not None
+    )
+    return jsonify({
+        "success": True,
+        "credential_id": hasil["credential_id"],
+        "setup_done": selesai_penyiapan,
+    })
 
 
 # ── Login dua tahap (butir 2.4) ──────────────────────────────────────────────
@@ -353,12 +387,20 @@ def login():
     session["login_stage"] = 1
     session["login_pending"] = token_pending
 
-    return jsonify({
+    metode = biometrics.metode_untuk_pengguna(user["id"])
+    balasan = {
         "success": True,
         "pending": token_pending,
-        "metode": biometrics.metode_untuk_pengguna(user["id"]),
+        "metode": metode,
         "kebijakan": config.BIOMETRIC_POLICY,
-    })
+    }
+    # Tantangan WebAuthn tahap 2 disertakan bila metode ini terdaftar.
+    if any(m["nama"] == "webauthn" for m in metode):
+        try:
+            balasan["webauthn_options"] = webauthn.buat_opsi_login(user["id"])
+        except Exception:
+            balasan["webauthn_options"] = None
+    return jsonify(balasan)
 
 
 @auth_bp.route("/login/biometric", methods=["POST"])
