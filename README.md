@@ -66,27 +66,6 @@ Buka browser di `http://127.0.0.1:5000`.
 
 ---
 
-## Tabel Pemetaan Ketentuan Dosen → Implementasi
-
-| No | Ketentuan Dosen | Implementasi |
-|----|----------------|-------------|
-| 1a | Face Recognition (OpenCV LBPH) | `modules/authentication/face_recognition.py` |
-| 1b | Fingerprint (ORB matching simulasi) | `modules/authentication/fingerprint.py` |
-| 2  | Password PBKDF2-HMAC-SHA256, 600 000 iterasi | `modules/authentication/password_hash.py` |
-| 3  | USB Token (HMAC + serial number) | `modules/authentication/usb_authentication.py` |
-| 4  | Super Encryption (Vigenere→Playfair→ChaCha20→Blowfish) | `modules/cryptography/super_encryption.py` |
-| 5  | Crypto Tools (uji tiap cipher) | `routes/crypto_routes.py` + `templates/crypto_tools.html` |
-| 6  | Enkripsi file AES-256-GCM | `modules/cryptography/file_encryption.py` |
-| 7  | Enkripsi database AES-256-GCM (HKDF) | `modules/cryptography/database_encryption.py` |
-| 8  | Steganografi LSB pada PNG | `modules/steganography/lsb.py` |
-| 9  | Blockchain hash chain di SQLite | `modules/blockchain/blockchain.py` |
-| 10 | Winamp integration + HTML5 fallback | `modules/media/winamp_integration.py` |
-| 11 | Key management (PBKDF2, session-only) | `modules/cryptography/key_management.py` |
-| 12 | Semua menu & halaman | `routes/` + `templates/` |
-| 13 | Security Assistant (rule-based) | `modules/assistant/security_agent.py` |
-
----
-
 ## Security Assistant
 
 CRYPTIX dilengkapi **Security Assistant** — sebuah agen berbasis aturan (*rule-based*) yang tampil sebagai antarmuka chat di sidebar.
