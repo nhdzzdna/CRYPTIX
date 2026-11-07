@@ -17,8 +17,11 @@ import config
 from app import create_app
 from database.db import get_db, init_db
 from modules.authentication import reauth
-from modules.blockchain.blockchain import account_hash
+from modules.blockchain.blockchain import account_hash, content_hash
 from modules.cryptography import session_keys
+from modules.cryptography.database_encryption import decrypt_record
+from modules.cryptography.key_management import purpose_key
+from modules.cryptography.super_encryption import super_decrypt
 
 MASTER_HEX = hashlib.sha256(b"kunci-sesi-uji").hexdigest()
 KATA_SANDI = "kata-sandi-uji-tersimpan"
@@ -105,14 +108,14 @@ class TestSecureNotes:
         assert JUDUL not in row["title_enc"]
         assert KATA_SANDI not in row["content_enc"]
 
-    def test_daftar_menampilkan_isi_setelah_dekripsi(self, client):
+    def test_daftar_hanya_menampilkan_judul(self, client):
         token = _csrf(client, "/secure-notes")
         client.post("/secure-notes/add", data={
             "csrf_token": token, "title": "Catatan Terlihat", "content": "Isi terlihat",
         })
         body = client.get("/secure-notes").get_data(as_text=True)
         assert "Catatan Terlihat" in body
-        assert "Isi terlihat" in body
+        assert "Isi terlihat" not in body
 
     def test_catatan_dipindah_ke_pengguna_lain_tidak_terbaca(self, client):
         token = _csrf(client, "/secure-notes")
@@ -482,3 +485,181 @@ class TestAccountVaultSesiI:
         )
         assert resp.status_code == 404
         assert _baris_kredensial(baris["id"]) is not None
+
+
+def _tambah_catatan(client, judul="Judul Catatan Uji",
+                    isi="Isi catatan sangat rahasia") -> dict:
+    token = _csrf(client, "/secure-notes")
+    resp = client.post("/secure-notes/add", data={
+        "csrf_token": token, "title": judul, "content": isi,
+    })
+    assert resp.status_code == 302
+    with get_db() as db:
+        row = db.execute(
+            "SELECT * FROM secure_notes WHERE user_id=? ORDER BY id DESC LIMIT 1",
+            (1,),
+        ).fetchone()
+    return dict(row)
+
+
+def _baris_catatan(note_id: int) -> dict | None:
+    with get_db() as db:
+        row = db.execute(
+            "SELECT * FROM secure_notes WHERE id=?", (note_id,)
+        ).fetchone()
+    return dict(row) if row else None
+
+
+class TestSecureNotesSesiI:
+    def test_isi_terenkripsi_ganda(self, client):
+        isi = "Isi ganda yang sangat rahasia"
+        baris = _tambah_catatan(client, isi=isi)
+        assert baris["content_enc"].startswith("v1:")
+        assert isi not in baris["content_enc"]
+
+        dek = bytes.fromhex(MASTER_HEX)
+        lapisan_field = decrypt_record(
+            {"content_enc": baris["content_enc"]},
+            purpose_key(dek, "database"), 1, "secure_notes",
+        )["content_enc"]
+        assert lapisan_field.startswith("CXSE2.")
+        assert isi not in lapisan_field
+        assert super_decrypt(lapisan_field, master_key=dek) == isi
+
+    def test_open_tanpa_grant_ditolak(self, client):
+        baris = _tambah_catatan(client)
+        token = _csrf(client, "/secure-notes")
+        resp = client.post(
+            f"/secure-notes/open/{baris['id']}",
+            headers={"X-CSRFToken": token},
+        )
+        assert resp.status_code == 401
+        assert resp.get_json()["success"] is False
+        assert resp.get_json()["reason"] == "missing"
+
+    def test_open_dengan_grant_mengembalikan_isi(self, client):
+        isi = "Isi yang hanya terbuka dengan grant"
+        baris = _tambah_catatan(client, isi=isi)
+        grant = _token_grant(client, "note.open", baris["id"])
+        token = _csrf(client, "/secure-notes")
+        resp = client.post(
+            f"/secure-notes/open/{baris['id']}",
+            headers={"X-CSRFToken": token, "X-Reauth-Grant": grant},
+        )
+        assert resp.status_code == 200
+        data = resp.get_json()
+        assert data["success"] is True
+        assert data["content"] == isi
+
+    def test_open_scope_salah_ditolak(self, client):
+        baris = _tambah_catatan(client)
+        grant = _token_grant(client, "note.edit", baris["id"])
+        token = _csrf(client, "/secure-notes")
+        resp = client.post(
+            f"/secure-notes/open/{baris['id']}",
+            headers={"X-CSRFToken": token, "X-Reauth-Grant": grant},
+        )
+        assert resp.status_code == 403
+        assert resp.get_json()["reason"] == "scope"
+
+    def test_open_idor_pengguna_lain(self, app, client):
+        baris = _tambah_catatan(client)
+        lain = _client_pengguna(app, 2, "pengujingdua")
+        grant = _token_grant(lain, "note.open", baris["id"])
+        token = _csrf(lain, "/secure-notes")
+        resp = lain.post(
+            f"/secure-notes/open/{baris['id']}",
+            headers={"X-CSRFToken": token, "X-Reauth-Grant": grant},
+        )
+        assert resp.status_code == 404
+
+    def test_edit_memerlukan_grant_dan_mencatat_modify(self, client):
+        baris = _tambah_catatan(client)
+        token = _csrf(client, "/secure-notes")
+        tanpa_grant = client.post(
+            f"/secure-notes/edit/{baris['id']}",
+            data={"csrf_token": token, "title": "Baru", "content": "Isi baru"},
+        )
+        assert tanpa_grant.status_code == 401
+        assert _baris_catatan(baris["id"]) == baris
+
+        grant = _token_grant(client, "note.edit", baris["id"])
+        resp = client.post(
+            f"/secure-notes/edit/{baris['id']}",
+            data={
+                "csrf_token": token,
+                "reauth_grant": grant,
+                "title": "Judul Baru",
+                "content": "Isi catatan baru",
+            },
+        )
+        assert resp.status_code == 302
+
+        baru = _baris_catatan(baris["id"])
+        assert baru["title_enc"] != baris["title_enc"]
+        assert baru["content_enc"] != baris["content_enc"]
+        assert "Isi catatan baru" not in baru["content_enc"]
+        with get_db() as db:
+            blok = db.execute(
+                "SELECT * FROM blockchain_log WHERE action='MODIFY' "
+                "AND asset_ref=?",
+                (f"note:{baris['id']}",),
+            ).fetchall()
+        assert len(blok) == 1
+        assert blok[0]["asset_hash"] == content_hash(
+            baru["content_enc"].encode("utf-8")
+        )
+
+    def test_edit_idor_pengguna_lain(self, app, client):
+        baris = _tambah_catatan(client)
+        lain = _client_pengguna(app, 2, "pengujingdua")
+        grant = _token_grant(lain, "note.edit", baris["id"])
+        token = _csrf(lain, "/secure-notes")
+        resp = lain.post(
+            f"/secure-notes/edit/{baris['id']}",
+            data={
+                "csrf_token": token,
+                "reauth_grant": grant,
+                "title": "Dibajak",
+                "content": "Isi bajakan",
+            },
+        )
+        assert resp.status_code == 404
+        assert _baris_catatan(baris["id"]) == baris
+
+    def test_hapus_memerlukan_item_delete(self, client):
+        baris = _tambah_catatan(client)
+        token = _csrf(client, "/secure-notes")
+        tanpa_grant = client.post(
+            f"/secure-notes/delete/{baris['id']}",
+            data={"csrf_token": token},
+        )
+        assert tanpa_grant.status_code == 401
+        assert _baris_catatan(baris["id"]) is not None
+
+        grant = _token_grant(client, "item.delete", baris["id"])
+        resp = client.post(
+            f"/secure-notes/delete/{baris['id']}",
+            data={"csrf_token": token, "reauth_grant": grant},
+        )
+        assert resp.status_code == 302
+        assert _baris_catatan(baris["id"]) is None
+        with get_db() as db:
+            blok = db.execute(
+                "SELECT * FROM blockchain_log WHERE action='DELETE' "
+                "AND asset_ref=?",
+                (f"note:{baris['id']}",),
+            ).fetchall()
+        assert len(blok) == 1
+
+    def test_hapus_idor_pengguna_lain(self, app, client):
+        baris = _tambah_catatan(client)
+        lain = _client_pengguna(app, 2, "pengujingdua")
+        grant = _token_grant(lain, "item.delete", baris["id"])
+        token = _csrf(lain, "/secure-notes")
+        resp = lain.post(
+            f"/secure-notes/delete/{baris['id']}",
+            data={"csrf_token": token, "reauth_grant": grant},
+        )
+        assert resp.status_code == 404
+        assert _baris_catatan(baris["id"]) is not None
