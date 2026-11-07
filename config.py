@@ -64,7 +64,7 @@ ALLOWED_EXTENSIONS: set = {
     "txt", "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx",
     "png", "jpg", "jpeg", "gif", "bmp", "webp",
     "mp3", "wav", "flac", "ogg", "m4a",
-    "mp4", "avi", "mkv", "mov",
+    "mp4", "webm", "avi", "mkv", "mov",
     "zip", "rar", "7z",
 }
 

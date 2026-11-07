@@ -103,6 +103,10 @@ def create_app() -> Flask:
     ]:
         os.makedirs(d, exist_ok=True)
 
+    # ── Sesi J1: bersihkan sisa berkas sementara Winamp saat startup ──────────
+    from modules.media.winamp_integration import cleanup_stale_temp_files
+    cleanup_stale_temp_files()
+
     # ── Register blueprints ───────────────────────────────────────────────────
     from routes.auth_routes      import auth_bp
     from routes.dashboard_routes import dashboard_bp
@@ -123,6 +127,10 @@ def create_app() -> Flask:
         assistant_bp,
     ]:
         app.register_blueprint(bp)
+
+    # ── Sesi H: blueprint autentikasi ulang (step-up) ─────────────────────────
+    from routes.reauth_routes import reauth_bp
+    app.register_blueprint(reauth_bp)
 
     # ── Jinja2 custom filters ─────────────────────────────────────────────
     import markupsafe
