@@ -10,7 +10,7 @@
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
       <div class="form-row">
         <input type="file" name="file" class="form-control"
-               accept=".mp3,.wav,.flac,.ogg,.m4a,.mp4,.avi,.mkv,.mov" required />
+               accept=".mp3,.wav,.flac,.ogg,.m4a,.mp4,.webm,.avi,.mkv,.mov" required />
         <button type="submit" class="btn btn-primary">🔒 Enkripsi & Upload</button>
       </div>
     </form>
@@ -18,9 +18,12 @@
 </div>
 
 {% if winamp_available %}
-<div class="alert alert-info">🎵 Winamp terdeteksi — Anda dapat memutar audio langsung di Winamp.</div>
+<div class="alert alert-info">
+  🎵 Winamp terdeteksi — audio dapat diputar langsung di Winamp.<br />
+  <small>{{ temp_warning }}</small>
+</div>
 {% else %}
-<div class="alert alert-warning">⚠ Winamp tidak ditemukan. Fallback: pemutar audio HTML5.</div>
+<div class="alert alert-warning">⚠ Winamp tidak ditemukan. Pemutaran audio/video memakai pemutar HTML5.</div>
 {% endif %}
 
 <div class="card">
@@ -29,7 +32,7 @@
     {% if files %}
     <table class="table">
       <thead>
-        <tr><th>Nama</th><th>Tipe</th><th>Ukuran</th><th>Upload</th><th>Aksi</th></tr>
+        <tr><th>Nama</th><th>Tipe</th><th>Ukuran</th><th>Upload</th><th>Pemutar</th><th>Aksi</th></tr>
       </thead>
       <tbody>
         {% for f in files %}
@@ -39,13 +42,19 @@
           <td>{{ "%.1f"|format(f.file_size / 1024) }} KB</td>
           <td>{{ f.uploaded_at[:16] }}</td>
           <td>
-            <!-- HTML5 player form -->
-            <form method="POST" action="{{ url_for('media.play', file_id=f.id) }}" style="display:inline">
-              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-              <input type="hidden" name="player" value="html5" />
-              <button type="submit" class="btn btn-sm btn-primary">▶ Play</button>
-            </form>
-            {% if winamp_available %}
+            {% if f.playable and f.file_type == 'audio' %}
+            <audio controls preload="none" src="{{ url_for('media.stream', file_id=f.id) }}"></audio>
+            {% elif f.playable and f.file_type == 'video' %}
+            <video controls preload="none" width="240" src="{{ url_for('media.stream', file_id=f.id) }}"></video>
+            {% else %}
+            <span class="text-muted">{{ download_only_note }}</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if f.playable and f.file_type == 'audio' %}
+            <small class="text-muted d-block">Codec harus didukung browser.</small>
+            {% endif %}
+            {% if winamp_available and f.file_type == 'audio' %}
             <form method="POST" action="{{ url_for('media.play', file_id=f.id) }}" style="display:inline">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
               <input type="hidden" name="player" value="winamp" />
