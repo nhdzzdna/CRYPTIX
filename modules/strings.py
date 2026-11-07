@@ -131,6 +131,17 @@ class MSG:
     # ── Assistant ────────────────────────────────────────────────────────────
     ASSISTANT_EMPTY_MESSAGE  = "Pesan tidak boleh kosong."
 
+    # ── Sesi H: autentikasi ulang / step-up ───────────────────────────────────
+    REAUTH_REQUIRED           = "Autentikasi ulang diperlukan untuk melanjutkan."
+    REAUTH_INVALID            = "Grant autentikasi ulang tidak valid atau sudah kedaluwarsa."
+    REAUTH_SESSION_MISMATCH   = "Grant autentikasi ulang ini milik sesi lain."
+    REAUTH_SCOPE_MISMATCH     = "Grant tidak berlaku untuk tindakan ini."
+    REAUTH_RESOURCE_MISMATCH  = "Grant tidak berlaku untuk sumber daya ini."
+    REAUTH_METHOD_UNSUPPORTED = "Metode autentikasi ulang tidak didukung."
+    REAUTH_WEBAUTHN_PENDING   = "WebAuthn belum tersedia pada versi ini."
+    REAUTH_PASSWORD_REQUIRED  = "Kata sandi wajib diisi."
+    REAUTH_FAILED             = "Kata sandi tidak valid."
+    REAUTH_SCOPE_UNKNOWN      = "Scope autentikasi ulang tidak dikenal."
     # ── Sesi J1: Media Vault dan Steganography ────────────────────────────────
     MEDIA_STREAM_UNSUPPORTED = "Format ini hanya tersedia untuk unduhan dan tidak diputar di browser."
     MEDIA_DOWNLOAD_ONLY      = "Hanya unduh — format ini mungkin tidak dapat diputar di browser."
