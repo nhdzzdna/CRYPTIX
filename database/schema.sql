@@ -9,11 +9,15 @@ CREATE TABLE IF NOT EXISTS users (
     id              INTEGER PRIMARY KEY AUTOINCREMENT,
     username        TEXT    NOT NULL UNIQUE,
     email           TEXT    NOT NULL UNIQUE,
-    password_hash   TEXT    NOT NULL,   -- PBKDF2-HMAC-SHA256 hex
-    salt            TEXT    NOT NULL,   -- hex-encoded random salt
+    password_hash   TEXT    NOT NULL,   -- PBKDF2-HMAC-SHA256 hex (autentikasi)
+    salt            TEXT    NOT NULL,   -- salt autentikasi; terpisah dari kek_salt
+    kek_salt        TEXT,               -- salt PBKDF2 pembentuk KEK (butir 1.1)
+    wrapped_dek     TEXT,               -- "v1:<nonce>:<ct>", DEK dibungkus KEK
+    recovery_wrapped_dek TEXT,          -- "v1:<nonce>:<ct>", DEK dibungkus kunci pemulihan
     face_model_path TEXT,               -- path to saved LBPH .yml file
     fingerprint_path TEXT,              -- path to stored fingerprint image
-    usb_token_hmac  TEXT,               -- HMAC of USB token file (hex)
+    usb_token_id    TEXT,               -- id token pada berkas .cryptix_token
+    usb_verifier    TEXT,               -- HMAC-SHA256(rahasia dongle, "cryptix-usb-verifier") hex
     usb_volume_serial TEXT,             -- bound volume serial number
     created_at      TEXT    NOT NULL DEFAULT (datetime('now')),
     last_login      TEXT

@@ -275,7 +275,7 @@ def _read_security_metadata(user_id: int) -> dict:
 
     with get_db() as db:
         user_row = db.execute(
-            "SELECT face_model_path, fingerprint_path, usb_token_hmac FROM users WHERE id=?",
+            "SELECT face_model_path, fingerprint_path, usb_token_id FROM users WHERE id=?",
             (user_id,),
         ).fetchone()
 
@@ -302,7 +302,7 @@ def _read_security_metadata(user_id: int) -> dict:
         "tampered_blocks": tampered,
         "has_face":        bool(user_row["face_model_path"]) if user_row else False,
         "has_fingerprint": bool(user_row["fingerprint_path"]) if user_row else False,
-        "has_usb":         bool(user_row["usb_token_hmac"])   if user_row else False,
+        "has_usb":         bool(user_row["usb_token_id"])     if user_row else False,
     }
 
 

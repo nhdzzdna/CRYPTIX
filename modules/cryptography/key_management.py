@@ -256,16 +256,3 @@ def get_file_encryption_key(master_key: bytes) -> bytes:
 def get_db_encryption_key(master_key: bytes) -> bytes:
     """DEPRECATED: gunakan purpose_key(dek, "database"). Kunci field basis data lama."""
     return derive_purpose_key(master_key, config.HKDF_SALT_DB_ENC)
-
-
-def get_stego_key(master_key: bytes) -> bytes:
-    """DEPRECATED: gunakan purpose_key(dek, "stego"). Kunci steganografi lama."""
-    return derive_purpose_key(master_key, config.HKDF_SALT_STEGO)
-
-
-def get_super_enc_subkey(master_key: bytes, cipher_name: str) -> bytes:
-    """DEPRECATED: gunakan purpose_key(dek, <nama>). Sub-kunci Super Encryption lama."""
-    label = config.SUPER_ENC_LABELS.get(cipher_name)
-    if label is None:
-        raise ValueError(f"Unknown Super Encryption cipher: {cipher_name}")
-    return derive_purpose_key(master_key, label)

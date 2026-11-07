@@ -5,6 +5,7 @@ Run with:  python app.py
 """
 
 import os
+import sys
 from datetime import timedelta
 
 from flask import Flask, jsonify, redirect, render_template, request, url_for
@@ -158,6 +159,15 @@ def create_app() -> Flask:
 if __name__ == "__main__":
     # Initialise DB (creates tables if they don't exist)
     init_db()
+
+    # Gerbang startup (butir 2.2d): tanpa dongle terdaftar yang terpasang,
+    # aplikasi menolak berjalan bila sudah ada pengguna terdaftar.
+    from modules.authentication import usb_authentication as usb_mod
+    pesan_gerbang = usb_mod.gerbang_startup()
+    if pesan_gerbang:
+        print(pesan_gerbang, file=sys.stderr)
+        _logger.error(pesan_gerbang)
+        raise SystemExit(1)
 
     app = create_app()
     _logger.info("CRYPTIX starting — http://localhost:5000")

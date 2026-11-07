@@ -11,7 +11,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, sessio
 from modules.strings import MSG
 from routes.auth_routes import login_required
 from database.db import get_db
-from modules.authentication.auth import get_user_by_id, update_usb_token
+from modules.authentication.auth import get_user_by_id, store_usb_token
 from modules.authentication.password_hash import hash_password, verify_password
 from modules.authentication import usb_authentication as usb_mod
 from modules.cryptography import session_keys
@@ -64,12 +64,21 @@ def change_password():
 @settings_bp.route("/settings/register-usb", methods=["POST"])
 @login_required
 def register_usb():
-    from flask import current_app
-    result = usb_mod.register_usb_token(current_app.config["SECRET_KEY"])
+    mountpoint = request.form.get("mountpoint", "").strip()
+    if not mountpoint:
+        drives = usb_mod.daftar_drive()
+        mountpoint = drives[0]["mountpoint"] if drives else ""
+    result = usb_mod.register_usb_token(mountpoint)
     if result is None:
         flash(MSG.SETTINGS_USB_NO_DRIVE, "danger")
     else:
-        update_usb_token(session["user_id"], result["hmac_hex"], result["volume_serial"])
+        store_usb_token(
+            session["user_id"],
+            result["token_id"],
+            result["verifier"],
+            result["volume_serial"],
+        )
+        usb_mod.lupakan_cache(session["user_id"])
         add_block(session["user_id"], "DONGLE_REGISTER", "auth:usb",
                   content_hash(str(session["user_id"]).encode("utf-8")))
         flash(MSG.SETTINGS_USB_REGISTERED, "success")

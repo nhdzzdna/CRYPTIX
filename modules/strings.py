@@ -23,6 +23,21 @@ class MSG:
     REGISTER_PASSWORD_MISMATCH = "Kata sandi tidak cocok."
     REGISTER_FAILED         = "Pendaftaran gagal: {error}"
     REGISTER_SUCCESS        = "Akun berhasil dibuat! Silakan masuk."
+    REGISTER_USERNAME_INVALID = "Nama pengguna harus 3–32 karakter dan hanya boleh memuat huruf, angka, garis bawah, atau titik."
+    REGISTER_EMAIL_INVALID  = "Format surel tidak valid."
+    REGISTER_PASSWORD_TOO_SHORT = "Kata sandi minimal 12 karakter."
+    REGISTER_PASSWORD_USERNAME = "Kata sandi tidak boleh memuat nama pengguna."
+    REGISTER_PASSWORD_COMMON = "Kata sandi termasuk daftar kata sandi umum. Gunakan kata sandi lain."
+    REGISTER_PASSWORD_COMPLEX = "Kata sandi harus memuat setidaknya 3 dari 4 jenis karakter: huruf kecil, huruf besar, angka, dan simbol."
+    REGISTER_USB_REQUIRED   = "Pilih dongle yang terpasang untuk mendaftarkan akun."
+    REGISTER_USB_INVALID    = "Dongle terpilih tidak terdeteksi. Colokkan kembali lalu muat ulang halaman."
+    RECOVERY_CHECK_REQUIRED = "Centang konfirmasi bahwa kunci pemulihan sudah disimpan untuk melanjutkan."
+    RECOVERY_ONLY_ONCE      = "Kunci pemulihan hanya ditampilkan satu kali dan tidak dapat dilihat kembali."
+    SETUP_BIOMETRIC_REQUIRED = "Daftarkan setidaknya satu biometrik (wajah atau sidik jari) untuk menyelesaikan penyiapan."
+    SETUP_FP_REQUIRED       = "Pilih berkas citra sidik jari terlebih dahulu."
+    SETUP_FP_FAILED         = "Pendaftaran sidik jari gagal. Gunakan citra PNG/JPG/BMP yang jelas."
+    SETUP_COMPLETE          = "Penyiapan keamanan selesai. Anda dapat mulai menggunakan CRYPTIX."
+
     LOGIN_FAILED            = "{error}"   # error string comes from auth module
     LOGIN_SUCCESS           = "Selamat datang, {username}!"
     LOGOUT_SUCCESS          = "Anda telah keluar dari sistem."
@@ -47,6 +62,10 @@ class MSG:
     FACE_VERIFIED                = None   # returned as JSON boolean; no message
     USB_NO_DRIVE                 = "Tidak ada media penyimpanan lepas yang terdeteksi."
     USB_REGISTERED               = "Token USB berhasil didaftarkan."
+    USB_NOT_ATTACHED             = "Colokkan dongle terdaftar lalu masuk kembali."
+    USB_STARTUP_BLOCKED          = "Aplikasi berhenti karena dongle terdaftar tidak terpasang. Colokkan dongle lalu jalankan ulang aplikasi."
+    USB_STARTUP_UNREGISTERED     = "Aplikasi berhenti karena belum ada dongle terdaftar bagi akun yang ada. Colokkan dongle lalu daftarkan ulang akun, atau reset basis data dengan perintah python -m database.reset_db."
+
 
     # ── Vault (file) ──────────────────────────────────────────────────────────
     VAULT_NO_FILE_SELECTED   = "Tidak ada file yang dipilih."

@@ -16,6 +16,26 @@ _logger = get_logger(__name__)
 
 _SCHEMA_PATH = os.path.join(os.path.dirname(__file__), "schema.sql")
 
+# Kolom users yang dibuat oleh skema baru; basis data lama dilengkapi agar
+# gerbang dongle dan hierarki kunci tidak gagal membaca baris lama.
+_KOLOM_BARU_USERS: tuple[tuple[str, str], ...] = (
+    ("kek_salt", "TEXT"),
+    ("wrapped_dek", "TEXT"),
+    ("recovery_wrapped_dek", "TEXT"),
+    ("usb_token_id", "TEXT"),
+    ("usb_verifier", "TEXT"),
+    ("usb_volume_serial", "TEXT"),
+)
+
+
+def _tambah_kolom_users(conn: sqlite3.Connection) -> None:
+    """Lengkapi tabel users pada basis data yang dibuat sebelum skema ini."""
+    ada = {baris[1] for baris in conn.execute("PRAGMA table_info(users)")}
+    for nama, jenis in _KOLOM_BARU_USERS:
+        if nama not in ada:
+            conn.execute(f"ALTER TABLE users ADD COLUMN {nama} {jenis}")
+            _logger.info("Kolom tabel users ditambahkan: %s", nama)
+
 
 @contextlib.contextmanager
 def get_db():
@@ -44,6 +64,7 @@ def init_db() -> None:
     with get_db() as conn:
         with open(_SCHEMA_PATH, "r", encoding="utf-8") as f:
             conn.executescript(f.read())
+        _tambah_kolom_users(conn)
         # Ensure schema_meta exists and has version row
         conn.execute(
             "INSERT OR IGNORE INTO schema_meta (version) VALUES (1)"

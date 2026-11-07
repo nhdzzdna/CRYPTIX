@@ -7,11 +7,14 @@ tidak ada DEK tes yang bocor ke test berikutnya.
 
 import pytest
 
+from modules.authentication import usb_authentication as usb_mod
 from modules.cryptography import session_keys
 
 
 @pytest.fixture(autouse=True)
 def _kunci_sesi_bersih():
     session_keys.clear()
+    usb_mod.lupakan_cache()
     yield
     session_keys.clear()
+    usb_mod.lupakan_cache()

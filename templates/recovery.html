@@ -1,0 +1,28 @@
+{% extends "auth_base.html" %}
+{% block title %}Kunci Pemulihan — CRYPTIX{% endblock %}
+{% block card_class %}style="max-width:560px;"{% endblock %}
+{% block auth_title %}Simpan Kunci Pemulihan{% endblock %}
+
+{% block auth_content %}
+<p class="form-hint">
+  Kunci ini ditampilkan <strong>satu kali saja</strong> dan tidak dapat dilihat
+  kembali. Simpan di tempat aman; kunci diperlukan untuk membuka kembali data
+  bila kata sandi atau dongle hilang.
+</p>
+
+<div class="alert alert-warning">
+  <code id="recovery-key" style="user-select:all; word-break:break-all;">{{ recovery_key }}</code>
+</div>
+
+<form method="POST" action="{{ url_for('auth.recovery_confirm') }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+  <input type="hidden" name="pending" value="{{ pending }}" />
+  <div class="form-group form-check">
+    <label>
+      <input type="checkbox" name="confirm_saved" id="confirm_saved" value="1" required />
+      Saya sudah menyimpannya
+    </label>
+  </div>
+  <button type="submit" class="btn btn-primary btn-full">Lanjut ke Penyiapan Keamanan</button>
+</form>
+{% endblock %}
