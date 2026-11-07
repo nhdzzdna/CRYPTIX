@@ -18,3 +18,13 @@ def _kunci_sesi_bersih():
     yield
     session_keys.clear()
     usb_mod.lupakan_cache()
+
+
+# ── Sesi I: cegah tempfile.tempdir menunjuk folder uji yang sudah dihapus ─────
+import tempfile as _tempfile
+
+
+@pytest.fixture(autouse=True)
+def _pulihkan_tempdir_sesi_i():
+    yield
+    _tempfile.tempdir = None

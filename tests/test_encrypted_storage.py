@@ -8,7 +8,9 @@ dekripsi, dan pemodifan tercatat sebagai blok TAMPER_DETECTED.
 
 import hashlib
 import io
+import os
 import re
+import tempfile
 
 import pytest
 from PIL import Image
@@ -173,6 +175,15 @@ def _unggah(client, nama: str, isi: bytes):
     }, content_type="multipart/form-data")
 
 
+def _unduh(client, file_id: int):
+    token = _csrf(client, "/vault")
+    grant = _token_grant(client, "file.download", file_id)
+    return client.post(
+        f"/vault/decrypt/{file_id}",
+        data={"csrf_token": token, "reauth_grant": grant},
+    )
+
+
 class TestVaultFiles:
     @pytest.fixture()
     def unggahan(self, client):
@@ -211,7 +222,7 @@ class TestVaultFiles:
 
     def test_unduhan_mengembalikan_plaintext_asli(self, unggahan, client):
         row, isi = unggahan
-        resp = client.get(f"/vault/decrypt/{row['id']}")
+        resp = _unduh(client, row["id"])
         assert resp.status_code == 200
         assert resp.data == isi
         assert "laporan-rahasia.pdf" in resp.headers.get("Content-Disposition", "")
@@ -225,7 +236,7 @@ class TestVaultFiles:
         with open(path, "wb") as f:
             f.write(bytes(blob))
 
-        resp = client.get(f"/vault/decrypt/{row['id']}")
+        resp = _unduh(client, row["id"])
         assert resp.status_code == 302
         assert "TAMPER_DETECTED" in _blok()
 
@@ -238,7 +249,7 @@ class TestVaultFiles:
             )
             db.commit()
 
-        resp = client.get(f"/vault/decrypt/{row['id']}")
+        resp = _unduh(client, row["id"])
         assert resp.status_code == 302
         assert "TAMPER_DETECTED" in _blok()
 
@@ -663,3 +674,133 @@ class TestSecureNotesSesiI:
         )
         assert resp.status_code == 404
         assert _baris_catatan(baris["id"]) is not None
+
+
+def _baris_berkas(file_id: int) -> dict | None:
+    with get_db() as db:
+        row = db.execute(
+            "SELECT * FROM vault_files WHERE id=?", (file_id,)
+        ).fetchone()
+    return dict(row) if row else None
+
+
+def _unggah_berkas(client, nama: str, isi: bytes) -> dict:
+    resp = _unggah(client, nama, isi)
+    assert resp.status_code == 302
+    with get_db() as db:
+        row = db.execute(
+            "SELECT * FROM vault_files WHERE user_id=? ORDER BY id DESC LIMIT 1",
+            (1,),
+        ).fetchone()
+    return dict(row)
+
+
+class TestVaultSesiI:
+    def test_unggah_menolak_ekstensi_tidak_diizinkan(self, client):
+        _unggah(client, "program.exe", b"bukan berkas sah")
+        with get_db() as db:
+            jumlah = db.execute("SELECT COUNT(*) AS n FROM vault_files").fetchone()["n"]
+        assert jumlah == 0
+
+    def test_unggah_menolak_isi_gambar_palsu(self, client):
+        _unggah(client, "gambar.png", b"ini bukan gambar PNG")
+        with get_db() as db:
+            jumlah = db.execute("SELECT COUNT(*) AS n FROM vault_files").fetchone()["n"]
+        assert jumlah == 0
+
+    def test_unggah_menerima_gambar_sah(self, client):
+        buf = io.BytesIO()
+        Image.new("RGB", (32, 32), color=(10, 20, 30)).save(buf, format="PNG")
+        row = _unggah_berkas(client, "foto-sah.png", buf.getvalue())
+        assert row["file_type"] == "image"
+        assert row["file_size"] == len(buf.getvalue())
+
+    def test_unduh_tanpa_grant_ditolak(self, client):
+        row = _unggah_berkas(client, "dokumen.pdf", b"isi dokumen")
+        token = _csrf(client, "/vault")
+        resp = client.post(
+            f"/vault/decrypt/{row['id']}", data={"csrf_token": token}
+        )
+        assert resp.status_code == 401
+        assert resp.get_json()["reason"] == "missing"
+
+    def test_unduh_scope_salah_ditolak(self, client):
+        row = _unggah_berkas(client, "dokumen.pdf", b"isi dokumen")
+        token = _csrf(client, "/vault")
+        grant = _token_grant(client, "item.delete", row["id"])
+        resp = client.post(
+            f"/vault/decrypt/{row['id']}",
+            data={"csrf_token": token, "reauth_grant": grant},
+        )
+        assert resp.status_code == 403
+        assert resp.get_json()["reason"] == "scope"
+
+    def test_unduh_memakai_grant_dan_header_aman(self, client):
+        isi = b"isi dokumen aman " * 20
+        row = _unggah_berkas(client, "dokumen-aman.pdf", isi)
+        resp = _unduh(client, row["id"])
+        assert resp.status_code == 200
+        assert resp.data == isi
+        assert "attachment" in resp.headers.get("Content-Disposition", "").lower()
+        assert "dokumen-aman.pdf" in resp.headers.get("Content-Disposition", "")
+        assert resp.headers.get("Cache-Control") == "no-store"
+        assert "DOWNLOAD" in _blok()
+
+    def test_unduh_idor_pengguna_lain(self, app, client):
+        row = _unggah_berkas(client, "milik-satu.pdf", b"rahasia satu")
+        lain = _client_pengguna(app, 2, "pengujingdua")
+        token = _csrf(lain, "/vault")
+        grant = _token_grant(lain, "file.download", row["id"])
+        resp = lain.post(
+            f"/vault/decrypt/{row['id']}",
+            data={"csrf_token": token, "reauth_grant": grant},
+        )
+        assert resp.status_code == 404
+
+    def test_hapus_memerlukan_item_delete(self, client):
+        row = _unggah_berkas(client, "akan-dihapus.pdf", b"isi")
+        token = _csrf(client, "/vault")
+        tanpa_grant = client.post(
+            f"/vault/delete/{row['id']}", data={"csrf_token": token}
+        )
+        assert tanpa_grant.status_code == 401
+        assert _baris_berkas(row["id"]) is not None
+
+        grant = _token_grant(client, "item.delete", row["id"])
+        resp = client.post(
+            f"/vault/delete/{row['id']}",
+            data={"csrf_token": token, "reauth_grant": grant},
+        )
+        assert resp.status_code == 302
+        assert _baris_berkas(row["id"]) is None
+        assert not os.path.exists(
+            os.path.join(config.ENCRYPTED_FILES_DIR, row["stored_name"])
+        )
+        assert "DELETE" in _blok()
+
+    def test_hapus_idor_pengguna_lain(self, app, client):
+        row = _unggah_berkas(client, "milik-satu.pdf", b"rahasia satu")
+        lain = _client_pengguna(app, 2, "pengujingdua")
+        token = _csrf(lain, "/vault")
+        grant = _token_grant(lain, "item.delete", row["id"])
+        resp = lain.post(
+            f"/vault/delete/{row['id']}",
+            data={"csrf_token": token, "reauth_grant": grant},
+        )
+        assert resp.status_code == 404
+        assert _baris_berkas(row["id"]) is not None
+
+    def test_startup_menyiapkan_tempdir_dan_membersihkan(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(config, "DATABASE_PATH", str(tmp_path / "mulai.db"))
+        monkeypatch.setattr(config, "ENCRYPTED_FILES_DIR", str(tmp_path / "enc"))
+        monkeypatch.setattr(config, "STEGO_IMAGES_DIR", str(tmp_path / "stego"))
+        monkeypatch.setattr(config, "TEMPORARY_FILES_DIR", str(tmp_path / "temp"))
+        os.makedirs(config.TEMPORARY_FILES_DIR, exist_ok=True)
+        sisa = os.path.join(config.TEMPORARY_FILES_DIR, "sisa.tmp")
+        with open(sisa, "wb") as handle:
+            handle.write(b"sisa")
+        init_db()
+
+        create_app()
+        assert tempfile.tempdir == config.TEMPORARY_FILES_DIR
+        assert not os.path.exists(sisa)

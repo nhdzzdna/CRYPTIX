@@ -152,3 +152,4 @@ class MSG:
     STEGO_EXTRACT_FILE_SUCCESS = "Berkas berhasil diekstrak."
     # ── Sesi I: Account Vault, Secure Notes, My Vault ─────────────────────────
     ACCOUNT_UPDATED           = "Kredensial berhasil diperbarui."
+    VAULT_FILE_CONTENT_INVALID = "Isi file tidak sesuai dengan jenisnya."
