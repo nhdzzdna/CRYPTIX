@@ -130,3 +130,12 @@ class MSG:
 
     # ── Assistant ────────────────────────────────────────────────────────────
     ASSISTANT_EMPTY_MESSAGE  = "Pesan tidak boleh kosong."
+
+    # ── Sesi J1: Media Vault dan Steganography ────────────────────────────────
+    MEDIA_STREAM_UNSUPPORTED = "Format ini hanya tersedia untuk unduhan dan tidak diputar di browser."
+    MEDIA_DOWNLOAD_ONLY      = "Hanya unduh — format ini mungkin tidak dapat diputar di browser."
+    MEDIA_TEMP_WARNING       = "Winamp memerlukan berkas plaintext sementara di disk. Berkas dihapus otomatis setelah 60 detik dengan penimpaan nol sebagai upaya terbaik; penghapusan permanen tidak dapat dijamin pada SSD atau media penyimpanan modern."
+    MEDIA_RANGE_INVALID      = "Rentang byte tidak valid."
+    STEGO_PASSPHRASE_REQUIRED = "Passphrase wajib diisi bila memilih kunci passphrase."
+    STEGO_EXTRACT_TEXT_SUCCESS = "Pesan berhasil diekstrak."
+    STEGO_EXTRACT_FILE_SUCCESS = "Berkas berhasil diekstrak."
