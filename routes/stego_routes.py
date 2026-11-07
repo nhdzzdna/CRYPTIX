@@ -6,6 +6,7 @@ Steganography: menyisipkan dan mengekstrak muatan LSB pada PNG.
 
 import hashlib
 import io
+import mimetypes
 import os
 import uuid
 
@@ -124,6 +125,16 @@ def embed():
     # Enkripsi aktif secara default; kotak centang dikirim value "0" bila
     # dicabut pengguna.
     use_enc = request.form.get("use_encryption", "1") == "1"
+    key_mode = request.form.get("key_mode", "account")
+    if key_mode not in {"account", "passphrase"}:
+        key_mode = "account"
+    passphrase = request.form.get("passphrase", "").strip()
+    if key_mode == "passphrase" and not passphrase:
+        flash(MSG.STEGO_PASSPHRASE_REQUIRED, "warning")
+        return redirect(url_for("stego.index"))
+    if key_mode != "passphrase":
+        # Passphrase tidak pernah disimpan di sesi/cookie/log.
+        passphrase = None
 
     if not carrier or not carrier.filename:
         flash(MSG.STEGO_NO_CARRIER, "warning")
@@ -150,6 +161,7 @@ def embed():
     os.makedirs(config.STEGO_IMAGES_DIR, exist_ok=True)
 
     mk = _dek()
+    stego_master = mk if key_mode == "account" else None
     tmp_payload = None
     try:
         if payload_type == "file":
@@ -160,12 +172,15 @@ def embed():
             payload_file.save(tmp_payload)
             result = embed_file(
                 tmp_in, tmp_payload, out_path,
-                master_key=mk, filename=payload_name,
+                master_key=stego_master, passphrase=passphrase,
+                filename=payload_name,
             )
             has_encryption = 1
         else:
             result = embed_message(
-                tmp_in, message, out_path, master_key=mk, encrypt=use_enc
+                tmp_in, message, out_path,
+                master_key=stego_master, passphrase=passphrase,
+                encrypt=use_enc,
             )
             has_encryption = int(use_enc)
     finally:
@@ -200,20 +215,43 @@ def embed():
     return redirect(url_for("stego.index"))
 
 
-def _hasilkan_muatan(result: dict):
-    """Sajikan hasil ekstrak: teks via flash, berkas langsung dari memori."""
+def _hasil_ekstraksi(result: dict):
+    """
+    Sajikan hasil ekstrak.
+
+    Teks dikirim sebagai JSON agar ditampilkan di dalam halaman, bukan flash.
+    Berkas disajikan langsung dari memori sehingga plaintext tidak ditulis ke
+    disk.
+    """
     if not result["success"]:
-        flash(MSG.STEGO_EXTRACT_FAILED.format(error=result.get('error')), "danger")
-        return redirect(url_for("stego.index"))
+        pesan = result.get("error") or MSG.STEGO_DECRYPT_FAILED
+        return jsonify({
+            "success": False,
+            "error": pesan,
+            "message": MSG.STEGO_EXTRACT_FAILED.format(error=pesan),
+        }), 400
     if result["type"] == "file":
-        # Plaintext tidak pernah ditulis ke disk; disajikan langsung.
-        return send_file(
+        mime = (
+            mimetypes.guess_type(result["filename"])[0]
+            or "application/octet-stream"
+        )
+        response = send_file(
             io.BytesIO(result["data"]),
             download_name=result["filename"],
             as_attachment=True,
+            mimetype=mime,
         )
-    flash(MSG.STEGO_EXTRACT_SUCCESS.format(message=result["text"]), "success")
-    return redirect(url_for("stego.index"))
+        response.headers["X-Cryptix-Extract"] = "file"
+        return response
+    response = jsonify({
+        "success": True,
+        "type": "text",
+        "text": result["text"],
+        "encrypted": bool(result.get("encrypted", False)),
+        "message": MSG.STEGO_EXTRACT_TEXT_SUCCESS,
+    })
+    response.headers["X-Cryptix-Extract"] = "text"
+    return response
 
 
 @stego_bp.route("/steganography/extract/<int:img_id>", methods=["POST"])
@@ -230,12 +268,15 @@ def extract(img_id: int):
 
     img_path = os.path.join(config.STEGO_IMAGES_DIR, row["stored_name"])
     mk = _dek()
-    result = extract_payload(img_path, master_key=mk)
+    passphrase = request.form.get("passphrase", "").strip()
+    result = extract_payload(
+        img_path, master_key=mk, passphrase=passphrase or None
+    )
 
     if result["success"]:
         add_block(session["user_id"], "STEGO_EXTRACT", f"stego:{img_id}",
                   _hash_gambar(img_path))
-    return _hasilkan_muatan(result)
+    return _hasil_ekstraksi(result)
 
 
 @stego_bp.route("/steganography/extract-upload", methods=["POST"])
@@ -278,7 +319,7 @@ def extract_upload():
     if result["success"]:
         add_block(session["user_id"], "STEGO_EXTRACT", "stego:unggahan",
                   hash_gambar)
-    return _hasilkan_muatan(result)
+    return _hasil_ekstraksi(result)
 
 
 @stego_bp.route("/steganography/download/<int:img_id>")
