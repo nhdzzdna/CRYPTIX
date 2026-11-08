@@ -72,6 +72,22 @@
         <button type="button" class="btn btn-primary btn-sm" id="btn-settings-capture" onclick="captureSettingsFace()" style="display:none;">Ambil Sampel</button>
       </div>
       <p id="settings-face-status" class="form-hint"></p>
+
+      <hr />
+
+      <!-- WebAuthn -->
+      <h4>WebAuthn</h4>
+      <p class="text-muted">
+        Status: {% if webauthn_terdaftar %}
+          <span class="badge badge-success">● Terdaftar</span>
+        {% else %}
+          <span class="badge badge-warning">Belum didaftarkan</span>
+        {% endif %}
+      </p>
+      <button type="button" class="btn btn-secondary btn-sm"
+              onclick="daftarWebAuthn('settings-webauthn-status')">🔐 Daftarkan WebAuthn</button>
+      <p id="settings-webauthn-status" class="form-hint"></p>
+      <small class="form-hint">Memakai autentikator platform perangkat ini (sidik jari atau Windows Hello).</small>
     </div>
   </div>
 
@@ -79,6 +95,7 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="{{ url_for('static', filename='js/webauthn.js') }}"></script>
 <script>
 let settingsStream = null;
 function startSettingsCamera() {

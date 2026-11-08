@@ -5,7 +5,7 @@
 
 {% block auth_content %}
 <p class="form-hint">
-  Daftarkan <strong>minimal satu biometrik</strong> (wajah atau sidik jari)
+  Daftarkan <strong>minimal satu biometrik</strong> (wajah atau WebAuthn)
   untuk menyelesaikan penyiapan. Sampai selesai, hanya halaman ini yang dapat
   diakses.
 </p>
@@ -25,22 +25,23 @@
   </div>
 </div>
 
-<!-- Fingerprint Registration -->
-<form method="POST" enctype="multipart/form-data" id="setup-fingerprint-form">
-  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-  <div class="card mb-3">
-    <div class="card-header">🔏 Pendaftaran Sidik Jari (Simulasi)</div>
-    <div class="card-body">
-      <input type="file" name="fingerprint_image" class="form-control"
-             accept=".png,.jpg,.jpeg,.bmp" required />
-      <small class="form-hint">Unggah citra sidik jari sebagai referensi.</small>
-      <button type="submit" class="btn btn-primary btn-sm mt-2">Daftarkan Sidik Jari</button>
-    </div>
+<!-- WebAuthn Registration -->
+<div class="card mb-3">
+  <div class="card-header">🔐 Pendaftaran WebAuthn</div>
+  <div class="card-body">
+    <p class="form-hint">
+      Daftarkan autentikator platform perangkat ini (sidik jari terintegrasi
+      atau Windows Hello) sebagai metode verifikasi tahap kedua.
+    </p>
+    <button type="button" class="btn btn-primary btn-sm" id="btn-setup-webauthn"
+            onclick="daftarWebAuthn('setup-webauthn-status')">Daftarkan WebAuthn</button>
+    <p id="setup-webauthn-status" class="form-hint"></p>
   </div>
-</form>
+</div>
 {% endblock %}
 
 {% block scripts %}
+<script src="{{ url_for('static', filename='js/webauthn.js') }}"></script>
 <script>
   let setupStream = null;
   function startSetupCamera() {

@@ -7,20 +7,17 @@ token ke dongle, kunci pemulihan tampil sekali, dan wizard penyiapan keamanan.
 
 import hashlib
 import hmac
-import io
 import json
 import os
 import re
 import shutil
 
 import pytest
-from PIL import Image
 
 import config
 from app import create_app
 from database.db import get_db, init_db
 from modules.authentication import face_recognition as face_mod
-from modules.authentication import fingerprint as fp_mod
 from modules.authentication import usb_authentication as usb_mod
 from modules.authentication.auth import (
     register_user, validate_email, validate_password,
@@ -43,12 +40,10 @@ def app(tmp_path, monkeypatch):
     monkeypatch.setattr(config, "ENCRYPTED_FILES_DIR", str(tmp_path / "encrypted"))
     monkeypatch.setattr(config, "STEGO_IMAGES_DIR", str(tmp_path / "stego"))
     monkeypatch.setattr(bc, "CHAIN_HEAD_PATH", str(tmp_path / "chain_head.json"))
-    monkeypatch.setattr(fp_mod, "_FP_DIR", str(tmp_path / "fingerprints"))
     monkeypatch.setattr(face_mod, "_FACE_DATA_DIR", str(tmp_path / "faces"))
     monkeypatch.setattr(config, "CRYPTIX_DEV_MODE", True)
     monkeypatch.setattr(config, "DEV_DONGLE_DIR", str(tmp_path / "dongle"))
     monkeypatch.setattr(usb_mod, "_get_removable_drives", lambda: [])
-    os.makedirs(str(tmp_path / "fingerprints"), exist_ok=True)
     os.makedirs(str(tmp_path / "faces"), exist_ok=True)
     init_db()
     application = create_app()
@@ -63,6 +58,9 @@ def client(app):
 
 def _token_csrf_dari(halaman_html: str) -> str:
     cocok = re.search(r'name="csrf_token" value="([^"]+)"', halaman_html)
+    if cocok is None:
+        # halaman tanpa form (mis. wizard tanpa unggahan) memakai meta
+        cocok = re.search(r'<meta name="csrf-token" content="([^"]+)"', halaman_html)
     assert cocok, "token CSRF tidak ditemukan"
     return cocok.group(1)
 
@@ -133,13 +131,6 @@ def _sesi_masuk(client, user_id: int = 1, username: str = "pengujian") -> str:
         sess["session_id"] = sid
         session_keys.put(sid, b"\x5a" * 32)
     return sid
-
-
-def _png_kecil() -> io.BytesIO:
-    buf = io.BytesIO()
-    Image.new("RGB", (64, 64), (12, 34, 56)).save(buf, format="PNG")
-    buf.seek(0)
-    return buf
 
 
 # ── 2.1 Kebijakan akun ────────────────────────────────────────────────────────
@@ -398,33 +389,15 @@ class TestPenyiapanKeamanan:
         assert resp.status_code == 302
         assert _menuju_login(resp.headers["Location"])
 
-    def test_setup_tanpa_berkas_sidik_jari_ditolak(self, app, client):
+    def test_unggah_sidik_jari_sudah_dihapus(self, app, client):
         _daftarkan_dan_konfirmasi(client)
-        token = _token_csrf(client, "/setup")
-        resp = client.post("/setup", data={"csrf_token": token})
-        body = resp.get_data(as_text=True)
-        assert resp.status_code == 200
-        assert MSG.SETUP_FP_REQUIRED in body
+        body = client.get("/setup").get_data(as_text=True)
+        assert 'name="fingerprint_image"' not in body
+        assert "daftarWebAuthn" in body
+        # unggah citra sidik jari tidak lagi menjadi bagian wizard
+        aturan = next(r for r in app.url_map.iter_rules() if r.rule == "/setup")
+        assert "POST" not in aturan.methods
         assert client.get("/dashboard").headers["Location"].endswith("/setup")
-
-    def test_sidik_jari_menyelesaikan_penyiapan(self, app, client):
-        _daftarkan_dan_konfirmasi(client)
-        token = _token_csrf(client, "/setup")
-        resp = client.post("/setup", data={
-            "csrf_token": token,
-            "fingerprint_image": (_png_kecil(), "sidik.png"),
-        }, content_type="multipart/form-data")
-        assert resp.status_code == 302
-        assert _menuju_login(resp.headers["Location"])
-
-        baris = _satu_pengguna()
-        assert baris["fingerprint_path"]
-        assert os.path.isfile(baris["fingerprint_path"])
-        with client.session_transaction() as sess:
-            assert "setup_user_id" not in sess
-            assert MSG.SETUP_COMPLETE in str(sess.get("_flashes", []))
-        # gerbang terbuka: kini diarahkan ke halaman masuk, bukan setup
-        assert _menuju_login(client.get("/dashboard").headers["Location"])
 
     def test_wajah_menyelesaikan_penyiapan(self, app, client, monkeypatch):
         _daftarkan_dan_konfirmasi(client)
