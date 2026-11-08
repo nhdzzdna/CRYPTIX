@@ -103,6 +103,21 @@ def create_app() -> Flask:
     ]:
         os.makedirs(d, exist_ok=True)
 
+    # ── Sesi I: folder sementara aplikasi dan pembersihan saat startup ────────
+    import tempfile as _tempfile
+    import shutil as _shutil
+    _tempfile.tempdir = config.TEMPORARY_FILES_DIR
+    for _entry in os.scandir(config.TEMPORARY_FILES_DIR):
+        if _entry.name == ".gitkeep":
+            continue
+        try:
+            if _entry.is_dir(follow_symlinks=False):
+                _shutil.rmtree(_entry.path, ignore_errors=True)
+            else:
+                os.remove(_entry.path)
+        except OSError:
+            pass
+
     # ── Sesi J1: bersihkan sisa berkas sementara Winamp saat startup ──────────
     from modules.media.winamp_integration import cleanup_stale_temp_files
     cleanup_stale_temp_files()

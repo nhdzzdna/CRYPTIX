@@ -169,3 +169,6 @@ class MSG:
     ACCOUNT_RECOVERY_FAILED   = "Nama pengguna atau kunci pemulihan tidak valid."
     ACCOUNT_RECOVERY_USB_REQUIRED = "Pilih dongle baru yang terpasang untuk memulihkan akun."
     ACCOUNT_RECOVERY_DONE     = "Pemulihan akun berhasil. Simpan kunci pemulihan baru, lalu masuk kembali."
+    # ── Sesi I: Account Vault, Secure Notes, My Vault ─────────────────────────
+    ACCOUNT_UPDATED           = "Kredensial berhasil diperbarui."
+    VAULT_FILE_CONTENT_INVALID = "Isi file tidak sesuai dengan jenisnya."
