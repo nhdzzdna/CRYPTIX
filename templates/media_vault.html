@@ -77,7 +77,7 @@
             <a href="{{ url_for('media.download', file_id=f.id) }}"
                class="btn btn-sm btn-success"
                data-reauth="file.download" data-reauth-resource="{{ f.id }}">⬇</a>
-            <form method="POST" action="{{ url_for('vault.delete', file_id=f.id) }}" style="display:inline"
+            <form method="POST" action="{{ url_for('vault.delete', resource_id=f.id) }}" style="display:inline"
                   onsubmit="return confirm('Hapus?')">
 
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
