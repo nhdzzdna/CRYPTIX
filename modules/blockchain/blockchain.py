@@ -24,6 +24,7 @@ import hashlib
 import hmac
 import json
 import os
+import threading
 from datetime import datetime, timezone
 
 from cryptography.hazmat.primitives import hashes
@@ -52,6 +53,11 @@ _DONGLE_HEAD_NAME = ".cryptix_chain_head"
 _LOGIN_FAIL_WINDOW_SECONDS = 60
 _LOGIN_FAIL_MAX = 3
 _CONTENT_HASH_INFO = b"cryptix-content-hash-v1"
+
+# Hasil verifikasi terakhir per pengguna; hanya metadata, disimpan di memori
+# agar Dashboard dapat menampilkan status tanpa memverifikasi ulang rantai.
+_verifikasi_lock = threading.Lock()
+_verifikasi_terakhir: dict[int, dict] = {}
 
 
 # ── Kunci rantai dan kunci konten ────────────────────────────────────────────
@@ -123,6 +129,11 @@ def _read_head() -> dict | None:
     except (OSError, ValueError):
         return None
     return data if isinstance(data, dict) else None
+
+
+def get_head_info() -> dict | None:
+    """Jangkar kepala terakhir (database, block_index, head_hash) atau None."""
+    return _read_head()
 
 
 def _write_dongle_head(payload: str) -> None:
@@ -437,3 +448,31 @@ def get_chain_stats() -> dict:
             "FROM blockchain_log"
         ).fetchone()
         return {"total_blocks": row["total"], "last_index": row["last_index"]}
+
+
+def record_verification(user_id: int, chain_result: list[dict]) -> dict:
+    """
+    Simpan hasil verifikasi terakhir milik ``user_id`` di memori proses.
+
+    Hanya metadata yang disimpan (waktu, jumlah blok rusak, head hash);
+    tidak ada isi blok atau kunci. Dipakai Dashboard agar tidak memicu
+    verifikasi ulang setiap kali halaman dibuka.
+    """
+    tampered = sum(1 for blok in chain_result if blok.get("tampered"))
+    hasil = {
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "total_blocks": len(chain_result),
+        "tampered_blocks": tampered,
+        "valid": tampered == 0,
+        "head_hash": chain_result[-1]["block_hash"] if chain_result else None,
+    }
+    with _verifikasi_lock:
+        _verifikasi_terakhir[user_id] = hasil
+    return dict(hasil)
+
+
+def get_last_verification(user_id: int) -> dict | None:
+    """Hasil verifikasi terakhir milik ``user_id``, atau None bila belum ada."""
+    with _verifikasi_lock:
+        hasil = _verifikasi_terakhir.get(user_id)
+        return dict(hasil) if hasil else None
