@@ -25,6 +25,8 @@ _KOLOM_BARU_USERS: tuple[tuple[str, str], ...] = (
     ("usb_token_id", "TEXT"),
     ("usb_verifier", "TEXT"),
     ("usb_volume_serial", "TEXT"),
+    ("failed_attempts", "INTEGER NOT NULL DEFAULT 0"),
+    ("locked_until", "TEXT"),
 )
 
 

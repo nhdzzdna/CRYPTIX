@@ -19,6 +19,8 @@ CREATE TABLE IF NOT EXISTS users (
     usb_token_id    TEXT,               -- id token pada berkas .cryptix_token
     usb_verifier    TEXT,               -- HMAC-SHA256(rahasia dongle, "cryptix-usb-verifier") hex
     usb_volume_serial TEXT,             -- bound volume serial number
+    failed_attempts INTEGER NOT NULL DEFAULT 0,   -- Sesi G: kegagalan masuk beruntun
+    locked_until    TEXT,                          -- Sesi G: batas waktu kunci sementara
     created_at      TEXT    NOT NULL DEFAULT (datetime('now')),
     last_login      TEXT
 );

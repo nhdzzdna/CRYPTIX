@@ -26,6 +26,7 @@ from modules.authentication import usb_authentication as usb_mod
 from modules.authentication import webauthn
 from modules.cryptography import pending_keys, session_keys
 from modules.cryptography.key_management import recover_dek
+from modules.rate_limit import limiter, LOGIN_LIMIT, FACE_VERIFY_LIMIT
 from modules.blockchain.blockchain import add_block, content_hash
 
 auth_bp = Blueprint("auth", __name__)
@@ -364,6 +365,7 @@ def dongle_status():
 
 @auth_bp.route("/login", methods=["GET", "POST"])
 @auth_bp.route("/", methods=["GET", "POST"])
+@limiter.limit(LOGIN_LIMIT, methods=["POST"])
 def login():
     if "user_id" in session:
         if request.method == "POST":
@@ -557,6 +559,7 @@ def register_face():
 # ── Face verification (AJAX endpoint) ────────────────────────────────────────
 
 @auth_bp.route("/api/verify_face", methods=["POST"])
+@limiter.limit(FACE_VERIFY_LIMIT)
 def verify_face():
     """
     Verifikasi 5 frame wajah pada sesi tahap login yang sah.

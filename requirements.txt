@@ -12,3 +12,5 @@ pytest>=8.2.0
 webauthn==3.0.1
 # Sesi G: pengenalan wajah headless (butir 2.6)
 opencv-contrib-python-headless==4.10.0.84
+# Sesi G: pembatas laju endpoint sensitif (butir 2.7)
+Flask-Limiter==3.8.0

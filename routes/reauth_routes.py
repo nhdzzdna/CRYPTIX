@@ -18,6 +18,7 @@ from modules.authentication import reauth
 from modules.authentication import webauthn
 from modules.blockchain.blockchain import add_block, content_hash
 from modules.cryptography import session_keys
+from modules.rate_limit import limiter, REAUTH_LIMIT
 from modules.strings import MSG
 
 reauth_bp = Blueprint("reauth", __name__)
@@ -32,6 +33,7 @@ def _badan_permintaan() -> dict:
 
 
 @reauth_bp.route("/api/reauth/webauthn/options", methods=["POST"])
+@limiter.limit(REAUTH_LIMIT)
 def reauth_webauthn_options():
     """Terbitkan tantangan WebAuthn sekali pakai untuk autentikasi ulang."""
     user_id = session.get("user_id")
@@ -59,6 +61,7 @@ def reauth_webauthn_options():
 
 
 @reauth_bp.route("/api/reauth", methods=["POST"])
+@limiter.limit(REAUTH_LIMIT)
 def reauth_endpoint():
     """Verifikasi ulang identitas lalu terbitkan grant sesuai scope."""
     user_id = session.get("user_id")
