@@ -14,10 +14,12 @@ from flask import (
     Blueprint, render_template, request, redirect, url_for,
     session, flash, send_file, jsonify, abort
 )
+from PIL import Image
 from werkzeug.utils import secure_filename
 
 import config
 from modules.strings import MSG
+from modules.authentication.reauth import require_grant
 from routes.auth_routes import login_required
 from database.db import get_db
 from modules.cryptography import session_keys
@@ -33,6 +35,19 @@ vault_bp = Blueprint("vault", __name__)
 
 def _allowed_file(filename: str) -> bool:
     return "." in filename and filename.rsplit(".", 1)[1].lower() in config.ALLOWED_EXTENSIONS
+
+
+_IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp"}
+
+
+def _valid_image(raw: bytes) -> bool:
+    """Verifikasi isi gambar dengan Pillow, bukan hanya ekstensinya."""
+    try:
+        with Image.open(io.BytesIO(raw)) as image:
+            image.verify()
+        return True
+    except Exception:
+        return False
 
 
 def _get_file_key() -> bytes:
@@ -104,7 +119,10 @@ def upload():
         return redirect(url_for("vault.index"))
 
     ext = os.path.splitext(filename)[1].lower()
-    if ext in {".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp"}:
+    if ext in _IMAGE_EXTENSIONS and not _valid_image(raw):
+        flash(MSG.VAULT_FILE_CONTENT_INVALID, "danger")
+        return redirect(url_for("vault.index"))
+    if ext in _IMAGE_EXTENSIONS:
         file_type = "image"
     elif ext in {".mp3", ".wav", ".flac", ".ogg", ".m4a"}:
         file_type = "audio"
@@ -145,13 +163,14 @@ def upload():
 
 # ── Download / Decrypt ────────────────────────────────────────────────────────
 
-@vault_bp.route("/vault/decrypt/<int:file_id>")
+@vault_bp.route("/vault/decrypt/<int:resource_id>", methods=["POST"])
 @login_required
-def decrypt(file_id: int):
+@require_grant("file.download")
+def decrypt(resource_id: int):
     with get_db() as db:
         row = db.execute(
             "SELECT * FROM vault_files WHERE id=? AND user_id=?",
-            (file_id, session["user_id"]),
+            (resource_id, session["user_id"]),
         ).fetchone()
 
     if not row:
@@ -170,30 +189,34 @@ def decrypt(file_id: int):
         return redirect(url_for("vault.index"))
     except Exception:
         # Tag GCM gagal, struktur berkas tidak sah, atau hash plaintext beda.
-        add_block(session["user_id"], "TAMPER_DETECTED", f"file:{file_id}",
+        add_block(session["user_id"], "TAMPER_DETECTED", f"file:{resource_id}",
                   row["sha256_ciphertext"])
         flash(MSG.VAULT_DECRYPT_FAILED, "danger")
         return redirect(url_for("vault.index"))
 
-    add_block(session["user_id"], "DOWNLOAD", f"file:{file_id}",
+    add_block(session["user_id"], "DOWNLOAD", f"file:{resource_id}",
               row["sha256_ciphertext"])
 
-    return send_file(
+    response = send_file(
         io.BytesIO(plaintext),
         download_name=original_name,
         as_attachment=True,
     )
+    response.headers["Cache-Control"] = "no-store"
+    response.headers["Pragma"] = "no-cache"
+    return response
 
 
 # ── Delete ────────────────────────────────────────────────────────────────────
 
-@vault_bp.route("/vault/delete/<int:file_id>", methods=["POST"])
+@vault_bp.route("/vault/delete/<int:resource_id>", methods=["POST"])
 @login_required
-def delete(file_id: int):
+@require_grant("item.delete")
+def delete(resource_id: int):
     with get_db() as db:
         row = db.execute(
             "SELECT * FROM vault_files WHERE id=? AND user_id=?",
-            (file_id, session["user_id"]),
+            (resource_id, session["user_id"]),
         ).fetchone()
         if not row:
             abort(404)
@@ -202,10 +225,11 @@ def delete(file_id: int):
         if os.path.exists(enc_path):
             os.remove(enc_path)
 
-        db.execute("DELETE FROM vault_files WHERE id=?", (file_id,))
+        db.execute("DELETE FROM vault_files WHERE id=? AND user_id=?",
+                   (resource_id, session["user_id"]))
         db.commit()
 
-    add_block(session["user_id"], "DELETE", f"file:{file_id}",
+    add_block(session["user_id"], "DELETE", f"file:{resource_id}",
               row["sha256_ciphertext"])
     flash(MSG.VAULT_FILE_DELETED, "info")
     return redirect(url_for("vault.index"))

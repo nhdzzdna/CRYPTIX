@@ -158,3 +158,6 @@ class MSG:
     STEGO_PASSPHRASE_REQUIRED = "Passphrase wajib diisi bila memilih kunci passphrase."
     STEGO_EXTRACT_TEXT_SUCCESS = "Pesan berhasil diekstrak."
     STEGO_EXTRACT_FILE_SUCCESS = "Berkas berhasil diekstrak."
+    # ── Sesi I: Account Vault, Secure Notes, My Vault ─────────────────────────
+    ACCOUNT_UPDATED           = "Kredensial berhasil diperbarui."
+    VAULT_FILE_CONTENT_INVALID = "Isi file tidak sesuai dengan jenisnya."

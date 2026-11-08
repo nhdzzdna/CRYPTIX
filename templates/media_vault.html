@@ -61,11 +61,19 @@
               <button type="submit" class="btn btn-sm btn-secondary">🎵 Winamp</button>
             </form>
             {% endif %}
-            <a href="{{ url_for('vault.decrypt', file_id=f.id) }}" class="btn btn-sm btn-success">⬇</a>
-            <form method="POST" action="{{ url_for('vault.delete', file_id=f.id) }}" style="display:inline"
-                  onsubmit="return confirm('Hapus?')">
+            <form method="POST" action="{{ url_for('vault.decrypt', resource_id=f.id) }}"
+                  style="display:inline">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-              <button type="submit" class="btn btn-sm btn-danger">🗑</button>
+              <button type="submit" class="btn btn-sm btn-success"
+                      data-reauth="file.download"
+                      data-reauth-resource="{{ f.id }}">⬇</button>
+            </form>
+            <form method="POST" action="{{ url_for('vault.delete', resource_id=f.id) }}"
+                  style="display:inline">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+              <button type="submit" class="btn btn-sm btn-danger"
+                      data-reauth="item.delete"
+                      data-reauth-resource="{{ f.id }}">🗑</button>
             </form>
           </td>
         </tr>
