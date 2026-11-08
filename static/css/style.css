@@ -348,6 +348,7 @@ html, body {
 
 /* ── Code / mono ─────────────────────────────────────────────────────────────── */
 .mono { font-family: "Consolas", "Fira Code", monospace; font-size: .85rem; }
+.small { font-size: .75rem; }
 .output-box {
   background: var(--bg);
   border: 1px solid var(--border);
