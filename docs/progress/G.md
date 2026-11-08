@@ -25,5 +25,7 @@ Sisa pekerjaan:
 4. /settings/register-usb dan /api/register_usb belum meminta autentikasi ulang (Sesi K butir 4.8).
 5. Belum diverifikasi terhadap ketentuan: verifikasi wajah 5 frame dan penolakan gambar beku (2.6c), nilai confidence terlihat di mode pengembangan, kunci akun naik bertahap hingga 30 menit (2.7), halaman kunci pemulihan baru no-store dan tampil sekali (2.8), sesi lain dihentikan setelah ganti password (2.9).
 6. Uji manual yang tidak bisa dilakukan agent: WebAuthn dengan Windows Hello, kamera untuk wajah.
+   7. Perbaikan yang sudah dilakukan setelah uji manual: konversi base64url ke ArrayBuffer di static/js/webauthn.js (pendaftaran dan login WebAuthn), requirements.txt memuat dua paket OpenCV (baris lama dihapus, dikunci opencv-contrib-python-headless==4.10.0.84 karena OpenCV 5 tidak memuat berkas Haar Cascade).
+   8. Belum: endpoint /api/... masih membalas halaman HTML saat terjadi error 500 (JavaScript gagal membaca JSON); RuntimeError dari modul wajah belum dibalas JSON.
 
 Catatan: LBPH dapat dikelabui foto. Python tidak menjamin penghapusan memori.
