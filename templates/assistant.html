@@ -99,8 +99,26 @@
         ➤ Kirim
       </button>
     </div>
+    <div class="chat-input-area">
+      <input
+        type="password"
+        id="password-input"
+        class="chat-input"
+        placeholder="Password untuk dicek (terpisah, tidak disimpan)"
+        maxlength="500"
+        autocomplete="off"
+        autocapitalize="off"
+        spellcheck="false"
+      />
+      <button id="check-password-btn" type="button" class="btn btn-ghost send-btn"
+              onclick="sendPassword()">
+        🔑 Cek Password
+      </button>
+    </div>
     <div class="input-hint">
-      ⚠️ Jangan kirim kunci enkripsi atau password penting lewat kolom ini, kecuali untuk fitur Cek Kekuatan Password.
+      ⚠️ Kolom Password terpisah dari pesan: nilainya tidak masuk riwayat,
+      log, atau blockchain. Riwayat hanya mencatat <code>[password diperiksa]</code>.
+      Jangan kirim kunci enkripsi lewat kolom mana pun.
     </div>
 
   </div><!-- /chat-panel -->
@@ -143,6 +161,7 @@
 // ── Helpers ────────────────────────────────────────────────────────────────
 const messagesEl = document.getElementById('chat-messages');
 const inputEl    = document.getElementById('user-input');
+const passwordEl = document.getElementById('password-input');
 const thinkingEl = document.getElementById('thinking-indicator');
 const thinkTextEl= document.getElementById('thinking-text');
 
@@ -157,6 +176,14 @@ inputEl.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && !e.shiftKey) {
     e.preventDefault();
     sendMessage();
+  }
+});
+
+// Enter di kolom password juga mengirim pemeriksaan (bukan pesan)
+passwordEl.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    sendPassword();
   }
 });
 
@@ -249,19 +276,27 @@ function hideThinking() {
 
 function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-// ── Send message ──────────────────────────────────────────────────────────
+// ── Send message / password ───────────────────────────────────────────────
 async function sendMessage() {
   const message = inputEl.value.trim();
-  if (!message) return;
+  const password = passwordEl.value;
+  if (!message && !password) return;
 
-  // Disable input
+  // Password TIDAK pernah ditampilkan; riwayat hanya memuat penanda.
+  const bubbleText = password ? '[password diperiksa]' : message;
+  const payload = password ? { password } : { message };
+
+  // Disable input dan langsung kosongkan kolom password dari DOM.
   inputEl.value = '';
+  passwordEl.value = '';
   inputEl.style.height = 'auto';
   inputEl.disabled = true;
+  passwordEl.disabled = true;
   document.getElementById('send-btn').disabled = true;
+  document.getElementById('check-password-btn').disabled = true;
 
   // Show user bubble
-  appendMessage('user', message);
+  appendMessage('user', bubbleText);
 
   // Show thinking animation
   await showThinkingSteps();
@@ -272,7 +307,7 @@ async function sendMessage() {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ message }),
+      body: JSON.stringify(payload),
     });
 
     if (!resp.ok) throw new Error('Server error ' + resp.status);
@@ -287,8 +322,15 @@ async function sendMessage() {
 
   // Re-enable input
   inputEl.disabled = false;
+  passwordEl.disabled = false;
   document.getElementById('send-btn').disabled = false;
+  document.getElementById('check-password-btn').disabled = false;
   inputEl.focus();
+}
+
+function sendPassword() {
+  if (!passwordEl.value) return;
+  sendMessage();
 }
 
 function sendSuggestion(text) {
