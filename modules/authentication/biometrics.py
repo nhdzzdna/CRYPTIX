@@ -72,13 +72,15 @@ def metode_untuk_pengguna(user_id: int) -> list[dict]:
     ]
 
 
-def verifikasi_tahap_biometrik(user_id: int, bukti) -> dict[str, bool]:
+def verifikasi_tahap_biometrik(user_id: int, bukti, konteks: dict | None = None) -> dict[str, bool]:
     """
     Verifikasi tiap metode terdaftar terhadap bukti yang dikirim.
 
-    Metode terdaftar tanpa bukti bernilai False sehingga tidak dapat
-    dilewati; kesalahan pada sebuah metode juga dihitung False.
+    ``konteks`` diteruskan sebagai argumen kata kunci (mis. ``dek`` untuk
+    metode wajah). Metode terdaftar tanpa bukti bernilai False sehingga tidak
+    dapat dilewati; kesalahan pada sebuah metode juga dihitung False.
     """
+    konteks = konteks or {}
     hasil: dict[str, bool] = {}
     if not isinstance(bukti, dict):
         bukti = {}
@@ -87,8 +89,12 @@ def verifikasi_tahap_biometrik(user_id: int, bukti) -> dict[str, bool]:
         if isi is None:
             hasil[nama] = False
             continue
+        fungsi = _METODE[nama]["verifikasi"]
         try:
-            hasil[nama] = bool(_METODE[nama]["verifikasi"](user_id, isi))
+            try:
+                hasil[nama] = bool(fungsi(user_id, isi, **konteks))
+            except TypeError:
+                hasil[nama] = bool(fungsi(user_id, isi))
         except Exception:
             hasil[nama] = False
     return hasil

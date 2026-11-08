@@ -289,8 +289,8 @@ class TestCSRF:
             json={"username": USERNAME, "frame": "abc"},
             headers={"X-CSRFToken": token},
         )
-        assert resp.status_code == 200
-        assert resp.get_json() == {"verified": False}
+        assert resp.status_code == 401
+        assert resp.get_json()["success"] is False
 
     def test_csrf_gagal_pada_form_html_dibalas_halaman(self, client):
         _masuk(client)

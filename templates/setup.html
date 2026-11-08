@@ -17,9 +17,10 @@
     <video id="setup-video" autoplay playsinline style="display:none;width:100%;border-radius:8px;"></video>
     <canvas id="setup-canvas" style="display:none;"></canvas>
     <div class="webcam-buttons">
-      <button type="button" class="btn btn-secondary btn-sm" onclick="startSetupCamera()">Buka Kamera</button>
-      <button type="button" class="btn btn-primary btn-sm" id="btn-setup-capture"
-              onclick="captureSetupFrames()" style="display:none;">Ambil Sampel (30 frame)</button>
+      <button type="button" class="btn btn-primary btn-sm"
+              onclick="CryptixFace.daftar('setup-video', 'setup-canvas', 'setup-face-status')">
+        Daftarkan Wajah (30 frame / 3 detik)
+      </button>
     </div>
     <p id="setup-face-status" class="form-hint"></p>
   </div>
@@ -42,50 +43,5 @@
 
 {% block scripts %}
 <script src="{{ url_for('static', filename='js/webauthn.js') }}"></script>
-<script>
-  let setupStream = null;
-  function startSetupCamera() {
-    navigator.mediaDevices.getUserMedia({video: true}).then(s => {
-      setupStream = s;
-      const v = document.getElementById('setup-video');
-      v.srcObject = s; v.style.display = 'block';
-      document.getElementById('btn-setup-capture').style.display = 'inline-block';
-    });
-  }
-  function captureSetupFrames() {
-    const v = document.getElementById('setup-video');
-    const c = document.getElementById('setup-canvas');
-    const st = document.getElementById('setup-face-status');
-    c.width = v.videoWidth; c.height = v.videoHeight;
-    let frames = [];
-    let count = 0;
-    st.textContent = 'Mengambil sampel wajah...';
-    const iv = setInterval(() => {
-      c.getContext('2d').drawImage(v, 0, 0);
-      frames.push(c.toDataURL('image/jpeg'));
-      count++;
-      st.textContent = `Sampel: ${count}/30`;
-      if (count >= 30) {
-        clearInterval(iv);
-        if (setupStream) setupStream.getTracks().forEach(t => t.stop());
-        apiFetch('/api/register_face', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({frames: frames})
-        }).then(r => r.json()).then(d => {
-          if (d.success) {
-            st.textContent = '✅ ' + d.message;
-            st.style.color = '#22c55e';
-            if (d.setup_done) {
-              setTimeout(() => { window.location.href = "{{ url_for('auth.login') }}"; }, 800);
-            }
-          } else {
-            st.textContent = '❌ ' + d.error;
-            st.style.color = '#ef4444';
-          }
-        });
-      }
-    }, 100);
-  }
-</script>
+<script src="{{ url_for('static', filename='js/face.js') }}"></script>
 {% endblock %}

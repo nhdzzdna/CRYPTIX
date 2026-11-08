@@ -122,6 +122,9 @@ class MSG:
     SETTINGS_WRONG_PASSWORD  = "Kata sandi lama tidak valid."
     SETTINGS_PASSWORD_MISMATCH = "Kata sandi baru tidak cocok."
     SETTINGS_PASSWORD_CHANGED  = "Kata sandi berhasil diubah. Silakan masuk kembali."
+    SETTINGS_PASSWORD_SAME     = "Kata sandi baru harus berbeda dari kata sandi saat ini."
+    SETTINGS_PASSWORD_REWRAP_FAILED = "Kata sandi gagal diubah karena kunci tidak dapat dibungkus ulang."
+    SETTINGS_USB_MISSING       = "Dongle terdaftar tidak terpasang atau tidak cocok."
     SETTINGS_USB_NO_DRIVE      = "Tidak ada media penyimpanan lepas yang terdeteksi."
     SETTINGS_USB_REGISTERED    = "Token USB berhasil didaftarkan."
 
@@ -158,6 +161,14 @@ class MSG:
     STEGO_PASSPHRASE_REQUIRED = "Passphrase wajib diisi bila memilih kunci passphrase."
     STEGO_EXTRACT_TEXT_SUCCESS = "Pesan berhasil diekstrak."
     STEGO_EXTRACT_FILE_SUCCESS = "Berkas berhasil diekstrak."
+    # ── Sesi G: autentikasi ulang WebAuthn ────────────────────────────────────
+    REAUTH_WEBAUTHN_FAILED    = "Verifikasi WebAuthn gagal. Coba sekali lagi."
+    REAUTH_WEBAUTHN_NONE      = "Belum ada kredensial WebAuthn terdaftar untuk akun ini."
+    FACE_NO_SESSION_KEY       = "Kunci sesi tidak tersedia. Muat ulang halaman lalu coba kembali."
+    FACE_CAPTURE_TOO_SHORT    = "Pendaftaran wajah memerlukan minimal 30 frame selama sedikitnya 3 detik."
+    ACCOUNT_RECOVERY_FAILED   = "Nama pengguna atau kunci pemulihan tidak valid."
+    ACCOUNT_RECOVERY_USB_REQUIRED = "Pilih dongle baru yang terpasang untuk memulihkan akun."
+    ACCOUNT_RECOVERY_DONE     = "Pemulihan akun berhasil. Simpan kunci pemulihan baru, lalu masuk kembali."
     # ── Sesi I: Account Vault, Secure Notes, My Vault ─────────────────────────
     ACCOUNT_UPDATED           = "Kredensial berhasil diperbarui."
     VAULT_FILE_CONTENT_INVALID = "Isi file tidak sesuai dengan jenisnya."

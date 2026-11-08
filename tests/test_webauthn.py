@@ -28,7 +28,6 @@ import config
 from app import create_app
 from database.db import get_db, init_db
 from modules.authentication import biometrics, webauthn
-from modules.authentication import face_recognition as face_mod
 from modules.authentication import usb_authentication as usb_mod
 from modules.authentication.auth import register_user
 from modules.blockchain import blockchain as bc
@@ -47,11 +46,9 @@ def app(tmp_path, monkeypatch):
     monkeypatch.setattr(config, "ENCRYPTED_FILES_DIR", str(tmp_path / "encrypted"))
     monkeypatch.setattr(config, "STEGO_IMAGES_DIR", str(tmp_path / "stego"))
     monkeypatch.setattr(bc, "CHAIN_HEAD_PATH", str(tmp_path / "chain_head.json"))
-    monkeypatch.setattr(face_mod, "_FACE_DATA_DIR", str(tmp_path / "faces"))
     monkeypatch.setattr(config, "CRYPTIX_DEV_MODE", True)
     monkeypatch.setattr(config, "DEV_DONGLE_DIR", str(tmp_path / "dongle"))
     monkeypatch.setattr(usb_mod, "_get_removable_drives", lambda: [])
-    os.makedirs(str(tmp_path / "faces"), exist_ok=True)
     init_db()
     application = create_app()
     application.config["TESTING"] = True

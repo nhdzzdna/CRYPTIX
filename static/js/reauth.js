@@ -103,7 +103,7 @@
     if (konteks) {
       konteks.textContent = 'Tindakan "' + scope + '"' +
         (resource ? ' pada sumber daya ' + resource : '') +
-        ' memerlukan konfirmasi kata sandi.';
+        ' memerlukan konfirmasi kata sandi atau biometrik.';
     }
     modal.style.display = 'flex';
     if (inputPassword) {
@@ -326,6 +326,41 @@
     bukaModal(info.scope, info.resource);
   }, true);
 
+  function mulaiBiometrik(target) {
+    if (!target) {
+      return;
+    }
+    if (!window.CryptixWebAuthn ||
+        typeof window.CryptixWebAuthn.masukDenganOpsi !== 'function') {
+      tampilkanGalat('Perangkat ini tidak mendukung WebAuthn.');
+      return;
+    }
+    setProses(true);
+    sembunyikanGalat();
+
+    apiFetch('/api/reauth/webauthn/options', {
+      method: 'POST',
+      body: '{}',
+      credentials: 'same-origin'
+    }).then(function (resp) {
+      return resp.json().then(function (data) {
+        if (!resp.ok || !data.success) {
+          throw new Error(data.error || 'Autentikasi ulang gagal.');
+        }
+        return data.options;
+      });
+    }).then(function (opsi) {
+      return window.CryptixWebAuthn.masukDenganOpsi(opsi);
+    }).then(function (respons) {
+      setProses(false);
+      mulaiDariPemicu(target.pemicu, 'webauthn', { response: respons });
+    }).catch(function (err) {
+      setProses(false);
+      tampilkanGalat(err && err.message ? err.message
+        : 'Autentikasi ulang gagal.');
+    });
+  }
+
   if (form) {
     form.addEventListener('submit', function (event) {
       event.preventDefault();
@@ -349,7 +384,7 @@
       if (sedangProses || !tertunda) {
         return;
       }
-      mulaiDariPemicu(tertunda.pemicu, 'webauthn', null);
+      mulaiBiometrik(tertunda);
     });
   }
 

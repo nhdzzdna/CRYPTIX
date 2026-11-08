@@ -88,5 +88,7 @@
   <script src="{{ url_for('static', filename='js/script.js') }}"></script>
   {% include "_reauth_modal.html" %}
   {% block scripts %}{% endblock %}
+  <!-- Sesi G: WebAuthn tersedia untuk tombol biometrik autentikasi ulang -->
+  <script src="{{ url_for('static', filename='js/webauthn.js') }}"></script>
 </body>
 </html>

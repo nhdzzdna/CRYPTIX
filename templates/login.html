@@ -23,6 +23,8 @@
 
   <button type="submit" class="btn btn-primary btn-full" id="btn-masuk">Masuk</button>
   <p class="auth-link">Belum punya akun? <a href="{{ url_for('auth.register') }}">Daftar di sini</a></p>
+  <p class="auth-link">Dongle hilang atau lupa kata sandi?
+    <a href="{{ url_for('auth.account_recovery') }}">Pulihkan akun</a></p>
 </form>
 
 <section id="stage2" hidden>
@@ -36,5 +38,6 @@
 
 {% block scripts %}
 <script src="{{ url_for('static', filename='js/webauthn.js') }}"></script>
+<script src="{{ url_for('static', filename='js/face.js') }}"></script>
 <script src="{{ url_for('static', filename='js/login.js') }}"></script>
 {% endblock %}

@@ -9,6 +9,7 @@ All DB access goes through database.db — no Flask imports here.
 import os
 import re
 import sqlite3
+from datetime import datetime, timedelta, timezone
 
 import config
 from modules.strings import MSG
@@ -165,6 +166,88 @@ def create_account(username: str, email: str, password: str,
 
 
 
+_LOCK_ESCALATION: tuple[tuple[int, int], ...] = (
+    (20, 30 * 60),
+    (15, 15 * 60),
+    (10, 5 * 60),
+    (5, 60),
+)
+
+
+def _sekarang_utc() -> datetime:
+    """Waktu UTC sadar zona untuk perhitungan kunci akun."""
+    return datetime.now(timezone.utc)
+
+
+def _format_waktu(nilai: datetime) -> str:
+    return nilai.strftime("%Y-%m-%d %H:%M:%S")
+
+
+def _parse_waktu(teks) -> datetime | None:
+    if not teks:
+        return None
+    try:
+        return datetime.strptime(str(teks), "%Y-%m-%d %H:%M:%S").replace(
+            tzinfo=timezone.utc
+        )
+    except (TypeError, ValueError):
+        return None
+
+
+def durasi_kunci(percobaan: int) -> int | None:
+    """
+    Detik kunci sementara untuk jumlah kegagalan beruntun.
+
+    Kunci naik bertahap: 5 gagal → 1 menit, 10 → 5 menit, 15 → 15 menit,
+    20 atau lebih → 30 menit. Di bawah 5 belum dikunci.
+    """
+    for ambang, detik in _LOCK_ESCALATION:
+        if percobaan >= ambang:
+            return detik
+    return None
+
+
+def akun_terkunci(row) -> bool:
+    """True bila ``locked_until`` akun masih berada di masa depan."""
+    try:
+        batas = _parse_waktu(row["locked_until"])
+        percobaan = int(row["failed_attempts"] or 0)
+    except (KeyError, IndexError, TypeError, ValueError):
+        return False
+    if percobaan < 5:
+        return False
+    return batas is not None and _sekarang_utc() < batas
+
+
+def _catat_kegagalan(user_id: int, percobaan) -> None:
+    """Naikkan hitungan gagal dan pasang kunci sementara bila mencapai ambang."""
+    try:
+        baru = int(percobaan or 0) + 1
+    except (TypeError, ValueError):
+        baru = 1
+    detik = durasi_kunci(baru)
+    batas = (
+        _format_waktu(_sekarang_utc() + timedelta(seconds=detik))
+        if detik else None
+    )
+    with get_db() as db:
+        db.execute(
+            "UPDATE users SET failed_attempts=?, locked_until=? WHERE id=?",
+            (baru, batas, user_id),
+        )
+        db.commit()
+
+
+def _bersihkan_kegagalan(user_id: int) -> None:
+    """Reset hitungan gagal setelah masuk berhasil."""
+    with get_db() as db:
+        db.execute(
+            "UPDATE users SET failed_attempts=0, locked_until=NULL WHERE id=?",
+            (user_id,),
+        )
+        db.commit()
+
+
 def _biaya_tiruan(password: str) -> None:
     """
     Jalankan biaya hash yang sama dengan jalur nyata bila username tidak
@@ -205,22 +288,30 @@ def verifikasi_tahap_satu(username: str, password: str) -> dict:
         _biaya_tiruan(password)
         return {"success": False, "error": MSG.LOGIN_STAGE1_FAILED}
 
+    if akun_terkunci(row):
+        return {"success": False, "error": MSG.LOGIN_STAGE1_FAILED}
+
     if not verify_password(password, row["password_hash"], row["salt"]):
+        _catat_kegagalan(row["id"], row["failed_attempts"])
         return {"success": False, "error": MSG.LOGIN_STAGE1_FAILED}
 
     if not row["usb_token_id"] or not row["usb_verifier"]:
+        _catat_kegagalan(row["id"], row["failed_attempts"])
         return {"success": False, "error": MSG.LOGIN_STAGE1_FAILED}
     sah, rahasia = usb_mod.verify_usb_token(
         row["usb_verifier"], row["usb_volume_serial"], row["usb_token_id"]
     )
     if not sah or rahasia is None:
+        _catat_kegagalan(row["id"], row["failed_attempts"])
         return {"success": False, "error": MSG.LOGIN_STAGE1_FAILED}
 
     try:
         dek = unlock_dek(password, rahasia, dict(row))
     except (TypeError, ValueError, KeyError):
+        _catat_kegagalan(row["id"], row["failed_attempts"])
         return {"success": False, "error": MSG.LOGIN_STAGE1_FAILED}
 
+    _bersihkan_kegagalan(row["id"])
     return {"success": True, "user": dict(row), "dek": dek}
 
 

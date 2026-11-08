@@ -174,6 +174,10 @@ def create_app() -> Flask:
     def root():
         return redirect(url_for("auth.login"))
 
+    # ── Sesi G: pembatas laju endpoint sensitif (butir 2.7) ──────────────────
+    from modules.rate_limit import init_app as _init_rate_limit
+    _init_rate_limit(app)
+
     return app
 
 

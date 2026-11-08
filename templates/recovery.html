@@ -14,7 +14,7 @@
   <code id="recovery-key" style="user-select:all; word-break:break-all;">{{ recovery_key }}</code>
 </div>
 
-<form method="POST" action="{{ url_for('auth.recovery_confirm') }}">
+<form method="POST" action="{{ next_action or url_for('auth.recovery_confirm') }}">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
   <input type="hidden" name="pending" value="{{ pending }}" />
   <div class="form-group form-check">
@@ -23,6 +23,6 @@
       Saya sudah menyimpannya
     </label>
   </div>
-  <button type="submit" class="btn btn-primary btn-full">Lanjut ke Penyiapan Keamanan</button>
+  <button type="submit" class="btn btn-primary btn-full">{{ next_label or 'Lanjut ke Penyiapan Keamanan' }}</button>
 </form>
 {% endblock %}
