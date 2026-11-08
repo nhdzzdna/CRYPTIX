@@ -18,13 +18,14 @@ from modules.strings import MSG
 from modules.authentication.auth import (
     create_account, validate_registration, validate_password,
     verifikasi_tahap_satu, get_user_by_id,
-    store_usb_token,
+    reregister_usb_token,
 )
 from modules.authentication.password_hash import hash_password
 from modules.authentication import biometrics
 from modules.authentication import face_recognition as face_mod
 from modules.authentication import usb_authentication as usb_mod
 from modules.authentication import webauthn
+from modules.authentication.reauth import require_grant
 from modules.cryptography import pending_keys, session_keys
 from modules.cryptography.key_management import (
     recover_dek, rewrap_dek, rewrap_recovery_key,
@@ -398,6 +399,7 @@ def webauthn_register_options():
 
 
 @auth_bp.route("/api/webauthn/register/complete", methods=["POST"])
+@require_grant("biometric.manage", when=lambda: bool(session.get("user_id")))
 def webauthn_register_complete():
     """Verifikasi respons navigator.credentials.create() lalu simpan."""
     user_id = _pengguna_webauthn()
@@ -461,7 +463,7 @@ def _finalisasi_masuk(user: dict, dek: bytes) -> None:
     session["username"]  = user["username"]
     session.permanent    = True
     session["session_id"] = sid
-    session_keys.put(sid, dek)
+    session_keys.put(sid, dek, user.get("session_timeout_minutes"))
 
     from database.db import get_db as _get_db
     with _get_db() as db:
@@ -622,6 +624,7 @@ def logout():
 # ── Face registration (AJAX endpoint) ────────────────────────────────────────
 
 @auth_bp.route("/api/register_face", methods=["POST"])
+@require_grant("biometric.manage", when=lambda: bool(session.get("user_id")))
 def register_face():
     """
     Daftarkan wajah dari sedikitnya 30 frame selama 3 detik. Template ROI
@@ -737,22 +740,26 @@ def verify_face():
 
 @auth_bp.route("/api/register_usb", methods=["POST"])
 @login_required
+@require_grant("settings.change")
 def register_usb():
     """Tulis berkas token ke dongle terpilih (atau drive pertama) dan simpan verifier."""
-    mountpoint = request.form.get("mountpoint", "").strip()
-    if not mountpoint:
-        drives = usb_mod.daftar_drive()
-        mountpoint = drives[0]["mountpoint"] if drives else ""
-    result = usb_mod.register_usb_token(mountpoint)
-    if result is None:
-        return jsonify({"success": False, "error": MSG.USB_NO_DRIVE})
-    store_usb_token(
-        session["user_id"],
-        result["token_id"],
-        result["verifier"],
-        result["volume_serial"],
-    )
-    usb_mod.lupakan_cache(session["user_id"])
+    dek = session_keys.get(session.get("session_id", ""))
+    if dek is None:
+        return jsonify({"success": False, "error": MSG.SESSION_EXPIRED}), 401
+
+    try:
+        hasil = reregister_usb_token(
+            session["user_id"],
+            dek,
+            request.form.get("current_password", ""),
+            request.form.get("mountpoint", "").strip(),
+        )
+    finally:
+        del dek
+
+    if not hasil["success"]:
+        return jsonify({"success": False, "error": hasil["error"]})
+
     add_block(session["user_id"], "DONGLE_REGISTER", "auth:usb",
               content_hash(str(session["user_id"]).encode("utf-8")))
     return jsonify({"success": True, "message": MSG.USB_REGISTERED})

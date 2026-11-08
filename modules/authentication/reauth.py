@@ -258,13 +258,17 @@ def _pesan_penolakan(alasan: str) -> str:
     }.get(alasan, MSG.REAUTH_INVALID)
 
 
-def require_grant(scope: str):
+def require_grant(scope: str, when=None):
     """
     Decorator rute: tolak bila grant untuk *scope* tidak sah.
 
     ``resource_id`` diambil dari argumen route bernama ``resource_id``.
     Grant dikirim melalui header ``X-Reauth-Grant`` (atau field form
     ``reauth_grant``), tidak pernah melalui URL.
+
+    ``when`` opsional: callable tanpa argumen. Bila hasilnya False, grant
+    tidak diminta. Dipakai agar alur penyiapan awal (belum ada sesi login)
+    tetap bebas grant, sedangkan alur Settings yang sudah masuk wajib grant.
     """
     if scope not in SCOPES:
         raise ValueError(f"Scope tidak dikenal: {scope}")
@@ -272,6 +276,8 @@ def require_grant(scope: str):
     def dekorator(view):
         @wraps(view)
         def terbungkus(*args, **kwargs):
+            if when is not None and not when():
+                return view(*args, **kwargs)
             token = _token_dari_permintaan()
             sah, alasan = consume_grant(
                 token,

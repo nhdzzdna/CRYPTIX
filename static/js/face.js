@@ -62,9 +62,11 @@ window.CryptixBiometrik = window.CryptixBiometrik || { penangan: {} };
     return stream;
   }
 
-  async function kirimPendaftaran(hasil, statusEl) {
+  async function kirimPendaftaran(hasil, statusEl, grant) {
+    const headers = grant ? { "X-Reauth-Grant": grant } : undefined;
     const resp = await apiFetch("/api/register_face", {
       method: "POST",
+      headers: headers,
       body: JSON.stringify(hasil),
     });
     const data = await resp.json();
@@ -80,7 +82,9 @@ window.CryptixBiometrik = window.CryptixBiometrik || { penangan: {} };
     return data;
   }
 
-  async function daftar(videoId, canvasId, statusId) {
+  async function daftar(videoId, canvasId, statusId, opsiOpsional) {
+    const opsiTambahan = opsiOpsional || {};
+    const grant = typeof opsiTambahan.grant === "string" ? opsiTambahan.grant : "";
     const video = document.getElementById(videoId);
     const canvas = document.getElementById(canvasId);
     const statusEl = document.getElementById(statusId);
@@ -95,7 +99,7 @@ window.CryptixBiometrik = window.CryptixBiometrik || { penangan: {} };
         setStatus(statusEl, "Sampel: " + n + "/30");
       });
       setStatus(statusEl, "Mengirim sampel\u2026");
-      return await kirimPendaftaran(hasil, statusEl);
+      return await kirimPendaftaran(hasil, statusEl, grant);
     } catch (err) {
       setStatus(statusEl, "\u274c " + (err.message || "Pendaftaran wajah gagal."),
         "#ef4444");

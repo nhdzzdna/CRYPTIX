@@ -3,65 +3,145 @@
 {% block page_title %}Settings{% endblock %}
 
 {% block content %}
+
+{% if recovery_key_baru %}
+<!-- Kunci pemulihan baru: hanya ada di respons ini (Cache-Control: no-store). -->
+<div class="card mb-4">
+  <div class="card-header">🔑 Kunci Pemulihan Baru</div>
+  <div class="card-body">
+    <div class="alert alert-warning">
+      Simpan kunci ini sekarang. Kunci hanya ditampilkan satu kali dan tidak
+      dapat dilihat lagi setelah halaman ditutup.
+    </div>
+    <p class="mono" style="font-size:1rem; word-break:break-all; user-select:all;">
+      {{ recovery_key_baru }}
+    </p>
+    <small class="form-hint">
+      Kunci pemulihan membuka data yang sama dengan kata sandi dan dongle.
+      Jangan bagikan kunci ini kepada siapa pun.
+    </small>
+  </div>
+</div>
+{% endif %}
+
+<!-- Profile / Change Password -->
+<div class="card mb-4">
+  <div class="card-header">👤 Profil & Keamanan</div>
+  <div class="card-body">
+    <p><strong>Username:</strong> {{ user.username }}</p>
+    <p><strong>Email:</strong> {{ user.email }}</p>
+    <p><strong>Bergabung:</strong> {{ user.created_at[:16] }}</p>
+    <p><strong>Login Terakhir:</strong> {{ user.last_login[:16] if user.last_login else '—' }}</p>
+    <hr />
+    <h4>Ganti Password</h4>
+    <form method="POST" action="{{ url_for('settings.change_password') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+      <div class="form-group">
+        <label>Password Saat Ini</label>
+        <input type="password" name="current_password" class="form-control"
+               required autocomplete="current-password" />
+      </div>
+      <div class="form-group">
+        <label>Password Baru</label>
+        <input type="password" name="new_password" class="form-control"
+               required minlength="12" autocomplete="new-password" />
+        <small class="form-hint">Minimal 12 karakter, memuat 3 dari 4 jenis
+          karakter (huruf kecil, huruf besar, angka, simbol), tanpa nama
+          pengguna.</small>
+      </div>
+      <div class="form-group">
+        <label>Konfirmasi Password Baru</label>
+        <input type="password" name="confirm_password" class="form-control"
+               required autocomplete="new-password" />
+      </div>
+      <button type="submit" class="btn btn-primary"
+              data-reauth="settings.change">Ganti Password</button>
+    </form>
+  </div>
+</div>
+
 <div class="card-grid-2">
 
-  <!-- Profile / Change Password -->
+  <!-- Dongle, recovery key, session lifetime -->
   <div class="card">
-    <div class="card-header">👤 Profil & Keamanan</div>
-    <div class="card-body">
-      <p><strong>Username:</strong> {{ user.username }}</p>
-      <p><strong>Email:</strong> {{ user.email }}</p>
-      <p><strong>Bergabung:</strong> {{ user.created_at[:16] }}</p>
-      <p><strong>Login Terakhir:</strong> {{ user.last_login[:16] if user.last_login else '—' }}</p>
-      <hr />
-      <h4>Ganti Password</h4>
-      <form method="POST" action="{{ url_for('settings.change_password') }}">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-        <div class="form-group">
-          <label>Password Saat Ini</label>
-          <input type="password" name="current_password" class="form-control"
-                 required autocomplete="current-password" />
-        </div>
-        <div class="form-group">
-          <label>Password Baru</label>
-          <input type="password" name="new_password" class="form-control"
-                 required minlength="12" autocomplete="new-password" />
-          <small class="form-hint">Minimal 12 karakter, memuat 3 dari 4 jenis
-            karakter (huruf kecil, huruf besar, angka, simbol), tanpa nama
-            pengguna.</small>
-        </div>
-        <div class="form-group">
-          <label>Konfirmasi Password Baru</label>
-          <input type="password" name="confirm_password" class="form-control"
-                 required autocomplete="new-password" />
-        </div>
-        <button type="submit" class="btn btn-primary"
-                data-reauth="settings.change">Ganti Password</button>
-      </form>
-    </div>
-  </div>
-
-  <!-- Security -->
-  <div class="card">
-    <div class="card-header">🔐 Autentikasi Tambahan</div>
+    <div class="card-header">🔐 Perangkat & Sesi</div>
     <div class="card-body">
 
       <!-- USB Token -->
-      <h4>USB Token</h4>
+      <h4>USB Token / Dongle</h4>
       <p class="text-muted">
-        Status: {% if user.usb_token_id %}
+        Status:
+        {% if user.usb_token_id %}
           <span class="badge badge-success">✅ Terdaftar</span>
         {% else %}
           <span class="badge badge-warning">Belum terdaftar</span>
         {% endif %}
+        {% if dongle_terpasang %}
+          <span class="badge badge-success">● Terpasang</span>
+        {% else %}
+          <span class="badge badge-danger">○ Tidak terpasang</span>
+        {% endif %}
       </p>
       <form method="POST" action="{{ url_for('settings.register_usb') }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-        <button type="submit" class="btn btn-secondary">🔌 Daftarkan USB Token</button>
+        <div class="form-group">
+          <label for="dongle-password">Password Saat Ini</label>
+          <input type="password" id="dongle-password" name="current_password"
+                 class="form-control" required autocomplete="current-password" />
+          <small class="form-hint">
+            Diperlukan untuk membungkus ulang kunci data dengan dongle baru.
+          </small>
+        </div>
+        <button type="submit" class="btn btn-secondary btn-sm"
+                data-reauth="settings.change">🔌 Daftar Ulang Dongle</button>
       </form>
-      <small class="form-hint mt-1">Pastikan flashdisk tercolok sebelum mendaftar.</small>
+      <small class="form-hint mt-1">
+        Colok dongle pengganti sebelum mendaftar. Kunci data, berkas, dan
+        template biometrik tidak berubah.
+      </small>
 
       <hr />
+
+      <!-- Recovery key -->
+      <h4>Kunci Pemulihan</h4>
+      <p class="form-hint">
+        Terbitkan kunci pemulihan baru untuk kunci data yang sama. Kunci lama
+        langsung tidak berlaku; kunci baru hanya tampil satu kali.
+      </p>
+      <form method="POST" action="{{ url_for('settings.regenerate_recovery_key') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        <button type="submit" class="btn btn-secondary btn-sm"
+                data-reauth="settings.change">🔑 Terbitkan Kunci Pemulihan Baru</button>
+      </form>
+
+      <hr />
+
+      <!-- Session timeout -->
+      <h4>Batas Diam Sesi</h4>
+      <form method="POST" action="{{ url_for('settings.session_timeout') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        <div class="form-group">
+          <label for="session-timeout">Keluar otomatis setelah tidak aktif</label>
+          <select id="session-timeout" name="session_timeout_minutes"
+                  class="form-control">
+            {% for menit in session_timeout_pilihan %}
+            <option value="{{ menit }}" {% if menit == session_timeout %}selected{% endif %}>
+              {{ menit }} menit
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+        <button type="submit" class="btn btn-secondary btn-sm"
+                data-reauth="settings.change">Simpan Batas Sesi</button>
+      </form>
+      <small class="form-hint">Berlaku pada sesi ini dan sesi berikutnya.</small>
+    </div>
+  </div>
+
+  <!-- Biometrics -->
+  <div class="card">
+    <div class="card-header">🧬 Autentikasi Biometrik</div>
+    <div class="card-body">
 
       <!-- Face Registration -->
       <h4>Face Recognition</h4>
@@ -76,7 +156,8 @@
         <video id="settings-video" autoplay playsinline style="display:none;width:100%;border-radius:8px;"></video>
         <canvas id="settings-canvas" style="display:none;"></canvas>
         <button type="button" class="btn btn-secondary btn-sm"
-                onclick="CryptixFace.daftar('settings-video', 'settings-canvas', 'settings-face-status')">
+                data-settings-action="face-enroll"
+                data-reauth="biometric.manage">
           📷 Daftar Ulang Wajah
         </button>
       </div>
@@ -93,10 +174,47 @@
           <span class="badge badge-warning">Belum didaftarkan</span>
         {% endif %}
       </p>
+
+      {% if kredensial %}
+      <table class="table table-sm">
+        <thead>
+          <tr><th>Nama</th><th>Ditambahkan</th><th>Aksi</th></tr>
+        </thead>
+        <tbody>
+          {% for kredensial_item in kredensial %}
+          <tr>
+            <td>{{ kredensial_item.nama or '(tanpa nama)' }}</td>
+            <td class="text-muted small">
+              {{ kredensial_item.dibuat[:16] if kredensial_item.dibuat else '—' }}
+            </td>
+            <td>
+              <form method="POST" action="{{ url_for('settings.delete_webauthn') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                <input type="hidden" name="credential_id"
+                       value="{{ kredensial_item.credential_id }}" />
+                <button type="submit" class="btn btn-outline-danger btn-sm"
+                        data-reauth="biometric.manage">Hapus</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% endif %}
+
+      <div class="form-group">
+        <label for="webauthn-nama">Nama Kredensial</label>
+        <input type="text" id="webauthn-nama" class="form-control"
+               maxlength="64" placeholder="mis. Laptop kantor" autocomplete="off" />
+      </div>
       <button type="button" class="btn btn-secondary btn-sm"
-              onclick="daftarWebAuthn('settings-webauthn-status')">🔐 Daftarkan WebAuthn</button>
+              data-settings-action="webauthn-add"
+              data-reauth="biometric.manage">🔐 Tambah WebAuthn</button>
       <p id="settings-webauthn-status" class="form-hint"></p>
-      <small class="form-hint">Memakai autentikator platform perangkat ini (sidik jari atau Windows Hello).</small>
+      <small class="form-hint">
+        Memakai autentikator platform perangkat ini (sidik jari atau Windows
+        Hello). Minimal satu biometrik harus tetap terdaftar.
+      </small>
     </div>
   </div>
 
@@ -104,6 +222,6 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="{{ url_for('static', filename='js/webauthn.js') }}"></script>
 <script src="{{ url_for('static', filename='js/face.js') }}"></script>
+<script src="{{ url_for('static', filename='js/settings.js') }}"></script>
 {% endblock %}

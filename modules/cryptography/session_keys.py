@@ -32,8 +32,13 @@ def create_session_id() -> str:
     return secrets.token_urlsafe(32)
 
 
-def put(session_id: str, dek: bytes) -> None:
-    """Simpan DEK sebuah sesi; entri lama dibuang dan bytearray-nya ditimpa."""
+def put(session_id: str, dek: bytes, timeout_minutes: int | None = None) -> None:
+    """
+    Simpan DEK sebuah sesi; entri lama dibuang dan bytearray-nya ditimpa.
+
+    ``timeout_minutes`` adalah batas diam khusus pengguna (dari Settings).
+    Bila None, batas global config.SESSION_IDLE_MINUTES yang dipakai.
+    """
     if not session_id:
         raise ValueError("session_id wajib terisi")
     now = time.monotonic()
@@ -45,7 +50,19 @@ def put(session_id: str, dek: bytes) -> None:
             "dek": bytearray(dek),
             "created_at": now,
             "last_seen": now,
+            "timeout_minutes": timeout_minutes,
         }
+
+
+def set_timeout(session_id: str, timeout_minutes: int | None) -> None:
+    """Perbarui batas diam sesi yang sedang aktif tanpa mengubah DEK."""
+    if not session_id:
+        return
+    with _lock:
+        entri = _store.get(session_id)
+        if entri is not None:
+            entri["timeout_minutes"] = timeout_minutes
+            entri["last_seen"] = time.monotonic()
 
 
 def get(session_id: str) -> bytes | None:
@@ -85,7 +102,10 @@ def clear() -> None:
 
 def _kedaluwarsa(entri: dict, now: float) -> bool:
     """True bila batas diam atau batas mutlak sudah terlampaui."""
-    diam = config.SESSION_IDLE_MINUTES * 60
+    menit_diam = entri.get("timeout_minutes")
+    if menit_diam is None:
+        menit_diam = config.SESSION_IDLE_MINUTES
+    diam = menit_diam * 60
     mutlak = config.SESSION_ABSOLUTE_MINUTES * 60
     return (now - entri["last_seen"] > diam) or (now - entri["created_at"] > mutlak)
 

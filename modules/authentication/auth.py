@@ -15,7 +15,9 @@ import config
 from modules.strings import MSG
 from modules.authentication.password_hash import hash_password, verify_password
 from modules.authentication import usb_authentication as usb_mod
-from modules.cryptography.key_management import create_key_bundle, unlock_dek
+from modules.cryptography.key_management import (
+    create_key_bundle, rewrap_dek, unlock_dek,
+)
 from database.db import get_db
 
 
@@ -344,6 +346,58 @@ def store_usb_token(user_id: int, token_id: str, verifier: str,
             (token_id, verifier, volume_serial, user_id),
         )
         db.commit()
+
+
+def reregister_usb_token(user_id: int, dek: bytes, current_password: str,
+                         mountpoint: str = "") -> dict:
+    """
+    Daftarkan dongle baru dan bungkus ulang DEK dengan rahasia dongle itu.
+
+    KEK diturunkan dari kata sandi dan rahasia dongle, sehingga penggantian
+    dongle wajib menyertakan kata sandi saat ini agar login berikutnya tetap
+    dapat membuka DEK. DEK tidak berubah: data, template biometrik, dan kunci
+    pemulihan tetap sah.
+
+    Returns
+    -------
+    dict ``success`` dan ``error``/``token_id``.
+    """
+    user = get_user_by_id(user_id)
+    if user is None:
+        return {"success": False, "error": MSG.LOGIN_REQUIRED}
+    if not verify_password(
+        current_password, user["password_hash"], user["salt"]
+    ):
+        return {"success": False, "error": MSG.SETTINGS_WRONG_PASSWORD}
+
+    if not mountpoint:
+        drives = usb_mod.daftar_drive()
+        mountpoint = drives[0]["mountpoint"] if drives else ""
+
+    result = usb_mod.register_usb_token(mountpoint)
+    if result is None:
+        return {"success": False, "error": MSG.SETTINGS_USB_NO_DRIVE}
+
+    try:
+        bundle = rewrap_dek(
+            dek, current_password, result["secret"], user_id
+        )
+    except (TypeError, ValueError):
+        return {"success": False, "error": MSG.SETTINGS_PASSWORD_REWRAP_FAILED}
+
+    with get_db() as db:
+        db.execute(
+            "UPDATE users SET usb_token_id=?, usb_verifier=?, "
+            "usb_volume_serial=?, kek_salt=?, wrapped_dek=? WHERE id=?",
+            (
+                result["token_id"], result["verifier"],
+                result["volume_serial"], bundle["kek_salt"],
+                bundle["wrapped_dek"], user_id,
+            ),
+        )
+        db.commit()
+    usb_mod.lupakan_cache(user_id)
+    return {"success": True, "token_id": result["token_id"]}
 
 
 def update_face_model_path(user_id: int, path: str) -> None:
