@@ -11,8 +11,9 @@ authenticator_attachment="platform" dan user_verification="required".
 
 Challenge disimpan di sisi server, berlaku sementara, dan sekali pakai:
   • kunci_daftar(user_id) — pendaftaran (wizard penyiapan dan Settings)
-  • kunci_masuk(user_id)  — tahap 2 login; juga dipakai modul
-    autentikasi ulang (butir 3.5) lewat verifikasi_webauthn().
+  • kunci_masuk(user_id)  — tahap 2 login
+  • kunci_reauth(user_id) — autentikasi ulang (step-up) lewat
+    verifikasi_webauthn() dan buat_opsi_reauth().
 
 Saat modul ini dimuat, metode biometrik "webauthn" didaftarkan ke
 registry biometrics sehingga tahap 2 login cukup menerima bukti berbentuk
@@ -65,6 +66,11 @@ def kunci_daftar(user_id: int) -> str:
 def kunci_masuk(user_id: int) -> str:
     """Kunci tantangan masuk (tahap 2) untuk ``user_id``."""
     return f"masuk:{user_id}"
+
+
+def kunci_reauth(user_id: int) -> str:
+    """Kunci tantangan autentikasi ulang (step-up) untuk ``user_id``."""
+    return f"reauth:{user_id}"
 
 
 def _simpan(kunci: str, tantangan: bytes) -> None:
@@ -210,6 +216,24 @@ def daftarkan_kredensial(
 def buat_opsi_login(user_id: int) -> dict:
     """Opsi navigator.credentials.get() untuk tahap 2 login ``user_id``."""
     tantangan = tantangan_baru(kunci_masuk(user_id))
+    ada = [_deskriptor(k["credential_id"]) for k in kredensial_pengguna(user_id)]
+    opsi = generate_authentication_options(
+        rp_id=config.RP_ID,
+        challenge=tantangan,
+        allow_credentials=ada or None,
+        user_verification=UserVerificationRequirement.REQUIRED,
+    )
+    return options_to_json_dict(opsi)
+
+
+def buat_opsi_reauth(user_id: int) -> dict:
+    """
+    Opsi navigator.credentials.get() untuk autentikasi ulang (step-up).
+
+    Tantangan disimpan pada kunci_reauth(user_id), terpisah dari tantangan
+    tahap 2 login, dan dibuang setelah verifikasi berhasil.
+    """
+    tantangan = tantangan_baru(kunci_reauth(user_id))
     ada = [_deskriptor(k["credential_id"]) for k in kredensial_pengguna(user_id)]
     opsi = generate_authentication_options(
         rp_id=config.RP_ID,

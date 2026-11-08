@@ -15,6 +15,7 @@ ke rute yang memakai ``@require_grant(scope)``.
 from flask import Blueprint, jsonify, request, session
 
 from modules.authentication import reauth
+from modules.authentication import webauthn
 from modules.blockchain.blockchain import add_block, content_hash
 from modules.cryptography import session_keys
 from modules.strings import MSG
@@ -28,6 +29,33 @@ def _badan_permintaan() -> dict:
     if isinstance(data, dict):
         return data
     return request.form.to_dict()
+
+
+@reauth_bp.route("/api/reauth/webauthn/options", methods=["POST"])
+def reauth_webauthn_options():
+    """Terbitkan tantangan WebAuthn sekali pakai untuk autentikasi ulang."""
+    user_id = session.get("user_id")
+    session_id = session.get("session_id", "")
+    if not user_id or session_keys.get(session_id) is None:
+        return jsonify({
+            "success": False,
+            "error": MSG.SESSION_EXPIRED,
+        }), 401
+
+    if not webauthn.ada_kredensial(user_id):
+        return jsonify({
+            "success": False,
+            "error": MSG.REAUTH_WEBAUTHN_NONE,
+        }), 400
+
+    try:
+        opsi = webauthn.buat_opsi_reauth(user_id)
+    except Exception:
+        return jsonify({
+            "success": False,
+            "error": MSG.REAUTH_WEBAUTHN_FAILED,
+        }), 500
+    return jsonify({"success": True, "options": opsi})
 
 
 @reauth_bp.route("/api/reauth", methods=["POST"])

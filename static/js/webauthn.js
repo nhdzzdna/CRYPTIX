@@ -74,6 +74,19 @@ const CryptixWebAuthn = {
   },
 
   /**
+   * Jalankan navigator.credentials.get() dengan opsi dari server.
+   * Dipakai login tahap 2 dan tombol biometrik autentikasi ulang.
+   * @param {object} opsi opsi PublicKeyCredentialRequestOptions
+   */
+  async masukDenganOpsi(opsi) {
+    if (!window.PublicKeyCredential) {
+      throw new Error("Perangkat ini tidak mendukung WebAuthn.");
+    }
+    const kredensial = await navigator.credentials.get({ publicKey: opsi });
+    return _objekRespons(kredensial);
+  },
+
+  /**
    * Daftarkan autentikator platform untuk pengguna sesi ini.
    * @param {string} idStatus id elemen paragraf status (boleh kosong)
    */
@@ -133,6 +146,5 @@ window.CryptixBiometrik.penangan.webauthn = async function () {
   if (!window.PublicKeyCredential) {
     throw new Error("Perangkat ini tidak mendukung WebAuthn.");
   }
-  const kredensial = await navigator.credentials.get({ publicKey: opsi });
-  return _objekRespons(kredensial);
+  return window.CryptixWebAuthn.masukDenganOpsi(opsi);
 };

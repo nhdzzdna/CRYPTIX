@@ -187,10 +187,10 @@ class TestPenerbitanGrant:
         assert resp.status_code == 400
         assert resp.get_json()["error"] == MSG.REAUTH_METHOD_UNSUPPORTED
 
-    def test_webauthn_menolak_sampai_kait_diimplementasikan(self, client):
+    def test_webauthn_tanpa_respons_ditolak(self, client):
         resp = _minta_grant(client, method="webauthn")
         assert resp.status_code == 401
-        assert resp.get_json()["error"] == MSG.REAUTH_WEBAUTHN_PENDING
+        assert resp.get_json()["error"] == MSG.REAUTH_WEBAUTHN_FAILED
 
     def test_registri_metode_dapat_ditambah(self):
         nama = "uji_registri"

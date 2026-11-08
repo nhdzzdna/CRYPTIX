@@ -158,3 +158,6 @@ class MSG:
     STEGO_PASSPHRASE_REQUIRED = "Passphrase wajib diisi bila memilih kunci passphrase."
     STEGO_EXTRACT_TEXT_SUCCESS = "Pesan berhasil diekstrak."
     STEGO_EXTRACT_FILE_SUCCESS = "Berkas berhasil diekstrak."
+    # ── Sesi G: autentikasi ulang WebAuthn ────────────────────────────────────
+    REAUTH_WEBAUTHN_FAILED    = "Verifikasi WebAuthn gagal. Coba sekali lagi."
+    REAUTH_WEBAUTHN_NONE      = "Belum ada kredensial WebAuthn terdaftar untuk akun ini."

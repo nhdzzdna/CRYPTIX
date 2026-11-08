@@ -12,7 +12,8 @@ Alur:
     dipakai berulang untuk satu resource selama 15 menit agar permintaan
     HTTP Range tidak menghabiskan grant pada byte pertama.
   • Metode verifikasi berada pada registri yang dapat ditambah. WebAuthn
-    disediakan sebagai kait dan implementasinya menunggu sesi berikutnya.
+    memakai tantangan khusus step-up (webauthn.kunci_reauth) yang diterbitkan
+    lewat POST /api/reauth/webauthn/options.
 
 Kata sandi hanya diverifikasi terhadap hash autentikasi. Modul ini tidak
 menurunkan, menyimpan, atau mengirim kunci apa pun, dan tidak menulis kata
@@ -122,11 +123,20 @@ def _metode_password(user_id: int, payload: dict):
 
 @register_method("webauthn")
 def _metode_webauthn(user_id: int, payload: dict):
-    """
-    Kait WebAuthn. Implementasi autentikator menunggu Sesi F; sampai saat
-    itu metode ini selalu menolak agar tidak menjadi jalur bypass.
-    """
-    return False, MSG.REAUTH_WEBAUTHN_PENDING
+    """Verifikasi WebAuthn untuk autentikasi ulang (tantangan kunci_reauth)."""
+    from modules.authentication import webauthn
+
+    respons = payload.get("response")
+    if not isinstance(respons, dict):
+        return False, MSG.REAUTH_WEBAUTHN_FAILED
+    hasil = webauthn.verifikasi_webauthn(
+        user_id, respons, webauthn.kunci_reauth(user_id)
+    )
+    if hasil.get("success"):
+        return True, None
+    if hasil.get("error") == MSG.WEBAUTHN_NO_CREDENTIAL:
+        return False, MSG.REAUTH_WEBAUTHN_NONE
+    return False, MSG.REAUTH_WEBAUTHN_FAILED
 
 
 def issue_grant(session_id: str, scope: str, resource_id=None) -> dict:
