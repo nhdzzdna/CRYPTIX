@@ -337,3 +337,175 @@ class TestRuteStego:
             "passphrase": "",
         }, content_type="multipart/form-data", follow_redirects=True)
         assert MSG.STEGO_NO_MESSAGE in resp.get_data(as_text=True)
+
+    def test_ekstraksi_teks_lewat_json_dan_tampil_di_halaman(self, client):
+        token = _csrf(client)
+        resp = client.post("/steganography/embed", data={
+            "csrf_token": token,
+            "carrier_image": (io.BytesIO(_gambar_png()), "pembawa.png"),
+            "payload_type": "text",
+            "message": "pesan json tersembunyi",
+        }, content_type="multipart/form-data")
+        assert resp.status_code == 302
+
+        from database.db import get_db
+        with get_db() as db:
+            row = db.execute(
+                "SELECT * FROM stego_images WHERE user_id=1"
+            ).fetchone()
+
+        token = _csrf(client)
+        hasil = client.post(f"/steganography/extract/{row['id']}", data={
+            "csrf_token": token,
+        })
+        assert hasil.status_code == 200
+        assert hasil.is_json
+        data = hasil.get_json()
+        assert data["success"] is True
+        assert data["type"] == "text"
+        assert data["text"] == "pesan json tersembunyi"
+        assert data["encrypted"] is True
+        assert hasil.headers.get("X-Cryptix-Extract") == "text"
+
+    def test_kunci_otomatis_dek_dapat_diekstrak(self, client):
+        token = _csrf(client)
+        resp = client.post("/steganography/embed", data={
+            "csrf_token": token,
+            "carrier_image": (io.BytesIO(_gambar_png()), "pembawa.png"),
+            "payload_type": "text",
+            "key_mode": "account",
+            "message": "kunci akun otomatis",
+        }, content_type="multipart/form-data")
+        assert resp.status_code == 302
+
+        from database.db import get_db
+        with get_db() as db:
+            row = db.execute(
+                "SELECT * FROM stego_images WHERE user_id=1"
+            ).fetchone()
+        token = _csrf(client)
+        hasil = client.post(f"/steganography/extract/{row['id']}", data={
+            "csrf_token": token,
+        })
+        assert hasil.status_code == 200
+        assert hasil.get_json()["text"] == "kunci akun otomatis"
+
+    def test_sisip_teks_dengan_passphrase_lalu_ekstrak(self, client):
+        token = _csrf(client)
+        resp = client.post("/steganography/embed", data={
+            "csrf_token": token,
+            "carrier_image": (io.BytesIO(_gambar_png()), "pembawa.png"),
+            "payload_type": "text",
+            "key_mode": "passphrase",
+            "passphrase": PASSPHRASE,
+            "message": "pesan dengan passphrase",
+        }, content_type="multipart/form-data")
+        assert resp.status_code == 302
+
+        from database.db import get_db
+        with get_db() as db:
+            row = db.execute(
+                "SELECT stored_name FROM stego_images WHERE user_id=1"
+            ).fetchone()
+        with open(os.path.join(config.STEGO_IMAGES_DIR, row["stored_name"]), "rb") as f:
+            png_bytes = f.read()
+
+        token = _csrf(client)
+        benar = client.post("/steganography/extract-upload", data={
+            "csrf_token": token,
+            "stego_image": (io.BytesIO(png_bytes), "stego.png"),
+            "passphrase": PASSPHRASE,
+        }, content_type="multipart/form-data")
+        assert benar.status_code == 200
+        assert benar.get_json()["text"] == "pesan dengan passphrase"
+
+        token = _csrf(client)
+        salah = client.post("/steganography/extract-upload", data={
+            "csrf_token": token,
+            "stego_image": (io.BytesIO(png_bytes), "stego.png"),
+            "passphrase": "passphrase-salah",
+        }, content_type="multipart/form-data")
+        assert salah.status_code == 400
+        assert salah.is_json
+        assert salah.get_json()["success"] is False
+        assert salah.get_json()["error"] in {
+            MSG.STEGO_TAMPERED, MSG.STEGO_DECRYPT_FAILED,
+        }
+
+    def test_sisip_berkas_dengan_passphrase_lalu_ekstrak(self, client):
+        isi = b"berkas rahasia dengan passphrase " * 8
+        token = _csrf(client)
+        resp = client.post("/steganography/embed", data={
+            "csrf_token": token,
+            "carrier_image": (io.BytesIO(_gambar_png(180)), "pembawa.png"),
+            "payload_type": "file",
+            "key_mode": "passphrase",
+            "passphrase": PASSPHRASE,
+            "payload_file": (io.BytesIO(isi), "rahasia.txt"),
+        }, content_type="multipart/form-data")
+        assert resp.status_code == 302
+
+        from database.db import get_db
+        with get_db() as db:
+            row = db.execute(
+                "SELECT stored_name FROM stego_images WHERE user_id=1"
+            ).fetchone()
+        with open(os.path.join(config.STEGO_IMAGES_DIR, row["stored_name"]), "rb") as f:
+            png_bytes = f.read()
+
+        sebelum = set(os.listdir(config.TEMPORARY_FILES_DIR))
+        token = _csrf(client)
+        hasil = client.post("/steganography/extract-upload", data={
+            "csrf_token": token,
+            "stego_image": (io.BytesIO(png_bytes), "stego.png"),
+            "passphrase": PASSPHRASE,
+        }, content_type="multipart/form-data")
+        assert hasil.status_code == 200
+        assert hasil.data == isi
+        assert "rahasia.txt" in hasil.headers.get("Content-Disposition", "")
+        assert set(os.listdir(config.TEMPORARY_FILES_DIR)) == sebelum
+
+        token = _csrf(client)
+        salah = client.post("/steganography/extract-upload", data={
+            "csrf_token": token,
+            "stego_image": (io.BytesIO(png_bytes), "stego.png"),
+            "passphrase": "passphrase-salah",
+        }, content_type="multipart/form-data")
+        assert salah.status_code == 400
+        assert salah.is_json
+
+    def test_kapasitas_terlampaui_lewat_rute(self, client):
+        token = _csrf(client)
+        resp = client.post("/steganography/embed", data={
+            "csrf_token": token,
+            "carrier_image": (io.BytesIO(_gambar_png(20)), "kecil.png"),
+            "payload_type": "text",
+            "message": "A" * 500,
+        }, content_type="multipart/form-data", follow_redirects=True)
+        assert resp.status_code == 200
+        assert "terlalu besar" in resp.get_data(as_text=True).lower()
+
+    def test_passphrase_tidak_disimpan_di_session(self, client):
+        token = _csrf(client)
+        resp = client.post("/steganography/embed", data={
+            "csrf_token": token,
+            "carrier_image": (io.BytesIO(_gambar_png()), "pembawa.png"),
+            "payload_type": "text",
+            "key_mode": "passphrase",
+            "passphrase": PASSPHRASE,
+            "message": "jangan simpan passphrase",
+        }, content_type="multipart/form-data")
+        assert resp.status_code == 302
+        with client.session_transaction() as sess:
+            assert PASSPHRASE not in str(dict(sess))
+        assert PASSPHRASE not in resp.headers.get("Set-Cookie", "")
+
+    def test_halaman_memakai_js_eksternal_dan_panel_hasil(self, client):
+        body = client.get("/steganography").get_data(as_text=True)
+        assert 'id="stego-result"' in body
+        assert "js/steganography.js" in body
+        assert "onchange=" not in body
+        assert "oninput=" not in body
+        assert "onsubmit=" not in body
+        assert "<script>" not in body
+        assert 'type="password"' in body

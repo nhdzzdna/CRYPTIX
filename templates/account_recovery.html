@@ -1,0 +1,61 @@
+{% extends "auth_base.html" %}
+{% block title %}Pemulihan Akun — CRYPTIX{% endblock %}
+{% block card_class %}style="max-width:540px;"{% endblock %}
+{% block auth_title %}Pemulihan Akun{% endblock %}
+
+{% block auth_content %}
+<p class="form-hint">
+  Gunakan kunci pemulihan yang Anda simpan saat mendaftar. Pemulihan
+  memerlukan dongle baru yang terpasang, lalu menghasilkan kata sandi dan
+  kunci pemulihan baru. Berkas dan data biometrik tetap dapat dibuka.
+</p>
+
+<form method="POST" id="account-recovery-form">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+
+  <div class="form-group">
+    <label for="username">Username</label>
+    <input type="text" id="username" name="username" class="form-control"
+           required autofocus />
+  </div>
+
+  <div class="form-group">
+    <label for="recovery_key">Kunci Pemulihan</label>
+    <textarea id="recovery_key" name="recovery_key" class="form-control"
+              rows="3" required autocomplete="off"
+              placeholder="Contoh: XXXXX-XXXXX-XXXXX-XXXXX-XXXXX-XXXXX-XXXXX"></textarea>
+    <small class="form-hint">Salin kunci persis seperti saat ditampilkan,
+      termasuk tanda hubung.</small>
+  </div>
+
+  <div class="form-group">
+    <label for="password">Kata Sandi Baru</label>
+    <input type="password" id="password" name="password" class="form-control"
+           required minlength="12" autocomplete="new-password" />
+    <small class="form-hint">Minimal 12 karakter, memuat 3 dari 4 jenis karakter
+      (huruf kecil, huruf besar, angka, simbol), tanpa nama pengguna.</small>
+  </div>
+
+  <div class="form-group">
+    <label for="confirm_password">Konfirmasi Kata Sandi Baru</label>
+    <input type="password" id="confirm_password" name="confirm_password"
+           class="form-control" required autocomplete="new-password" />
+  </div>
+
+  <div class="form-group">
+    <label for="dongle">Dongle Baru</label>
+    <select id="dongle" name="dongle" class="form-control" required>
+      {% for d in drives %}
+        <option value="{{ d.mountpoint }}">{{ d.mountpoint }}</option>
+      {% else %}
+        <option value="" disabled selected>Tidak ada dongle terdeteksi</option>
+      {% endfor %}
+    </select>
+    <small class="form-hint">Colokkan dongle baru, lalu muat ulang halaman ini
+      bila daftar belum muncul.</small>
+  </div>
+
+  <button type="submit" class="btn btn-primary btn-full">Pulihkan Akun</button>
+  <p class="auth-link"><a href="{{ url_for('auth.login') }}">Kembali ke halaman masuk</a></p>
+</form>
+{% endblock %}

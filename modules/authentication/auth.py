@@ -2,21 +2,20 @@
 modules/authentication/auth.py
 ───────────────────────────────
 High-level authentication orchestrator.
-Combines password, face, fingerprint, and USB checks.
+Tahap 1 login dua tahap (password + dongle → DEK) dan pendaftaran akun.
 All DB access goes through database.db — no Flask imports here.
 """
 
 import os
 import re
 import sqlite3
+from datetime import datetime, timedelta, timezone
 
 import config
 from modules.strings import MSG
 from modules.authentication.password_hash import hash_password, verify_password
-from modules.authentication import face_recognition as face_mod
-from modules.authentication import fingerprint as fp_mod
 from modules.authentication import usb_authentication as usb_mod
-from modules.cryptography.key_management import create_key_bundle
+from modules.cryptography.key_management import create_key_bundle, unlock_dek
 from database.db import get_db
 
 
@@ -167,25 +166,118 @@ def create_account(username: str, email: str, password: str,
 
 
 
-def authenticate_user(
-    username: str,
-    password: str,
-    face_frame=None,           # numpy BGR array, optional
-    fingerprint_path: str | None = None,  # path to probe image
-) -> dict:
-    """
-    Full authentication pipeline.
+_LOCK_ESCALATION: tuple[tuple[int, int], ...] = (
+    (20, 30 * 60),
+    (15, 15 * 60),
+    (10, 5 * 60),
+    (5, 60),
+)
 
-    Steps:
-      1. Fetch user from DB.
-      2. Verify password hash.
-      3. Verify USB token (if USB_REQUIRED).
-      4. Verify face (if model exists and frame provided).
-      5. Verify fingerprint (if model exists and path provided).
+
+def _sekarang_utc() -> datetime:
+    """Waktu UTC sadar zona untuk perhitungan kunci akun."""
+    return datetime.now(timezone.utc)
+
+
+def _format_waktu(nilai: datetime) -> str:
+    return nilai.strftime("%Y-%m-%d %H:%M:%S")
+
+
+def _parse_waktu(teks) -> datetime | None:
+    if not teks:
+        return None
+    try:
+        return datetime.strptime(str(teks), "%Y-%m-%d %H:%M:%S").replace(
+            tzinfo=timezone.utc
+        )
+    except (TypeError, ValueError):
+        return None
+
+
+def durasi_kunci(percobaan: int) -> int | None:
+    """
+    Detik kunci sementara untuk jumlah kegagalan beruntun.
+
+    Kunci naik bertahap: 5 gagal → 1 menit, 10 → 5 menit, 15 → 15 menit,
+    20 atau lebih → 30 menit. Di bawah 5 belum dikunci.
+    """
+    for ambang, detik in _LOCK_ESCALATION:
+        if percobaan >= ambang:
+            return detik
+    return None
+
+
+def akun_terkunci(row) -> bool:
+    """True bila ``locked_until`` akun masih berada di masa depan."""
+    try:
+        batas = _parse_waktu(row["locked_until"])
+        percobaan = int(row["failed_attempts"] or 0)
+    except (KeyError, IndexError, TypeError, ValueError):
+        return False
+    if percobaan < 5:
+        return False
+    return batas is not None and _sekarang_utc() < batas
+
+
+def _catat_kegagalan(user_id: int, percobaan) -> None:
+    """Naikkan hitungan gagal dan pasang kunci sementara bila mencapai ambang."""
+    try:
+        baru = int(percobaan or 0) + 1
+    except (TypeError, ValueError):
+        baru = 1
+    detik = durasi_kunci(baru)
+    batas = (
+        _format_waktu(_sekarang_utc() + timedelta(seconds=detik))
+        if detik else None
+    )
+    with get_db() as db:
+        db.execute(
+            "UPDATE users SET failed_attempts=?, locked_until=? WHERE id=?",
+            (baru, batas, user_id),
+        )
+        db.commit()
+
+
+def _bersihkan_kegagalan(user_id: int) -> None:
+    """Reset hitungan gagal setelah masuk berhasil."""
+    with get_db() as db:
+        db.execute(
+            "UPDATE users SET failed_attempts=0, locked_until=NULL WHERE id=?",
+            (user_id,),
+        )
+        db.commit()
+
+
+def _biaya_tiruan(password: str) -> None:
+    """
+    Jalankan biaya hash yang sama dengan jalur nyata bila username tidak
+    ada, agar waktu respons tidak membocorkan keberadaan akun (butir 2.4a).
+    """
+    hash_password(password)  # PBKDF2 autentikasi
+    paket_tiruan = {
+        "id": -1,
+        "kek_salt": os.urandom(config.SALT_LENGTH).hex(),
+        "wrapped_dek": "v1:" + ("00" * 12) + ":" + ("00" * 32),
+    }
+    try:
+        unlock_dek(password, b"\x00" * 32, paket_tiruan)
+    except (TypeError, ValueError, KeyError):
+        pass  # blob tiruan memang tidak terbuka; biayanya tetap dijalankan
+
+
+def verifikasi_tahap_satu(username: str, password: str) -> dict:
+    """
+    Tahap 1 login dua tahap: verifikasi password dan rahasia dongle dalam
+    satu permintaan, lalu buka DEK dari key bundle dengan unlock_dek().
+
+    Password hanya hidup selama fungsi berjalan dan tidak pernah disimpan.
+    Password salah, dongle tidak ada, dongle tidak cocok, maupun username
+    tidak ada semuanya membalas satu pesan generik yang sama.
 
     Returns
     -------
-    dict with ``success`` bool, ``user`` row dict, and ``error`` string.
+    dict ``{"success": True, "user": dict, "dek": bytes}`` bila lulus;
+    ``{"success": False, "error": pesan_generik}`` bila gagal.
     """
     with get_db() as db:
         row = db.execute(
@@ -193,40 +285,34 @@ def authenticate_user(
         ).fetchone()
 
     if row is None:
-        return {"success": False, "error": MSG.AUTH_INVALID_CREDENTIALS}
+        _biaya_tiruan(password)
+        return {"success": False, "error": MSG.LOGIN_STAGE1_FAILED}
 
-    # ── 1. Password ──────────────────────────────────────────────────────────
+    if akun_terkunci(row):
+        return {"success": False, "error": MSG.LOGIN_STAGE1_FAILED}
+
     if not verify_password(password, row["password_hash"], row["salt"]):
-        return {"success": False, "error": MSG.AUTH_INVALID_CREDENTIALS}
+        _catat_kegagalan(row["id"], row["failed_attempts"])
+        return {"success": False, "error": MSG.LOGIN_STAGE1_FAILED}
 
-    # ── 2. USB Token ─────────────────────────────────────────────────────────
-    if config.USB_REQUIRED:
-        if not row["usb_token_id"] or not row["usb_verifier"]:
-            return {"success": False, "error": MSG.AUTH_USB_NOT_REGISTERED}
-        ok, _rahasia = usb_mod.verify_usb_token(
-            row["usb_verifier"], row["usb_volume_serial"], row["usb_token_id"]
-        )
-        if not ok:
-            return {"success": False, "error": MSG.AUTH_USB_INVALID}
+    if not row["usb_token_id"] or not row["usb_verifier"]:
+        _catat_kegagalan(row["id"], row["failed_attempts"])
+        return {"success": False, "error": MSG.LOGIN_STAGE1_FAILED}
+    sah, rahasia = usb_mod.verify_usb_token(
+        row["usb_verifier"], row["usb_volume_serial"], row["usb_token_id"]
+    )
+    if not sah or rahasia is None:
+        _catat_kegagalan(row["id"], row["failed_attempts"])
+        return {"success": False, "error": MSG.LOGIN_STAGE1_FAILED}
 
-    # ── 3. Face Recognition ──────────────────────────────────────────────────
-    if face_frame is not None and face_mod.has_face_model(row["id"]):
-        if not face_mod.verify_face_from_frame(row["id"], face_frame):
-            return {"success": False, "error": MSG.AUTH_FACE_FAILED}
+    try:
+        dek = unlock_dek(password, rahasia, dict(row))
+    except (TypeError, ValueError, KeyError):
+        _catat_kegagalan(row["id"], row["failed_attempts"])
+        return {"success": False, "error": MSG.LOGIN_STAGE1_FAILED}
 
-    # ── 4. Fingerprint ───────────────────────────────────────────────────────
-    if fingerprint_path and fp_mod.has_fingerprint(row["id"]):
-        if not fp_mod.verify_fingerprint(row["id"], fingerprint_path):
-            return {"success": False, "error": MSG.AUTH_FINGERPRINT_FAILED}
-
-    # ── Update last_login ────────────────────────────────────────────────────
-    with get_db() as db:
-        db.execute(
-            "UPDATE users SET last_login = datetime('now') WHERE id = ?", (row["id"],)
-        )
-        db.commit()
-
-    return {"success": True, "user": dict(row)}
+    _bersihkan_kegagalan(row["id"])
+    return {"success": True, "user": dict(row), "dek": dek}
 
 
 def get_user_by_id(user_id: int) -> dict | None:
@@ -266,6 +352,8 @@ def update_face_model_path(user_id: int, path: str) -> None:
         db.commit()
 
 
+# DEPRECATED (T8/T11): pemanggilnya (unggah citra sidik jari) dihapus pada
+# butir 2.5; status biometrik kini dicatat pada tabel webauthn_credentials.
 def update_fingerprint_path(user_id: int, path: str) -> None:
     with get_db() as db:
         db.execute("UPDATE users SET fingerprint_path=? WHERE id=?", (path, user_id))

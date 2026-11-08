@@ -5,6 +5,8 @@ Butir 3.1 (penyimpanan kunci sisi server), 3.2 (cookie dan batas waktu),
 dan 3.4 (meta csrf-token, apiFetch, handler CSRFError).
 """
 
+import json
+import os
 import re
 import time
 from pathlib import Path
@@ -14,13 +16,17 @@ import pytest
 import config
 from app import create_app
 from database.db import get_db, init_db
-from modules.authentication.auth import register_user
+from modules.authentication import biometrics
+from modules.authentication import usb_authentication as usb_mod
+from modules.authentication.auth import create_account
+from modules.blockchain import blockchain as bc
 from modules.cryptography import session_keys
-from modules.cryptography.key_management import derive_master_key
+from modules.cryptography.key_management import unlock_dek
 from modules.strings import MSG
 
 USERNAME = "penguji_sesi"
 KATA_SANDI = "kata-sandi-sesi-123"
+EMAIL = "sesi@contoh.test"
 DEK_UJI = b"\x11" * 32
 
 
@@ -33,8 +39,16 @@ def app(tmp_path, monkeypatch):
     # Turunkan biaya PBKDF2 khusus pengujian; login dan ekspektasi sama-sama
     # memakai config sehingga DEK yang dibandingkan tetap konsisten.
     monkeypatch.setattr(config, "PBKDF2_ITERATIONS", 1000)
+    monkeypatch.setattr(config, "KEK_PBKDF2_ITERATIONS", 1000)
+    monkeypatch.setattr(bc, "CHAIN_HEAD_PATH", str(tmp_path / "chain_head.json"))
+    monkeypatch.setattr(config, "CRYPTIX_DEV_MODE", True)
+    monkeypatch.setattr(config, "DEV_DONGLE_DIR", str(tmp_path / "dongle"))
+    monkeypatch.setattr(usb_mod, "_get_removable_drives", lambda: [])
     init_db()
-    register_user(USERNAME, "sesi@contoh.test", KATA_SANDI)
+    token = usb_mod.register_usb_token(str(tmp_path / "dongle"))
+    assert token is not None
+    hasil = create_account(USERNAME, EMAIL, KATA_SANDI, token)
+    assert hasil["success"], hasil
     application = create_app()
     application.config["TESTING"] = True
     return application
@@ -46,12 +60,29 @@ def client(app):
 
 
 def _masuk(client) -> str:
-    """Login lalu kembalikan session id; memastikan DEK tersimpan."""
+    """Login dua tahap lalu kembalikan session id; memastikan DEK tersimpan."""
     token = _token_meta(client.get("/login").get_data(as_text=True))
-    resp = client.post("/login", data={
-        "username": USERNAME, "password": KATA_SANDI, "csrf_token": token,
-    })
-    assert resp.status_code == 302
+    biometrics.tambah_metode(
+        "uji", "Metode Uji",
+        terdaftar=lambda user_id: True,
+        verifikasi=lambda user_id, bukti: bukti == {"kunci": "sah"},
+    )
+    try:
+        resp1 = client.post(
+            "/login",
+            json={"username": USERNAME, "password": KATA_SANDI},
+            headers={"X-CSRFToken": token},
+        )
+        assert resp1.status_code == 200, resp1.get_data(as_text=True)
+        resp2 = client.post(
+            "/login/biometric",
+            json={"pending": resp1.get_json()["pending"],
+                  "bukti": {"uji": {"kunci": "sah"}}},
+            headers={"X-CSRFToken": token},
+        )
+        assert resp2.status_code == 200, resp2.get_data(as_text=True)
+    finally:
+        biometrics.hapus_metode("uji")
     with client.session_transaction() as sess:
         return sess["session_id"]
 
@@ -159,11 +190,18 @@ class TestAlurLogin:
         assert isi["_permanent"] is True
 
         with get_db() as db:
-            salt = db.execute(
-                "SELECT salt FROM users WHERE username=?", (USERNAME,)
-            ).fetchone()["salt"]
-        assert session_keys.get(sid) == derive_master_key(KATA_SANDI, salt)
-        assert derive_master_key(KATA_SANDI, salt).hex() not in str(isi)
+            baris = db.execute(
+                "SELECT * FROM users WHERE username=?", (USERNAME,)
+            ).fetchone()
+        # DEK dibuka dari key bundle dengan password + rahasia dongle,
+        # bukan diturunkan dari password seperti alur lama.
+        with open(os.path.join(config.DEV_DONGLE_DIR, config.USB_TOKEN_FILENAME),
+                  encoding="utf-8") as handle:
+            rahasia = bytes.fromhex(json.load(handle)["secret"])
+        dek = unlock_dek(KATA_SANDI, rahasia, dict(baris))
+        assert session_keys.get(sid) == dek
+        assert dek.hex() not in str(isi)
+        assert KATA_SANDI not in str(isi)
 
     def test_cookie_hanya_memuat_id_pengguna_dan_username(self, app, client):
         _masuk(client)
@@ -251,8 +289,8 @@ class TestCSRF:
             json={"username": USERNAME, "frame": "abc"},
             headers={"X-CSRFToken": token},
         )
-        assert resp.status_code == 200
-        assert resp.get_json() == {"verified": False}
+        assert resp.status_code == 401
+        assert resp.get_json()["success"] is False
 
     def test_csrf_gagal_pada_form_html_dibalas_halaman(self, client):
         _masuk(client)

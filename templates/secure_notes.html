@@ -23,63 +23,60 @@
 
 {% if notes %}
   {% for note in notes %}
-  <div class="card mb-3">
+  <div class="card mb-3 note-entry" data-note="{{ note.id }}">
     <div class="card-header d-flex justify-between">
       <span>{{ note.title }}</span>
       <small class="text-muted">{{ note.updated_at[:16] }}</small>
     </div>
     <div class="card-body">
-      <p style="white-space:pre-wrap;">{{ note.content }}</p>
-      <div class="mt-2 d-flex gap-2">
-        <!-- Edit -->
-        <button class="btn btn-sm btn-secondary" onclick="openEdit({{ note.id }}, '{{ note.title|e }}', `{{ note.content|e }}`)">✏ Edit</button>
-        <!-- Delete -->
-        <form method="POST" action="{{ url_for('notes.delete', note_id=note.id) }}" style="display:inline"
-              onsubmit="return confirm('Hapus catatan ini?')">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-          <button type="submit" class="btn btn-sm btn-danger">🗑</button>
-        </form>
+      <div class="d-flex gap-2 align-center">
+        <button type="button" class="btn btn-sm btn-secondary"
+                data-reauth="note.open"
+                data-reauth-resource="{{ note.id }}"
+                data-note-open-id="{{ note.id }}"
+                data-note-open-url="{{ url_for('notes.open_note', resource_id=note.id) }}">📖 Buka</button>
+        <span class="text-muted" data-note-status="{{ note.id }}"></span>
       </div>
+
+      <div class="mt-2" data-note-box="{{ note.id }}" hidden>
+        <p style="white-space:pre-wrap;" data-note-content="{{ note.id }}"></p>
+        <button type="button" class="btn btn-sm btn-secondary"
+                data-note-close="{{ note.id }}">Tutup</button>
+      </div>
+
+      <form method="POST" action="{{ url_for('notes.edit', resource_id=note.id) }}"
+            class="mt-3" data-note-edit="{{ note.id }}" hidden>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        <div class="form-group">
+          <label>Judul</label>
+          <input type="text" name="title" class="form-control" required />
+        </div>
+        <div class="form-group">
+          <label>Isi</label>
+          <textarea name="content" class="form-control" rows="5" required></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary"
+                data-reauth="note.edit"
+                data-reauth-resource="{{ note.id }}">Simpan</button>
+        <button type="button" class="btn btn-secondary"
+                data-note-cancel="{{ note.id }}">Batal</button>
+      </form>
+
+      <form method="POST" action="{{ url_for('notes.delete', resource_id=note.id) }}"
+            style="display:inline" class="mt-2">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        <button type="submit" class="btn btn-sm btn-danger"
+                data-reauth="item.delete"
+                data-reauth-resource="{{ note.id }}">🗑 Hapus</button>
+      </form>
     </div>
   </div>
   {% endfor %}
 {% else %}
 <p class="text-muted">Belum ada catatan.</p>
 {% endif %}
-
-<!-- Edit Modal -->
-<div id="edit-modal" class="modal-overlay" style="display:none;">
-  <div class="modal-box">
-    <h3>Edit Catatan</h3>
-    <form method="POST" id="edit-form">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-      <div class="form-group">
-        <label>Judul</label>
-        <input type="text" name="title" id="edit-title" class="form-control" required />
-      </div>
-      <div class="form-group">
-        <label>Isi</label>
-        <textarea name="content" id="edit-content" class="form-control" rows="5" required></textarea>
-      </div>
-      <div class="d-flex gap-2 mt-2">
-        <button type="submit" class="btn btn-primary">Simpan</button>
-        <button type="button" class="btn btn-secondary" onclick="closeEdit()">Batal</button>
-      </div>
-    </form>
-  </div>
-</div>
 {% endblock %}
 
 {% block scripts %}
-<script>
-function openEdit(id, title, content) {
-  document.getElementById('edit-title').value = title;
-  document.getElementById('edit-content').value = content;
-  document.getElementById('edit-form').action = '/secure-notes/edit/' + id;
-  document.getElementById('edit-modal').style.display = 'flex';
-}
-function closeEdit() {
-  document.getElementById('edit-modal').style.display = 'none';
-}
-</script>
+<script src="{{ url_for('static', filename='js/secure_notes.js') }}"></script>
 {% endblock %}

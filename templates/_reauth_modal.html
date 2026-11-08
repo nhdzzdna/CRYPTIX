@@ -1,0 +1,26 @@
+{% raw %}
+<div id="reauth-modal" class="modal-overlay" style="display:none;"
+     role="dialog" aria-modal="true" aria-labelledby="reauth-title">
+  <div class="modal-box">
+    <h2 id="reauth-title" class="mb-3">Autentikasi Ulang</h2>
+    <p id="reauth-context" class="text-muted mb-3"></p>
+
+    <form id="reauth-form" novalidate>
+      <div class="form-group">
+        <label for="reauth-password">Kata sandi</label>
+        <input type="password" id="reauth-password" class="form-control"
+               autocomplete="current-password" required />
+      </div>
+
+      <div id="reauth-error" class="mt-3" style="display:none;"></div>
+
+      <div class="d-flex gap-2 mt-3">
+        <button type="submit" id="reauth-submit" class="btn btn-primary">Verifikasi</button>
+        <button type="button" id="reauth-webauthn" class="btn btn-secondary">Biometrik</button>
+        <button type="button" id="reauth-cancel" class="btn btn-secondary">Batal</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endraw %}
+<script src="{{ url_for('static', filename='js/reauth.js') }}"></script>

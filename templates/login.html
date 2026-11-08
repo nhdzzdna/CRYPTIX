@@ -3,7 +3,7 @@
 {% block auth_title %}Masuk ke Akun Anda{% endblock %}
 
 {% block auth_content %}
-<form method="POST" enctype="multipart/form-data" id="login-form">
+<form method="POST" id="login-form">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
 
   <div class="form-group">
@@ -18,67 +18,26 @@
            placeholder="Masukkan password" required />
   </div>
 
-  <!-- Fingerprint (optional) -->
-  <div class="form-group">
-    <label>Fingerprint (opsional)</label>
-    <input type="file" name="fingerprint_image" class="form-control"
-           accept=".png,.jpg,.jpeg,.bmp" />
-    <small class="form-hint">Simulasi: unggah citra sidik jari yang sama saat registrasi.</small>
-  </div>
+  <p id="dongle-status" class="form-hint">Memeriksa dongle…</p>
+  <div id="login-error" class="form-hint" role="alert"></div>
 
-  <!-- Face Recognition (optional) -->
-  <div class="form-group">
-    <label>Face Recognition (opsional)</label>
-    <div class="webcam-box" id="face-verify-box">
-      <video id="verify-video" autoplay playsinline style="display:none;width:100%;border-radius:8px;"></video>
-      <canvas id="verify-canvas" style="display:none;"></canvas>
-      <div class="webcam-buttons">
-        <button type="button" class="btn btn-secondary" onclick="startVerifyCamera()">📷 Buka Kamera</button>
-        <button type="button" class="btn btn-primary"   onclick="captureAndVerify()" id="btn-verify" style="display:none;">Verifikasi Wajah</button>
-      </div>
-      <p id="face-status" class="form-hint"></p>
-    </div>
-  </div>
-
-  <button type="submit" class="btn btn-primary btn-full">Masuk</button>
+  <button type="submit" class="btn btn-primary btn-full" id="btn-masuk">Masuk</button>
   <p class="auth-link">Belum punya akun? <a href="{{ url_for('auth.register') }}">Daftar di sini</a></p>
+  <p class="auth-link">Dongle hilang atau lupa kata sandi?
+    <a href="{{ url_for('auth.account_recovery') }}">Pulihkan akun</a></p>
 </form>
+
+<section id="stage2" hidden>
+  <p class="form-hint">Selesaikan verifikasi biometrik untuk menyelesaikan masuk.</p>
+  <ul id="metode-list"></ul>
+  <div id="stage2-error" class="form-hint" role="alert"></div>
+  <button type="button" class="btn btn-primary btn-full" id="btn-verifikasi">Verifikasi</button>
+  <p class="auth-link"><a href="{{ url_for('auth.login') }}">Mulai dari awal</a></p>
+</section>
 {% endblock %}
 
 {% block scripts %}
-<script>
-  let verifyStream = null;
-  function startVerifyCamera() {
-    navigator.mediaDevices.getUserMedia({video: true}).then(s => {
-      verifyStream = s;
-      const v = document.getElementById('verify-video');
-      v.srcObject = s;
-      v.style.display = 'block';
-      document.getElementById('btn-verify').style.display = 'inline-block';
-    }).catch(() => { document.getElementById('face-status').textContent = 'Kamera tidak tersedia.'; });
-  }
-  function captureAndVerify() {
-    const v = document.getElementById('verify-video');
-    const c = document.getElementById('verify-canvas');
-    c.width = v.videoWidth; c.height = v.videoHeight;
-    c.getContext('2d').drawImage(v, 0, 0);
-    const frame = c.toDataURL('image/jpeg');
-    const uname = document.getElementById('username').value;
-    apiFetch('/api/verify_face', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({username: uname, frame: frame})
-    }).then(r => r.json()).then(d => {
-      const st = document.getElementById('face-status');
-      if (d.verified) {
-        st.textContent = '✅ Wajah terverifikasi!';
-        st.style.color = '#22c55e';
-      } else {
-        st.textContent = '❌ Wajah tidak cocok.';
-        st.style.color = '#ef4444';
-      }
-      if (verifyStream) verifyStream.getTracks().forEach(t => t.stop());
-    });
-  }
-</script>
+<script src="{{ url_for('static', filename='js/webauthn.js') }}"></script>
+<script src="{{ url_for('static', filename='js/face.js') }}"></script>
+<script src="{{ url_for('static', filename='js/login.js') }}"></script>
 {% endblock %}

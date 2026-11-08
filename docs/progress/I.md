@@ -1,0 +1,15 @@
+# Sesi I — Account Vault, Secure Notes, My Vault, Documents
+- Selesai: Account Vault, Secure Notes, My Vault/Documents dengan grant step-up.
+- File diubah: routes/account_routes.py, routes/notes_routes.py, routes/vault_routes.py, templates/account_vault.html, templates/secure_notes.html, templates/vault.html, templates/documents.html, templates/media_vault.html, static/js/account_vault.js, static/js/secure_notes.js, modules/strings.py, app.py, tests/conftest.py, tests/test_encrypted_storage.py.
+- pytest: baseline 390 passed; akhir 418 passed (`pytest -q`).
+- Desain: daftar hanya memuat nama situs/judul; reveal dan open mengembalikan JSON lewat POST + header grant; isi catatan dienkripsi Super Encryption lalu field database; unduhan memakai form POST, verifikasi SHA-256, header attachment dan no-store.
+- Scope route: POST /account-vault/reveal/<id> = account.reveal; POST /account-vault/edit/<id> = account.reveal; POST /account-vault/delete/<id> = item.delete.
+- Scope route: POST /secure-notes/open/<id> = note.open; POST /secure-notes/edit/<id> = note.edit; POST /secure-notes/delete/<id> = item.delete.
+- Scope route: POST /vault/decrypt/<id> = file.download; POST /vault/delete/<id> = item.delete (dipakai juga oleh Documents dan Media Vault).
+- Frontend: account_vault.js menghapus tampilan setelah 15 detik dan clipboard setelah 20 detik; secure_notes.js membuka isi hanya lewat grant; tidak ada JavaScript inline baru.
+- Sisa pekerjaan: tidak ada untuk lingkup ini; route Media dan Steganografi tetap menjadi lingkup sesi lain.
+- DEPRECATED: key_management.derive_master_key dipakai routes/auth_routes.py:299, tests/test_auth.py, tests/test_session_keys.py.
+- DEPRECATED: key_management.derive_purpose_key, get_file_encryption_key, get_db_encryption_key dipakai internal dan tests/test_auth.py.
+- DEPRECATED: file_encryption.encrypt_file, decrypt_file, save_encrypted_file, load_encrypted_file dipakai tests/test_file_encryption.py.
+- Catatan: templates/media_vault.html diperbarui hanya untuk memanggil vault.decrypt/vault.delete versi POST yang baru.
+- Tidak ada fungsi DEPRECATED baru.

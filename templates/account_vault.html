@@ -37,33 +37,86 @@
 
 <div class="card">
   <div class="card-header">Kredensial Tersimpan ({{ entries|length }})</div>
-  <div class="card-body p-0">
+  <div class="card-body">
     {% if entries %}
-    <table class="table">
-      <thead>
-        <tr><th>Situs</th><th>Username</th><th>Password</th><th>URL</th><th>Aksi</th></tr>
-      </thead>
-      <tbody>
-        {% for e in entries %}
-        <tr>
-          <td>{{ e.site_name }}</td>
-          <td>{{ e.username }}</td>
-          <td>
-            <span class="password-mask" data-pw="{{ e.password }}">••••••••</span>
-            <button class="btn btn-sm btn-ghost" onclick="togglePw(this)">👁</button>
-          </td>
-          <td>{% if e.url %}<a href="{{ e.url }}" target="_blank" rel="noopener">🔗</a>{% endif %}</td>
-          <td>
-            <form method="POST" action="{{ url_for('account.delete', entry_id=e.id) }}" style="display:inline"
-                  onsubmit="return confirm('Hapus kredensial ini?')">
-              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-              <button type="submit" class="btn btn-sm btn-danger">🗑</button>
-            </form>
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+      {% for e in entries %}
+      <div class="account-entry card mb-3" data-entry="{{ e.id }}">
+        <div class="card-header d-flex justify-between">
+          <span>{{ e.site_name }}</span>
+          <small class="text-muted">{{ e.updated_at[:16] }}</small>
+        </div>
+        <div class="card-body">
+          <div class="d-flex gap-2 align-center">
+            <button type="button" class="btn btn-sm btn-secondary"
+                    data-reauth="account.reveal"
+                    data-reauth-resource="{{ e.id }}"
+                    data-reveal-id="{{ e.id }}"
+                    data-reveal-url="{{ url_for('account.reveal', resource_id=e.id) }}">👁 Tampilkan</button>
+            <span class="text-muted" data-reveal-status="{{ e.id }}"></span>
+          </div>
+
+          <div class="mt-2" data-reveal-box="{{ e.id }}" hidden>
+            <dl class="data-list">
+              <dt>Username / Email</dt>
+              <dd class="d-flex gap-2 align-center">
+                <span data-field="username"></span>
+                <button type="button" class="btn btn-sm btn-ghost" data-copy-field="username">Salin</button>
+              </dd>
+              <dt>Password</dt>
+              <dd class="d-flex gap-2 align-center">
+                <span data-field="password"></span>
+                <button type="button" class="btn btn-sm btn-ghost" data-copy-field="password">Salin</button>
+              </dd>
+              <dt>URL</dt>
+              <dd data-field="url"></dd>
+              <dt>Catatan</dt>
+              <dd data-field="notes"></dd>
+            </dl>
+            <small class="text-muted" data-countdown="{{ e.id }}"></small>
+          </div>
+
+          <form method="POST" action="{{ url_for('account.edit', resource_id=e.id) }}"
+                class="mt-3" data-edit-form="{{ e.id }}" hidden>
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Nama Situs</label>
+                <input type="text" name="site_name" class="form-control" required />
+              </div>
+              <div class="form-group">
+                <label>Username / Email</label>
+                <input type="text" name="username" class="form-control" required />
+              </div>
+              <div class="form-group">
+                <label>Password</label>
+                <input type="password" name="password" class="form-control" required />
+              </div>
+              <div class="form-group">
+                <label>URL (opsional)</label>
+                <input type="url" name="url" class="form-control" />
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Catatan (opsional)</label>
+              <textarea name="notes" class="form-control" rows="2"></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary"
+                    data-reauth="account.reveal"
+                    data-reauth-resource="{{ e.id }}">Simpan Perubahan</button>
+            <button type="button" class="btn btn-secondary"
+                    data-edit-cancel="{{ e.id }}">Batal</button>
+          </form>
+
+          <form method="POST" action="{{ url_for('account.delete', resource_id=e.id) }}"
+                style="display:inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+            <button type="submit" class="btn btn-sm btn-danger mt-2"
+                    data-reauth="item.delete"
+                    data-reauth-resource="{{ e.id }}">🗑 Hapus</button>
+          </form>
+        </div>
+      </div>
+      {% endfor %}
     {% else %}
     <p class="p-3 text-muted">Belum ada kredensial tersimpan.</p>
     {% endif %}
@@ -72,10 +125,5 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
-function togglePw(btn) {
-  const span = btn.previousElementSibling;
-  span.textContent = span.textContent === '••••••••' ? span.dataset.pw : '••••••••';
-}
-</script>
+<script src="{{ url_for('static', filename='js/account_vault.js') }}"></script>
 {% endblock %}

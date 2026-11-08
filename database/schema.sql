@@ -19,6 +19,8 @@ CREATE TABLE IF NOT EXISTS users (
     usb_token_id    TEXT,               -- id token pada berkas .cryptix_token
     usb_verifier    TEXT,               -- HMAC-SHA256(rahasia dongle, "cryptix-usb-verifier") hex
     usb_volume_serial TEXT,             -- bound volume serial number
+    failed_attempts INTEGER NOT NULL DEFAULT 0,   -- Sesi G: kegagalan masuk beruntun
+    locked_until    TEXT,                          -- Sesi G: batas waktu kunci sementara
     created_at      TEXT    NOT NULL DEFAULT (datetime('now')),
     last_login      TEXT
 );
@@ -93,4 +95,23 @@ CREATE TABLE IF NOT EXISTS blockchain_log (
     nonce           INTEGER NOT NULL DEFAULT 0,    -- proof of work
     block_hash      TEXT    NOT NULL,
     signature       TEXT    NOT NULL    -- HMAC-SHA256(kunci rantai, block_hash)
+);
+
+-- === Sesi F: kredensial WebAuthn (butir 2.5) ===--------------------------------------------------------
+CREATE TABLE IF NOT EXISTS webauthn_credentials (
+    user_id       INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    credential_id TEXT    NOT NULL UNIQUE,
+    public_key    TEXT    NOT NULL,
+    sign_count    INTEGER NOT NULL DEFAULT 0,
+    nama          TEXT    NOT NULL DEFAULT '',
+    dibuat        TEXT    NOT NULL DEFAULT (datetime('now'))
+);
+
+-- === Sesi G: template wajah terenkripsi (butir 2.6b) ===-------------------------------
+CREATE TABLE IF NOT EXISTS biometric_templates (
+    user_id   INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    metode    TEXT    NOT NULL DEFAULT 'wajah',
+    template  BLOB    NOT NULL,   -- array ROI terkompresi, dienkripsi purpose_key(DEK, "face")
+    sampel    INTEGER NOT NULL,
+    dibuat    TEXT    NOT NULL DEFAULT (datetime('now'))
 );

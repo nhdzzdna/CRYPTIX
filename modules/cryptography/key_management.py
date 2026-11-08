@@ -183,6 +183,30 @@ def recover_dek(recovery_key, bundle) -> bytes:
     return _unwrap(recovery_kek, b["recovery_wrapped_dek"], _aad(RECOVERY_INFO, user_id))
 
 
+def rewrap_recovery_key(dek: bytes, user_id) -> dict:
+    """
+    Terbitkan kunci pemulihan baru untuk DEK yang sama.
+
+    DEK tidak berubah sehingga data lama dan template biometrik tetap sah.
+    Kunci baru hanya ditampilkan sekali kepada pengguna.
+
+    Returns
+    -------
+    dict berisi ``user_id``, ``recovery_wrapped_dek``, dan ``recovery_key``.
+    """
+    if len(dek) != 32:
+        raise ValueError("DEK harus 32 byte.")
+    rk = os.urandom(32)
+    recovery_kek = _hkdf(rk, None, RECOVERY_INFO)
+    return {
+        "user_id": user_id,
+        "recovery_wrapped_dek": _wrap(
+            recovery_kek, dek, _aad(RECOVERY_INFO, user_id)
+        ),
+        "recovery_key": format_recovery_key(rk),
+    }
+
+
 def purpose_key(dek: bytes, label) -> bytes:
     """
     Kunci per tujuan = HKDF(DEK, label).
@@ -221,38 +245,3 @@ def _parse_recovery_key(text: str) -> bytes:
         return base64.b32decode(cleaned)
     except Exception as exc:
         raise ValueError("Format kunci pemulihan tidak valid.") from exc
-
-
-# ── API lama (DEPRECATED — dihapus pada tugas T8 dan T11) ────────────────────
-
-def derive_master_key(password: str, salt_hex: str) -> bytes:
-    """DEPRECATED: gunakan create_key_bundle()/unlock_dek(). PBKDF2 dari salt autentikasi."""
-    salt = bytes.fromhex(salt_hex)
-    return hashlib.pbkdf2_hmac(
-        config.PBKDF2_HASH_ALGO,
-        password.encode("utf-8"),
-        salt,
-        config.PBKDF2_ITERATIONS,
-        dklen=32,
-    )
-
-
-def derive_purpose_key(master_key: bytes, label: bytes, length: int = 32) -> bytes:
-    """DEPRECATED: gunakan purpose_key(dek, label). HKDF lama berbasis label."""
-    hkdf = HKDF(
-        algorithm=_hashes.SHA256(),
-        length=length,
-        salt=label,
-        info=b"cryptix-key-derivation",
-    )
-    return hkdf.derive(master_key)
-
-
-def get_file_encryption_key(master_key: bytes) -> bytes:
-    """DEPRECATED: gunakan purpose_key(dek, "file"). Kunci enkripsi file lama."""
-    return derive_purpose_key(master_key, config.HKDF_SALT_FILE_ENC)
-
-
-def get_db_encryption_key(master_key: bytes) -> bytes:
-    """DEPRECATED: gunakan purpose_key(dek, "database"). Kunci field basis data lama."""
-    return derive_purpose_key(master_key, config.HKDF_SALT_DB_ENC)
