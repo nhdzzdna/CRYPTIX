@@ -206,47 +206,91 @@
     }, 1000);
   }
 
+  function kirimEkstraksi(formEkstrak, token) {
+    tampilkanHasil('alert-info', 'Memproses ekstraksi…', null);
+
+    var data = new FormData(formEkstrak);
+    var csrf = formEkstrak.querySelector('input[name="csrf_token"]');
+    if (csrf && !data.get('csrf_token')) {
+      data.append('csrf_token', csrf.value);
+    }
+
+    var headers = {};
+    if (token) {
+      headers['X-Reauth-Grant'] = token;
+    }
+
+    apiFetch(formEkstrak.action, {
+      method: 'POST',
+      headers: headers,
+      body: data
+    })
+      .then(function (resp) {
+        var tipe = resp.headers.get('Content-Type') || '';
+        if (tipe.indexOf('application/json') !== -1) {
+          return resp.json().then(function (payload) {
+            if (!resp.ok || !payload.success) {
+              throw new Error(payload.error || 'Ekstraksi gagal.');
+            }
+            if (payload.type === 'text') {
+              tampilkanHasil('alert-success', 'Pesan hasil ekstraksi:', payload.text);
+            } else {
+              tampilkanHasil('alert-success', payload.message || 'Ekstraksi berhasil.', null);
+            }
+          });
+        }
+
+        if (!resp.ok) {
+          throw new Error('Ekstraksi gagal.');
+        }
+        return resp.blob().then(function (blob) {
+          var nama = namaBerkasDari(resp.headers.get('Content-Disposition')) ||
+            'berkas-hasil';
+          unduhBlob(blob, nama);
+          tampilkanHasil('alert-success',
+            'Berkas berhasil diekstrak dan diunduh: ' + nama, null);
+        });
+      })
+      .catch(function (err) {
+        tampilkanHasil('alert-danger', 'Ekstraksi gagal.', err.message);
+      });
+  }
+
+  function formUntukResource(resource) {
+    var daftar = document.querySelectorAll('.stego-extract-form');
+    for (var i = 0; i < daftar.length; i += 1) {
+      if (daftar[i].getAttribute('data-reauth-resource') === String(resource)) {
+        return daftar[i];
+      }
+    }
+    return null;
+  }
+
+  document.addEventListener('cryptix:reauth-grant', function (event) {
+    var detail = event.detail || {};
+    if (detail.scope !== 'stego.extract') {
+      return;
+    }
+    var formEkstrak;
+    if (detail.resource) {
+      formEkstrak = formUntukResource(detail.resource);
+    } else {
+      formEkstrak = document.querySelector(
+        '.stego-extract-form[data-stego-upload="1"]'
+      );
+    }
+    if (formEkstrak) {
+      kirimEkstraksi(formEkstrak, detail.token);
+    }
+  });
+
   document.querySelectorAll('.stego-extract-form').forEach(function (formEkstrak) {
     formEkstrak.addEventListener('submit', function (event) {
       event.preventDefault();
-      tampilkanHasil('alert-info', 'Memproses ekstraksi…', null);
-
-      var data = new FormData(formEkstrak);
-      var token = formEkstrak.querySelector('input[name="csrf_token"]');
-      if (token && !data.get('csrf_token')) {
-        data.append('csrf_token', token.value);
+      var tombol = formEkstrak.querySelector('[data-reauth="stego.extract"]');
+      if (tombol) {
+        tombol.click();
       }
-
-      apiFetch(formEkstrak.action, { method: 'POST', body: data })
-        .then(function (resp) {
-          var tipe = resp.headers.get('Content-Type') || '';
-          if (tipe.indexOf('application/json') !== -1) {
-            return resp.json().then(function (payload) {
-              if (!resp.ok || !payload.success) {
-                throw new Error(payload.error || 'Ekstraksi gagal.');
-              }
-              if (payload.type === 'text') {
-                tampilkanHasil('alert-success', 'Pesan hasil ekstraksi:', payload.text);
-              } else {
-                tampilkanHasil('alert-success', payload.message || 'Ekstraksi berhasil.', null);
-              }
-            });
-          }
-
-          if (!resp.ok) {
-            throw new Error('Ekstraksi gagal.');
-          }
-          return resp.blob().then(function (blob) {
-            var nama = namaBerkasDari(resp.headers.get('Content-Disposition')) ||
-              'berkas-hasil';
-            unduhBlob(blob, nama);
-            tampilkanHasil('alert-success',
-              'Berkas berhasil diekstrak dan diunduh: ' + nama, null);
-          });
-        })
-        .catch(function (err) {
-          tampilkanHasil('alert-danger', 'Ekstraksi gagal.', err.message);
-        });
     });
   });
 

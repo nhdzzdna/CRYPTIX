@@ -212,6 +212,38 @@ def consume_grant(token: str, session_id: str, scope: str, resource_id=None):
         return True, "ok"
 
 
+def find_active_grant(session_id: str, scope: str, resource_id=None) -> str | None:
+    """
+    Cari token grant berulang yang masih berlaku untuk sesi, scope, dan
+    resource yang sama.
+
+    Dipakai ``require_grant`` ketika klien tidak dapat mengirim header,
+    misalnya elemen ``<audio>``/``<video>`` yang memuat URL langsung. Hanya
+    grant berulang (``media.stream``) yang dicari agar scope sekali pakai
+    tetap wajib menyertakan token secara eksplisit.
+    """
+    if not session_id:
+        return None
+    resource = normalize_resource_id(resource_id)
+    sekarang = _now()
+    with _lock:
+        _buang_kedaluwarsa(sekarang)
+        kandidat = None
+        for token, entri in _grants.items():
+            if not entri.get("reusable"):
+                continue
+            if not hmac.compare_digest(entri["session_id"], session_id):
+                continue
+            if entri["scope"] != scope:
+                continue
+            if entri["resource_id"] != resource:
+                continue
+            if (kandidat is None
+                    or entri["expires_at"] > _grants[kandidat]["expires_at"]):
+                kandidat = token
+        return kandidat
+
+
 def _buang_kedaluwarsa(sekarang: float) -> None:
     """Buang seluruh grant kedaluwarsa; pemanggil memegang lock."""
     for token in [
@@ -258,13 +290,23 @@ def _pesan_penolakan(alasan: str) -> str:
     }.get(alasan, MSG.REAUTH_INVALID)
 
 
+def _resource_id_dari_kwargs(kwargs: dict):
+    """Ambil resource id dari argumen rute yang lazim dipakai."""
+    for nama in ("resource_id", "file_id", "img_id"):
+        if nama in kwargs:
+            return kwargs[nama]
+    return None
+
+
 def require_grant(scope: str):
     """
     Decorator rute: tolak bila grant untuk *scope* tidak sah.
 
-    ``resource_id`` diambil dari argumen route bernama ``resource_id``.
-    Grant dikirim melalui header ``X-Reauth-Grant`` (atau field form
-    ``reauth_grant``), tidak pernah melalui URL.
+    ``resource_id`` diambil dari argumen route bernama ``resource_id``,
+    ``file_id``, atau ``img_id``. Grant dikirim melalui header
+    ``X-Reauth-Grant`` (atau field form ``reauth_grant``), tidak pernah
+    melalui URL. Untuk scope berulang (``media.stream``), grant aktif milik
+    sesi yang sama dicari bila header/field tidak ada.
     """
     if scope not in SCOPES:
         raise ValueError(f"Scope tidak dikenal: {scope}")
@@ -272,12 +314,16 @@ def require_grant(scope: str):
     def dekorator(view):
         @wraps(view)
         def terbungkus(*args, **kwargs):
+            session_id = session.get("session_id", "")
+            resource_id = _resource_id_dari_kwargs(kwargs)
             token = _token_dari_permintaan()
+            if not token and scope in REUSABLE_TTL:
+                token = find_active_grant(session_id, scope, resource_id) or ""
             sah, alasan = consume_grant(
                 token,
-                session.get("session_id", ""),
+                session_id,
                 scope,
-                kwargs.get("resource_id"),
+                resource_id,
             )
             if not sah:
                 status = 403 if alasan in {"scope", "resource"} else 401

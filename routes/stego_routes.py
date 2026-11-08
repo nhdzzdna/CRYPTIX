@@ -18,6 +18,7 @@ from werkzeug.utils import secure_filename
 
 import config
 from modules.strings import MSG
+from modules.authentication.reauth import require_grant
 from routes.auth_routes import login_required
 from database.db import get_db
 from modules.steganography.lsb import (
@@ -256,6 +257,7 @@ def _hasil_ekstraksi(result: dict):
 
 @stego_bp.route("/steganography/extract/<int:img_id>", methods=["POST"])
 @login_required
+@require_grant("stego.extract")
 def extract(img_id: int):
     with get_db() as db:
         row = db.execute(
@@ -281,6 +283,7 @@ def extract(img_id: int):
 
 @stego_bp.route("/steganography/extract-upload", methods=["POST"])
 @login_required
+@require_grant("stego.extract")
 def extract_upload():
     """Ekstrak muatan dari gambar yang diunggah; passphrase opsional."""
     carrier = request.files.get("stego_image")
@@ -324,6 +327,7 @@ def extract_upload():
 
 @stego_bp.route("/steganography/download/<int:img_id>")
 @login_required
+@require_grant("stego.download")
 def download(img_id: int):
     with get_db() as db:
         row = db.execute(
