@@ -122,6 +122,9 @@ class MSG:
     SETTINGS_WRONG_PASSWORD  = "Kata sandi lama tidak valid."
     SETTINGS_PASSWORD_MISMATCH = "Kata sandi baru tidak cocok."
     SETTINGS_PASSWORD_CHANGED  = "Kata sandi berhasil diubah. Silakan masuk kembali."
+    SETTINGS_PASSWORD_SAME     = "Kata sandi baru harus berbeda dari kata sandi saat ini."
+    SETTINGS_PASSWORD_REWRAP_FAILED = "Kata sandi gagal diubah karena kunci tidak dapat dibungkus ulang."
+    SETTINGS_USB_MISSING       = "Dongle terdaftar tidak terpasang atau tidak cocok."
     SETTINGS_USB_NO_DRIVE      = "Tidak ada media penyimpanan lepas yang terdeteksi."
     SETTINGS_USB_REGISTERED    = "Token USB berhasil didaftarkan."
 
