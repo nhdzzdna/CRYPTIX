@@ -24,6 +24,41 @@ function _base64url(bytes) {
   return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
+function _dariBase64url(teks) {
+  const b64 = teks.replace(/-/g, "+").replace(/_/g, "/");
+  const bin = atob(b64 + "=".repeat((4 - (b64.length % 4)) % 4));
+  const u8 = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) {
+    u8[i] = bin.charCodeAt(i);
+  }
+  return u8.buffer;
+}
+
+function _idKeBuffer(daftar) {
+  return daftar.map(function (c) {
+    return Object.assign({}, c, { id: _dariBase64url(c.id) });
+  });
+}
+
+function _opsiCipta(opsi) {
+  const o = Object.assign({}, opsi);
+  o.challenge = _dariBase64url(o.challenge);
+  o.user = Object.assign({}, o.user, { id: _dariBase64url(o.user.id) });
+  if (Array.isArray(o.excludeCredentials)) {
+    o.excludeCredentials = _idKeBuffer(o.excludeCredentials);
+  }
+  return o;
+}
+
+function _opsiMasuk(opsi) {
+  const o = Object.assign({}, opsi);
+  o.challenge = _dariBase64url(o.challenge);
+  if (Array.isArray(o.allowCredentials)) {
+    o.allowCredentials = _idKeBuffer(o.allowCredentials);
+  }
+  return o;
+}
+
 function _objekRespons(kredensial) {
   if (typeof kredensial.toJSON === "function") {
     return kredensial.toJSON();
@@ -82,7 +117,7 @@ const CryptixWebAuthn = {
     if (!window.PublicKeyCredential) {
       throw new Error("Perangkat ini tidak mendukung WebAuthn.");
     }
-    const kredensial = await navigator.credentials.get({ publicKey: opsi });
+    const kredensial = await navigator.credentials.get({ publicKey: _opsiMasuk(opsi) });
     return _objekRespons(kredensial);
   },
 
@@ -104,7 +139,7 @@ const CryptixWebAuthn = {
         throw new Error("Perangkat ini tidak mendukung WebAuthn.");
       }
       const opsi = await this._opsiDaftar();
-      const kredensial = await navigator.credentials.create({ publicKey: opsi });
+      const kredensial = await navigator.credentials.create({ publicKey: _opsiCipta(opsi) });
       set("Memverifikasi kredensial…");
       const resp = await apiFetch("/api/webauthn/register/complete", {
         method: "POST",
