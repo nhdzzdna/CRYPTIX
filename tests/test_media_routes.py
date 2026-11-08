@@ -14,6 +14,7 @@ import pytest
 import config
 from app import create_app
 from database.db import get_db, init_db
+from modules.authentication import reauth
 from modules.cryptography import session_keys
 from modules.cryptography.database_encryption import encrypt_field, field_aad
 from modules.cryptography.file_encryption import (
@@ -54,6 +55,7 @@ def app(tmp_path, monkeypatch):
 
     application = create_app()
     application.config["TESTING"] = True
+    reauth.clear()
     return application
 
 
@@ -75,6 +77,13 @@ def _csrf(client, halaman: str = "/media-vault") -> str:
     match = re.search(r'name="csrf_token" value="([^"]+)"', page.get_data(as_text=True))
     assert match
     return match.group(1)
+
+
+def _grant(client, scope: str, resource_id=None) -> str:
+    """Terbitkan grant untuk sesi klien uji tanpa lewat endpoint reauth."""
+    with client.session_transaction() as sess:
+        sid = sess["session_id"]
+    return reauth.issue_grant(sid, scope, resource_id)["token"]
 
 
 def _buat_media(user_id: int, nama: str, data: bytes, dek: bytes = DEK):
@@ -111,7 +120,10 @@ ISI_AUDIO = b"ID3" + bytes(range(256)) * 20
 class TestMediaStream:
     def test_stream_tanpa_range(self, client):
         file_id, _ = _buat_media(1, "lagu.mp3", ISI_AUDIO)
-        resp = client.get(f"/media-vault/stream/{file_id}")
+        resp = client.get(
+            f"/media-vault/stream/{file_id}",
+            headers={"X-Reauth-Grant": _grant(client, "media.stream", file_id)},
+        )
         assert resp.status_code == 200
         assert resp.data == ISI_AUDIO
         assert resp.headers["Accept-Ranges"] == "bytes"
@@ -122,7 +134,10 @@ class TestMediaStream:
         file_id, _ = _buat_media(1, "lagu.mp3", ISI_AUDIO)
         resp = client.get(
             f"/media-vault/stream/{file_id}",
-            headers={"Range": "bytes=2-9"},
+            headers={
+                "Range": "bytes=2-9",
+                "X-Reauth-Grant": _grant(client, "media.stream", file_id),
+            },
         )
         assert resp.status_code == 206
         assert resp.data == ISI_AUDIO[2:10]
@@ -134,7 +149,10 @@ class TestMediaStream:
         file_id, _ = _buat_media(1, "lagu.mp3", ISI_AUDIO)
         resp = client.get(
             f"/media-vault/stream/{file_id}",
-            headers={"Range": "bytes=10-"},
+            headers={
+                "Range": "bytes=10-",
+                "X-Reauth-Grant": _grant(client, "media.stream", file_id),
+            },
         )
         assert resp.status_code == 206
         assert resp.data == ISI_AUDIO[10:]
@@ -142,7 +160,10 @@ class TestMediaStream:
 
         resp = client.get(
             f"/media-vault/stream/{file_id}",
-            headers={"Range": "bytes=-10"},
+            headers={
+                "Range": "bytes=-10",
+                "X-Reauth-Grant": _grant(client, "media.stream", file_id),
+            },
         )
         assert resp.status_code == 206
         assert resp.data == ISI_AUDIO[-10:]
@@ -158,7 +179,10 @@ class TestMediaStream:
         file_id, _ = _buat_media(1, "lagu.mp3", ISI_AUDIO)
         resp = client.get(
             f"/media-vault/stream/{file_id}",
-            headers={"Range": rentang},
+            headers={
+                "Range": rentang,
+                "X-Reauth-Grant": _grant(client, "media.stream", file_id),
+            },
         )
         assert resp.status_code == 416
         assert resp.headers["Content-Range"] == f"bytes */{len(ISI_AUDIO)}"
@@ -166,7 +190,10 @@ class TestMediaStream:
 
     def test_pengguna_lain_tidak_boleh_mengakses(self, client):
         file_id, _ = _buat_media(2, "lagu.mp3", ISI_AUDIO)
-        resp = client.get(f"/media-vault/stream/{file_id}")
+        resp = client.get(
+            f"/media-vault/stream/{file_id}",
+            headers={"X-Reauth-Grant": _grant(client, "media.stream", file_id)},
+        )
         assert resp.status_code == 404
 
     def test_plaintext_tidak_ditulis_ke_disk(self, client):
@@ -174,7 +201,10 @@ class TestMediaStream:
         sebelum = set(os.listdir(config.TEMPORARY_FILES_DIR))
         resp = client.get(
             f"/media-vault/stream/{file_id}",
-            headers={"Range": "bytes=0-15"},
+            headers={
+                "Range": "bytes=0-15",
+                "X-Reauth-Grant": _grant(client, "media.stream", file_id),
+            },
         )
         assert resp.status_code == 206
         sesudah = set(os.listdir(config.TEMPORARY_FILES_DIR))
@@ -198,7 +228,10 @@ class TestMediaStream:
         file_id, _ = _buat_media(1, nama, ISI_AUDIO)
         resp = client.get(
             f"/media-vault/stream/{file_id}",
-            headers={"Range": "bytes=0-3"},
+            headers={
+                "Range": "bytes=0-3",
+                "X-Reauth-Grant": _grant(client, "media.stream", file_id),
+            },
         )
         assert resp.status_code == 206
         assert resp.headers["Content-Type"].startswith(mime)
@@ -206,7 +239,10 @@ class TestMediaStream:
     @pytest.mark.parametrize("nama", ["video.avi", "video.mkv", "video.mov"])
     def test_format_unduh_saja_ditolak_stream(self, client, nama):
         file_id, _ = _buat_media(1, nama, ISI_AUDIO)
-        resp = client.get(f"/media-vault/stream/{file_id}")
+        resp = client.get(
+            f"/media-vault/stream/{file_id}",
+            headers={"X-Reauth-Grant": _grant(client, "media.stream", file_id)},
+        )
         assert resp.status_code == 415
 
     def test_pemodifan_ciphertext_dicatat(self, client):
@@ -219,7 +255,10 @@ class TestMediaStream:
 
         resp = client.get(
             f"/media-vault/stream/{file_id}",
-            headers={"Range": "bytes=0-15"},
+            headers={
+                "Range": "bytes=0-15",
+                "X-Reauth-Grant": _grant(client, "media.stream", file_id),
+            },
         )
         assert resp.status_code == 403
         with get_db() as db:
@@ -247,7 +286,11 @@ class TestMediaHalaman:
         token = _csrf(client)
         resp = client.post(
             f"/media-vault/play/{file_id}",
-            data={"csrf_token": token, "player": "html5"},
+            data={
+                "csrf_token": token,
+                "reauth_grant": _grant(client, "media.winamp", file_id),
+                "player": "html5",
+            },
         )
         assert resp.status_code == 302
         assert f"/media-vault/stream/{file_id}" in resp.headers["Location"]
@@ -261,6 +304,10 @@ class TestMediaHalaman:
         token = _csrf(client)
         resp = client.post(
             f"/media-vault/play/{file_id}",
-            data={"csrf_token": token, "player": "winamp"},
+            data={
+                "csrf_token": token,
+                "reauth_grant": _grant(client, "media.winamp", file_id),
+                "player": "winamp",
+            },
         )
         assert resp.status_code == 400

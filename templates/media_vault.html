@@ -43,9 +43,17 @@
           <td>{{ f.uploaded_at[:16] }}</td>
           <td>
             {% if f.playable and f.file_type == 'audio' %}
-            <audio controls preload="none" src="{{ url_for('media.stream', file_id=f.id) }}"></audio>
+            <audio controls preload="none"
+                   data-stream-url="{{ url_for('media.stream', file_id=f.id) }}"
+                   data-stream-resource="{{ f.id }}"></audio>
+            <button type="button" class="btn btn-sm btn-primary mt-1"
+                    data-reauth="media.stream" data-reauth-resource="{{ f.id }}">▶ Putar</button>
             {% elif f.playable and f.file_type == 'video' %}
-            <video controls preload="none" width="240" src="{{ url_for('media.stream', file_id=f.id) }}"></video>
+            <video controls preload="none" width="240"
+                   data-stream-url="{{ url_for('media.stream', file_id=f.id) }}"
+                   data-stream-resource="{{ f.id }}"></video>
+            <button type="button" class="btn btn-sm btn-primary mt-1"
+                    data-reauth="media.stream" data-reauth-resource="{{ f.id }}">▶ Putar</button>
             {% else %}
             <span class="text-muted">{{ download_only_note }}</span>
             {% endif %}
@@ -55,14 +63,23 @@
             <small class="text-muted d-block">Codec harus didukung browser.</small>
             {% endif %}
             {% if winamp_available and f.file_type == 'audio' %}
-            <form method="POST" action="{{ url_for('media.play', file_id=f.id) }}" style="display:inline">
+            <form method="POST" action="{{ url_for('media.play', file_id=f.id) }}" style="display:inline"
+                  data-reauth="media.winamp" data-reauth-resource="{{ f.id }}">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
               <input type="hidden" name="player" value="winamp" />
               <button type="submit" class="btn btn-sm btn-secondary">🎵 Winamp</button>
             </form>
             {% endif %}
+
             <form method="POST" action="{{ url_for('vault.decrypt', resource_id=f.id) }}"
                   style="display:inline">
+
+            <a href="{{ url_for('media.download', file_id=f.id) }}"
+               class="btn btn-sm btn-success"
+               data-reauth="file.download" data-reauth-resource="{{ f.id }}">⬇</a>
+            <form method="POST" action="{{ url_for('vault.delete', resource_id=f.id) }}" style="display:inline"
+                  onsubmit="return confirm('Hapus?')">
+
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
               <button type="submit" class="btn btn-sm btn-success"
                       data-reauth="file.download"
@@ -85,4 +102,8 @@
     {% endif %}
   </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/media_vault.js') }}"></script>
 {% endblock %}

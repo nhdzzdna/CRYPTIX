@@ -19,7 +19,9 @@ import config
 from app import create_app
 from database.db import get_db, init_db
 from modules.authentication import reauth
+
 from modules.blockchain.blockchain import account_hash, content_hash
+
 from modules.cryptography import session_keys
 from modules.cryptography.database_encryption import decrypt_record
 from modules.cryptography.key_management import purpose_key
@@ -48,6 +50,7 @@ def app(tmp_path, monkeypatch):
 
     application = create_app()
     application.config["TESTING"] = True
+    reauth.clear()
     return application
 
 
@@ -279,7 +282,13 @@ class TestStegoOriginalName:
         body = client.get("/steganography").get_data(as_text=True)
         assert "gambar-pribadi.png" in body
 
-        unduhan = client.get(f"/steganography/download/{row['id']}")
+        with client.session_transaction() as sess:
+            sid = sess["session_id"]
+        grant = reauth.issue_grant(sid, "stego.download", row["id"])["token"]
+        unduhan = client.get(
+            f"/steganography/download/{row['id']}",
+            headers={"X-Reauth-Grant": grant},
+        )
         assert unduhan.status_code == 200
         assert "gambar-pribadi.png" in unduhan.headers.get("Content-Disposition", "")
 
