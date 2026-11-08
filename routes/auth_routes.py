@@ -16,17 +16,22 @@ from flask import (
 import config
 from modules.strings import MSG
 from modules.authentication.auth import (
-    create_account, validate_registration,
+    create_account, validate_registration, validate_password,
     verifikasi_tahap_satu, get_user_by_id,
     store_usb_token,
 )
+from modules.authentication.password_hash import hash_password
 from modules.authentication import biometrics
 from modules.authentication import face_recognition as face_mod
 from modules.authentication import usb_authentication as usb_mod
 from modules.authentication import webauthn
 from modules.cryptography import pending_keys, session_keys
-from modules.cryptography.key_management import recover_dek
-from modules.rate_limit import limiter, LOGIN_LIMIT, FACE_VERIFY_LIMIT
+from modules.cryptography.key_management import (
+    recover_dek, rewrap_dek, rewrap_recovery_key,
+)
+from modules.rate_limit import (
+    limiter, LOGIN_LIMIT, FACE_VERIFY_LIMIT, RECOVERY_LIMIT,
+)
 from modules.blockchain.blockchain import add_block, content_hash
 
 auth_bp = Blueprint("auth", __name__)
@@ -152,6 +157,122 @@ def recovery_confirm():
     _pasang_kunci_penyiapan(user_id, recovery_key)
     session["setup_user_id"] = user_id
     return redirect(url_for("auth.setup"))
+
+
+@auth_bp.route("/account-recovery", methods=["GET", "POST"])
+@limiter.limit(RECOVERY_LIMIT, methods=["POST"])
+def account_recovery():
+    """
+    Pulihkan akun tanpa kata sandi lama atau dongle lama (butir 2.8).
+
+    Kunci pemulihan membuka DEK; DEK dibungkus ulang dengan kata sandi dan
+    dongle baru, lalu kunci pemulihan baru diterbitkan. DEK tidak berubah
+    sehingga berkas dan template biometrik tetap sah.
+    """
+    drives = usb_mod.daftar_drive()
+    if request.method == "GET":
+        return render_template("account_recovery.html", drives=drives)
+
+    username = request.form.get("username", "").strip()
+    recovery_key = request.form.get("recovery_key", "").strip()
+    password = request.form.get("password", "")
+    confirm = request.form.get("confirm_password", "")
+
+    def _ulang():
+        return render_template(
+            "account_recovery.html", drives=usb_mod.daftar_drive()
+        )
+
+    if confirm != password:
+        flash(MSG.REGISTER_PASSWORD_MISMATCH, "danger")
+        return _ulang()
+    galat = validate_password(password, username)
+    if galat:
+        flash(galat, "danger")
+        return _ulang()
+
+    from database.db import get_db
+    with get_db() as db:
+        row = db.execute(
+            "SELECT * FROM users WHERE username=?", (username,)
+        ).fetchone()
+    if row is None:
+        flash(MSG.ACCOUNT_RECOVERY_FAILED, "danger")
+        return _ulang()
+
+    try:
+        dek = recover_dek(recovery_key, dict(row))
+    except (TypeError, ValueError, KeyError):
+        flash(MSG.ACCOUNT_RECOVERY_FAILED, "danger")
+        return _ulang()
+
+    mountpoint = request.form.get("dongle", "").strip()
+    if not mountpoint and drives:
+        mountpoint = drives[0]["mountpoint"]
+    if not mountpoint:
+        del dek, password, recovery_key
+        flash(MSG.ACCOUNT_RECOVERY_USB_REQUIRED, "danger")
+        return _ulang()
+
+    token = usb_mod.register_usb_token(mountpoint)
+    if token is None:
+        del dek, password, recovery_key
+        flash(MSG.REGISTER_USB_INVALID, "danger")
+        return _ulang()
+
+    bundle = rewrap_dek(dek, password, token["secret"], row["id"])
+    baru = rewrap_recovery_key(dek, row["id"])
+    pw_hash, salt = hash_password(password)
+    with get_db() as db:
+        db.execute(
+            "UPDATE users SET password_hash=?, salt=?, kek_salt=?, "
+            "wrapped_dek=?, recovery_wrapped_dek=?, usb_token_id=?, "
+            "usb_verifier=?, usb_volume_serial=?, failed_attempts=0, "
+            "locked_until=NULL WHERE id=?",
+            (
+                pw_hash, salt, bundle["kek_salt"], bundle["wrapped_dek"],
+                baru["recovery_wrapped_dek"], token["token_id"],
+                token["verifier"], token["volume_serial"], row["id"],
+            ),
+        )
+        db.commit()
+    usb_mod.lupakan_cache(row["id"])
+    add_block(
+        row["id"], "RECOVERY", "auth:recovery",
+        content_hash(username.encode("utf-8")),
+    )
+    del dek, password, recovery_key
+
+    return _respon_tanpa_simpan(
+        "recovery.html",
+        recovery_key=baru["recovery_key"],
+        pending=_simpan_kunci_pulih(row["id"], baru["recovery_key"]),
+        next_action=url_for("auth.account_recovery_confirm"),
+        next_label="Kembali ke Halaman Masuk",
+    )
+
+
+@auth_bp.route("/account-recovery/confirm", methods=["POST"])
+def account_recovery_confirm():
+    """Konfirmasi penyimpanan kunci pemulihan baru lalu arahkan ke masuk."""
+    token = request.form.get("pending", "")
+    entri = _KUNCI_PULIH.get(token)
+    if entri is None:
+        flash(MSG.RECOVERY_ONLY_ONCE, "warning")
+        return redirect(url_for("auth.login"))
+    _, recovery_key, _ = entri
+    if not request.form.get("confirm_saved"):
+        flash(MSG.RECOVERY_CHECK_REQUIRED, "warning")
+        return _respon_tanpa_simpan(
+            "recovery.html",
+            recovery_key=recovery_key,
+            pending=token,
+            next_action=url_for("auth.account_recovery_confirm"),
+            next_label="Kembali ke Halaman Masuk",
+        )
+    _KUNCI_PULIH.pop(token, None)
+    flash(MSG.ACCOUNT_RECOVERY_DONE, "success")
+    return redirect(url_for("auth.login"))
 
 
 def _pasang_kunci_penyiapan(user_id: int, recovery_key: str) -> None:

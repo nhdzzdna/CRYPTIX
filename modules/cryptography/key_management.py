@@ -183,6 +183,30 @@ def recover_dek(recovery_key, bundle) -> bytes:
     return _unwrap(recovery_kek, b["recovery_wrapped_dek"], _aad(RECOVERY_INFO, user_id))
 
 
+def rewrap_recovery_key(dek: bytes, user_id) -> dict:
+    """
+    Terbitkan kunci pemulihan baru untuk DEK yang sama.
+
+    DEK tidak berubah sehingga data lama dan template biometrik tetap sah.
+    Kunci baru hanya ditampilkan sekali kepada pengguna.
+
+    Returns
+    -------
+    dict berisi ``user_id``, ``recovery_wrapped_dek``, dan ``recovery_key``.
+    """
+    if len(dek) != 32:
+        raise ValueError("DEK harus 32 byte.")
+    rk = os.urandom(32)
+    recovery_kek = _hkdf(rk, None, RECOVERY_INFO)
+    return {
+        "user_id": user_id,
+        "recovery_wrapped_dek": _wrap(
+            recovery_kek, dek, _aad(RECOVERY_INFO, user_id)
+        ),
+        "recovery_key": format_recovery_key(rk),
+    }
+
+
 def purpose_key(dek: bytes, label) -> bytes:
     """
     Kunci per tujuan = HKDF(DEK, label).

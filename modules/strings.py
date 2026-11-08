@@ -163,3 +163,6 @@ class MSG:
     REAUTH_WEBAUTHN_NONE      = "Belum ada kredensial WebAuthn terdaftar untuk akun ini."
     FACE_NO_SESSION_KEY       = "Kunci sesi tidak tersedia. Muat ulang halaman lalu coba kembali."
     FACE_CAPTURE_TOO_SHORT    = "Pendaftaran wajah memerlukan minimal 30 frame selama sedikitnya 3 detik."
+    ACCOUNT_RECOVERY_FAILED   = "Nama pengguna atau kunci pemulihan tidak valid."
+    ACCOUNT_RECOVERY_USB_REQUIRED = "Pilih dongle baru yang terpasang untuk memulihkan akun."
+    ACCOUNT_RECOVERY_DONE     = "Pemulihan akun berhasil. Simpan kunci pemulihan baru, lalu masuk kembali."
