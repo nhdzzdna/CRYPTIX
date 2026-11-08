@@ -4,16 +4,18 @@ routes/media_routes.py
 Media Vault: encrypted audio/video files with Winamp/HTML5 playback.
 """
 
+import io
 import os
 import hashlib
 
 from flask import (
     Blueprint, render_template, request, redirect, url_for,
-    session, flash, abort, Response
+    session, flash, abort, Response, send_file
 )
 
 import config
 from modules.strings import MSG
+from modules.authentication.reauth import require_grant
 from routes.auth_routes import login_required
 from database.db import get_db
 from modules.cryptography import session_keys
@@ -172,6 +174,7 @@ def _range_not_satisfiable(size: int) -> Response:
 
 @media_bp.route("/media-vault/stream/<int:file_id>")
 @login_required
+@require_grant("media.stream")
 def stream(file_id: int):
     """
     Sajikan media terenkripsi lewat HTTP Range tanpa menulis plaintext ke disk.
@@ -248,6 +251,7 @@ def stream(file_id: int):
 
 @media_bp.route("/media-vault/play/<int:file_id>", methods=["POST"])
 @login_required
+@require_grant("media.winamp")
 def play(file_id: int):
     """Buka audio di Winamp; pemutaran HTML5 memakai rute stream."""
     with get_db() as db:
@@ -300,3 +304,44 @@ def play(file_id: int):
         cleanup_temp_file(tmp_path)
         flash(MSG.MEDIA_WINAMP_ERROR.format(error=result.get('error')), "danger")
     return redirect(url_for("media.index"))
+
+
+@media_bp.route("/media-vault/download/<int:file_id>")
+@login_required
+@require_grant("file.download")
+def download(file_id: int):
+    """Unduh media terenkripsi sebagai lampiran setelah autentikasi ulang."""
+    with get_db() as db:
+        row = db.execute(
+            "SELECT * FROM vault_files WHERE id=? AND user_id=? "
+            "AND file_type IN ('audio','video')",
+            (file_id, session["user_id"]),
+        ).fetchone()
+
+    if not row:
+        abort(404)
+
+    try:
+        original_name = decrypt_field(
+            row["original_name"], _db_key(),
+            field_aad(row["user_id"], "vault_files", "original_name"),
+        )
+        path = os.path.join(config.ENCRYPTED_FILES_DIR, row["stored_name"])
+        plaintext = decrypt_all(
+            path, _file_key(), file_aad(row["user_id"], row["stored_name"])
+        )
+        if hashlib.sha256(plaintext).hexdigest() != row["sha256_hash"]:
+            raise ValueError("SHA-256 plaintext tidak cocok dengan nilai tercatat.")
+    except OSError:
+        abort(404)
+    except Exception:
+        add_block(session["user_id"], "TAMPER_DETECTED", f"file:{file_id}",
+                  row["sha256_ciphertext"])
+        abort(403)
+
+    return send_file(
+        io.BytesIO(plaintext),
+        mimetype=mime_for(original_name),
+        download_name=original_name,
+        as_attachment=True,
+    )

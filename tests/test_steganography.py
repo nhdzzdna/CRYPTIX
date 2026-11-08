@@ -19,6 +19,7 @@ import numpy as np
 
 import config
 from modules.strings import MSG
+from modules.authentication import reauth
 from modules.cryptography import session_keys
 from modules.steganography.lsb import (
     HEADER_BITS, MAGIC, VERSION,
@@ -197,6 +198,7 @@ def app(tmp_path, monkeypatch):
     from app import create_app
     application = create_app()
     application.config["TESTING"] = True
+    reauth.clear()
     return application
 
 
@@ -218,6 +220,13 @@ def _csrf(client, halaman: str = "/steganography") -> str:
     match = re.search(r'name="csrf_token" value="([^"]+)"', page.get_data(as_text=True))
     assert match
     return match.group(1)
+
+
+def _grant(client, scope: str, resource_id=None) -> str:
+    """Terbitkan grant sekali pakai untuk sesi klien uji."""
+    with client.session_transaction() as sess:
+        sid = sess["session_id"]
+    return reauth.issue_grant(sid, scope, resource_id)["token"]
 
 
 def _gambar_png(ukuran: int = 120) -> bytes:
@@ -255,7 +264,10 @@ class TestRuteStego:
             ).fetchone()
         assert row["has_encryption"] == 1
 
-        unduhan = client.get(f"/steganography/download/{row['id']}")
+        unduhan = client.get(
+            f"/steganography/download/{row['id']}",
+            headers={"X-Reauth-Grant": _grant(client, "stego.download", row["id"])},
+        )
         assert unduhan.status_code == 200
         disp = unduhan.headers.get("Content-Disposition", "")
         assert "foto.png" in disp and ".jpg" not in disp.split("filename=")[-1]
@@ -291,6 +303,7 @@ class TestRuteStego:
         token = _csrf(client)
         resp = client.post("/steganography/extract-upload", data={
             "csrf_token": token,
+            "reauth_grant": _grant(client, "stego.extract"),
             "stego_image": (io.BytesIO(png_bytes), "hasil.png"),
             "passphrase": "",
         }, content_type="multipart/form-data")
@@ -309,6 +322,7 @@ class TestRuteStego:
         token = _csrf(client)
         resp = client.post("/steganography/extract-upload", data={
             "csrf_token": token,
+            "reauth_grant": _grant(client, "stego.extract"),
             "stego_image": (io.BytesIO(hasil.read_bytes()), "stego.png"),
             "passphrase": PASSPHRASE,
         }, content_type="multipart/form-data", follow_redirects=True)
@@ -320,6 +334,7 @@ class TestRuteStego:
         token = _csrf(client)
         resp = client.post("/steganography/extract-upload", data={
             "csrf_token": token,
+            "reauth_grant": _grant(client, "stego.extract"),
             "stego_image": (io.BytesIO(hasil.read_bytes()), "stego.png"),
             "passphrase": "",
         }, content_type="multipart/form-data", follow_redirects=True)
@@ -333,6 +348,7 @@ class TestRuteStego:
         token = _csrf(client)
         resp = client.post("/steganography/extract-upload", data={
             "csrf_token": token,
+            "reauth_grant": _grant(client, "stego.extract"),
             "stego_image": (io.BytesIO(biasa), "biasa.png"),
             "passphrase": "",
         }, content_type="multipart/form-data", follow_redirects=True)
@@ -357,6 +373,7 @@ class TestRuteStego:
         token = _csrf(client)
         hasil = client.post(f"/steganography/extract/{row['id']}", data={
             "csrf_token": token,
+            "reauth_grant": _grant(client, "stego.extract", row["id"]),
         })
         assert hasil.status_code == 200
         assert hasil.is_json
@@ -386,6 +403,7 @@ class TestRuteStego:
         token = _csrf(client)
         hasil = client.post(f"/steganography/extract/{row['id']}", data={
             "csrf_token": token,
+            "reauth_grant": _grant(client, "stego.extract", row["id"]),
         })
         assert hasil.status_code == 200
         assert hasil.get_json()["text"] == "kunci akun otomatis"
@@ -413,6 +431,7 @@ class TestRuteStego:
         token = _csrf(client)
         benar = client.post("/steganography/extract-upload", data={
             "csrf_token": token,
+            "reauth_grant": _grant(client, "stego.extract"),
             "stego_image": (io.BytesIO(png_bytes), "stego.png"),
             "passphrase": PASSPHRASE,
         }, content_type="multipart/form-data")
@@ -422,6 +441,7 @@ class TestRuteStego:
         token = _csrf(client)
         salah = client.post("/steganography/extract-upload", data={
             "csrf_token": token,
+            "reauth_grant": _grant(client, "stego.extract"),
             "stego_image": (io.BytesIO(png_bytes), "stego.png"),
             "passphrase": "passphrase-salah",
         }, content_type="multipart/form-data")
@@ -457,6 +477,7 @@ class TestRuteStego:
         token = _csrf(client)
         hasil = client.post("/steganography/extract-upload", data={
             "csrf_token": token,
+            "reauth_grant": _grant(client, "stego.extract"),
             "stego_image": (io.BytesIO(png_bytes), "stego.png"),
             "passphrase": PASSPHRASE,
         }, content_type="multipart/form-data")
@@ -468,6 +489,7 @@ class TestRuteStego:
         token = _csrf(client)
         salah = client.post("/steganography/extract-upload", data={
             "csrf_token": token,
+            "reauth_grant": _grant(client, "stego.extract"),
             "stego_image": (io.BytesIO(png_bytes), "stego.png"),
             "passphrase": "passphrase-salah",
         }, content_type="multipart/form-data")

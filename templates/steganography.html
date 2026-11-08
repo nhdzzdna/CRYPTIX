@@ -75,7 +75,7 @@
     <div class="card-header">Ekstrak dari Gambar Unggahan</div>
     <div class="card-body">
       <form method="POST" action="{{ url_for('stego.extract_upload') }}" enctype="multipart/form-data"
-            class="stego-extract-form">
+            class="stego-extract-form" data-stego-upload="1">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
         <div class="form-group">
           <label>Gambar Stego (PNG)</label>
@@ -86,7 +86,8 @@
           <input type="password" name="passphrase" class="form-control"
                  placeholder="Kosongkan bila memakai kunci akun" autocomplete="off" />
         </div>
-        <button type="submit" class="btn btn-primary">🔍 Ekstrak</button>
+        <button type="button" class="btn btn-primary"
+                data-reauth="stego.extract">🔍 Ekstrak</button>
       </form>
       <ul class="text-muted mt-3 mb-0">
         <li>Header ber-magic <code>CRXS</code> menyimpan versi, jenis muatan, panjang, dan CRC32.</li>
@@ -119,14 +120,18 @@
           <td>
             <!-- Extract -->
             <form method="POST" action="{{ url_for('stego.extract', img_id=img.id) }}"
-                  class="stego-extract-form" style="display:inline">
+                  class="stego-extract-form" style="display:inline"
+                  data-reauth-resource="{{ img.id }}">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
               <input type="password" name="passphrase" class="form-control form-control-sm d-inline-block"
                      style="width:10rem" placeholder="Passphrase (opsional)" autocomplete="off" />
-              <button type="submit" class="btn btn-sm btn-primary">🔍 Ekstrak</button>
+              <button type="button" class="btn btn-sm btn-primary"
+                      data-reauth="stego.extract" data-reauth-resource="{{ img.id }}">🔍 Ekstrak</button>
             </form>
             <!-- Download -->
-            <a href="{{ url_for('stego.download', img_id=img.id) }}" class="btn btn-sm btn-success">⬇</a>
+            <a href="{{ url_for('stego.download', img_id=img.id) }}"
+               class="btn btn-sm btn-success"
+               data-reauth="stego.download" data-reauth-resource="{{ img.id }}">⬇</a>
             <!-- Delete -->
             <form method="POST" action="{{ url_for('stego.delete', img_id=img.id) }}"
                   class="stego-delete-form" style="display:inline">
