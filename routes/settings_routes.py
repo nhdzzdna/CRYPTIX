@@ -15,6 +15,7 @@ from modules.authentication.auth import get_user_by_id, store_usb_token
 from modules.authentication.password_hash import hash_password, verify_password
 from modules.authentication import usb_authentication as usb_mod
 from modules.authentication import webauthn
+from modules.authentication import face_recognition as face_mod
 from modules.cryptography import session_keys
 from modules.blockchain.blockchain import add_block, content_hash
 
@@ -29,6 +30,7 @@ def index():
         "settings.html",
         user=user,
         webauthn_terdaftar=webauthn.ada_kredensial(user["id"]),
+        wajah_terdaftar=face_mod.template_ada(user["id"]),
     )
 
 

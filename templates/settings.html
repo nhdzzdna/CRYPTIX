@@ -59,8 +59,8 @@
       <!-- Face Registration -->
       <h4>Face Recognition</h4>
       <p class="text-muted">
-        Status: {% if user.face_model_path %}
-          <span class="badge badge-success">✅ Model tersimpan</span>
+        Status: {% if wajah_terdaftar %}
+          <span class="badge badge-success">✅ Template tersimpan</span>
         {% else %}
           <span class="badge badge-warning">Belum didaftarkan</span>
         {% endif %}
@@ -68,8 +68,10 @@
       <div class="webcam-buttons">
         <video id="settings-video" autoplay playsinline style="display:none;width:100%;border-radius:8px;"></video>
         <canvas id="settings-canvas" style="display:none;"></canvas>
-        <button type="button" class="btn btn-secondary btn-sm" onclick="startSettingsCamera()">📷 Daftar Ulang Wajah</button>
-        <button type="button" class="btn btn-primary btn-sm" id="btn-settings-capture" onclick="captureSettingsFace()" style="display:none;">Ambil Sampel</button>
+        <button type="button" class="btn btn-secondary btn-sm"
+                onclick="CryptixFace.daftar('settings-video', 'settings-canvas', 'settings-face-status')">
+          📷 Daftar Ulang Wajah
+        </button>
       </div>
       <p id="settings-face-status" class="form-hint"></p>
 
@@ -96,42 +98,5 @@
 
 {% block scripts %}
 <script src="{{ url_for('static', filename='js/webauthn.js') }}"></script>
-<script>
-let settingsStream = null;
-function startSettingsCamera() {
-  navigator.mediaDevices.getUserMedia({video: true}).then(s => {
-    settingsStream = s;
-    const v = document.getElementById('settings-video');
-    v.srcObject = s; v.style.display = 'block';
-    document.getElementById('btn-settings-capture').style.display = 'inline-block';
-  });
-}
-function captureSettingsFace() {
-  const v = document.getElementById('settings-video');
-  const c = document.getElementById('settings-canvas');
-  const st = document.getElementById('settings-face-status');
-  c.width = v.videoWidth; c.height = v.videoHeight;
-  let frames = [];
-  let count = 0;
-  st.textContent = 'Mengambil sampel…';
-  const iv = setInterval(() => {
-    c.getContext('2d').drawImage(v, 0, 0);
-    frames.push(c.toDataURL('image/jpeg'));
-    count++;
-    st.textContent = `Sampel: ${count}/30`;
-    if (count >= 30) {
-      clearInterval(iv);
-      if (settingsStream) settingsStream.getTracks().forEach(t => t.stop());
-      apiFetch('/api/register_face', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({frames: frames})
-      }).then(r => r.json()).then(d => {
-        st.textContent = d.success ? '✅ ' + d.message : '❌ ' + d.error;
-        st.style.color = d.success ? '#22c55e' : '#ef4444';
-      });
-    }
-  }, 100);
-}
-</script>
+<script src="{{ url_for('static', filename='js/face.js') }}"></script>
 {% endblock %}

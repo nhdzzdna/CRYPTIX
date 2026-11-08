@@ -161,3 +161,5 @@ class MSG:
     # ── Sesi G: autentikasi ulang WebAuthn ────────────────────────────────────
     REAUTH_WEBAUTHN_FAILED    = "Verifikasi WebAuthn gagal. Coba sekali lagi."
     REAUTH_WEBAUTHN_NONE      = "Belum ada kredensial WebAuthn terdaftar untuk akun ini."
+    FACE_NO_SESSION_KEY       = "Kunci sesi tidak tersedia. Muat ulang halaman lalu coba kembali."
+    FACE_CAPTURE_TOO_SHORT    = "Pendaftaran wajah memerlukan minimal 30 frame selama sedikitnya 3 detik."

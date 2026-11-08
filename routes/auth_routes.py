@@ -7,7 +7,6 @@ Login, logout, register, and biometric setup routes.
 import os
 import secrets
 import time
-import base64
 
 from flask import (
     Blueprint, render_template, request, redirect, url_for,
@@ -19,14 +18,14 @@ from modules.strings import MSG
 from modules.authentication.auth import (
     create_account, validate_registration,
     verifikasi_tahap_satu, get_user_by_id,
-    store_usb_token, update_face_model_path,
+    store_usb_token,
 )
 from modules.authentication import biometrics
 from modules.authentication import face_recognition as face_mod
-from modules.authentication import fingerprint as fp_mod
 from modules.authentication import usb_authentication as usb_mod
 from modules.authentication import webauthn
 from modules.cryptography import pending_keys, session_keys
+from modules.cryptography.key_management import recover_dek
 from modules.blockchain.blockchain import add_block, content_hash
 
 auth_bp = Blueprint("auth", __name__)
@@ -149,15 +148,49 @@ def recovery_confirm():
             "recovery.html", recovery_key=recovery_key, pending=token
         )
     _KUNCI_PULIH.pop(token, None)
+    _pasang_kunci_penyiapan(user_id, recovery_key)
     session["setup_user_id"] = user_id
     return redirect(url_for("auth.setup"))
+
+
+def _pasang_kunci_penyiapan(user_id: int, recovery_key: str) -> None:
+    """
+    Buka DEK dengan kunci pemulihan dan tahan di penyimpanan kunci server.
+
+    Wizard penyiapan memerlukan DEK untuk mengenkripsi template wajah;
+    DEK hanya hidup di memori server dan dibuang saat penyiapan selesai.
+    """
+    user = get_user_by_id(user_id)
+    if user is None:
+        return
+    try:
+        dek = recover_dek(recovery_key, user)
+    except (TypeError, ValueError, KeyError):
+        return
+    sid_lama = session.get("session_id")
+    if sid_lama:
+        session_keys.drop(sid_lama)
+    sid = session_keys.create_session_id()
+    session["session_id"] = sid
+    session_keys.put(sid, dek)
+
+
+def _selesaikan_penyiapan(user_id: int) -> bool:
+    """Tutup sesi penyiapan bila pengguna ini sudah punya biometrik."""
+    if session.get("setup_user_id") != user_id:
+        return False
+    session.pop("setup_user_id", None)
+    sid = session.pop("session_id", None)
+    if sid:
+        session_keys.drop(sid)
+    return True
 
 
 # ── Setup keamanan (wizard butir 2.3c) ───────────────────────────────────────
 
 def _biometrik_terdaftar(user_id: int) -> bool:
-    """True bila pengguna sudah punya minimal satu biometrik (wajah/sidik jari)."""
-    return face_mod.has_face_model(user_id) or fp_mod.has_fingerprint(user_id)
+    """True bila pengguna sudah punya minimal satu metode biometrik terdaftar."""
+    return bool(biometrics.metode_biometrik_terdaftar(user_id))
 
 
 _IZIN_PENYIAPAN = frozenset({
@@ -173,6 +206,9 @@ def _gerbang_penyiapan():
     if not user_id:
         return None
     if _biometrik_terdaftar(user_id):
+        sid = session.pop("session_id", None)
+        if sid:
+            session_keys.drop(sid)
         session.pop("setup_user_id", None)
         return None
     if request.endpoint in _IZIN_PENYIAPAN:
@@ -261,10 +297,7 @@ def webauthn_register_complete():
 
     add_block(user_id, "BIOMETRIC_ENROLL", "auth:webauthn",
               content_hash(str(user_id).encode("utf-8")))
-    selesai_penyiapan = (
-        session.get("setup_user_id") == user_id
-        and session.pop("setup_user_id", None) is not None
-    )
+    selesai_penyiapan = _selesaikan_penyiapan(user_id)
     return jsonify({
         "success": True,
         "credential_id": hasil["credential_id"],
@@ -428,7 +461,7 @@ def login_biometric():
         return _galat_masuk(MSG.LOGIN_BIOMETRIC_NONE)
 
     hasil = biometrics.verifikasi_tahap_biometrik(
-        user_id, isian.get("bukti")
+        user_id, isian.get("bukti"), konteks={"dek": _dek}
     )
     if not biometrics.kebijakan_dipenuhi(hasil):
         return _galat_masuk(MSG.LOGIN_BIOMETRIC_FAILED)
@@ -468,76 +501,112 @@ def logout():
 @auth_bp.route("/api/register_face", methods=["POST"])
 def register_face():
     """
-    Receives a JSON list of base64-encoded JPEG frames from the webcam
-    and trains the LBPH model. Berjalan pada sesi login maupun sesi
-    penyiapan keamanan.
+    Daftarkan wajah dari sedikitnya 30 frame selama 3 detik. Template ROI
+    dienkripsi dengan purpose_key(DEK, "face") lalu disimpan sebagai BLOB;
+    tidak ada citra atau model wajah yang ditulis ke disk.
     """
-    import cv2
-    import numpy as np
-
     user_id = session.get("user_id") or session.get("setup_user_id")
     if user_id is None:
         return jsonify({"success": False, "error": MSG.LOGIN_REQUIRED}), 401
 
-    data = request.get_json()
-    if not data or "frames" not in data:
-        return jsonify({"success": False, "error": MSG.FACE_NO_FRAMES})
-
-    frames = []
-    for b64 in data["frames"]:
-        try:
-            img_bytes = base64.b64decode(b64.split(",")[-1])
-            arr = np.frombuffer(img_bytes, dtype=np.uint8)
-            frame = cv2.imdecode(arr, cv2.IMREAD_COLOR)
-            if frame is not None:
-                frames.append(frame)
-        except Exception:
-            continue
-
-    ok = face_mod.register_face_from_frames(user_id, frames)
-    if ok:
-        update_face_model_path(user_id, face_mod._model_path(user_id))
-        add_block(user_id, "BIOMETRIC_ENROLL", "auth:face",
-                  content_hash(str(user_id).encode("utf-8")))
-        selesai_penyiapan = (
-            session.get("setup_user_id") == user_id
-            and session.pop("setup_user_id", None) is not None
-        )
+    dek = session_keys.get(session.get("session_id", ""))
+    if dek is None:
         return jsonify({
-            "success": True,
-            "message": MSG.FACE_MODEL_SAVED,
-            "setup_done": selesai_penyiapan,
-        })
-    return jsonify({"success": False, "error": MSG.FACE_NOT_ENOUGH_SAMPLES})
+            "success": False, "error": MSG.FACE_NO_SESSION_KEY,
+        }), 401
+
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return jsonify({"success": False, "error": MSG.FACE_NO_FRAMES}), 400
+
+    frames = data.get("frames")
+    if not isinstance(frames, list) or not frames:
+        return jsonify({"success": False, "error": MSG.FACE_NO_FRAMES}), 400
+
+    try:
+        durasi_ms = int(data.get("duration_ms", 0))
+    except (TypeError, ValueError):
+        durasi_ms = 0
+    if len(frames) < 30 or durasi_ms < 3000:
+        return jsonify({
+            "success": False, "error": MSG.FACE_CAPTURE_TOO_SHORT,
+        }), 400
+
+    try:
+        hasil = face_mod.daftarkan_wajah(user_id, frames, dek)
+    finally:
+        del dek
+
+    if not hasil.get("success"):
+        return jsonify({
+            "success": False,
+            "error": hasil.get("error") or MSG.FACE_NOT_ENOUGH_SAMPLES,
+        }), 400
+
+    add_block(user_id, "BIOMETRIC_ENROLL", "auth:face",
+              content_hash(str(user_id).encode("utf-8")))
+    selesai_penyiapan = _selesaikan_penyiapan(user_id)
+    return jsonify({
+        "success": True,
+        "message": MSG.FACE_MODEL_SAVED,
+        "sampel": hasil.get("sampel"),
+        "setup_done": selesai_penyiapan,
+    })
 
 
 # ── Face verification (AJAX endpoint) ────────────────────────────────────────
 
 @auth_bp.route("/api/verify_face", methods=["POST"])
 def verify_face():
-    """Verify a single base64 webcam frame during login."""
-    import cv2
-    import numpy as np
+    """
+    Verifikasi 5 frame wajah pada sesi tahap login yang sah.
 
-    data = request.get_json()
-    username = data.get("username", "")
-    b64 = data.get("frame", "")
+    Endpoint tidak menerima username dari klien: pengguna dibaca dari token
+    pending tahap 1 sehingga tidak dapat dipakai sebagai pemeriksa publik.
+    """
+    if session.get("login_stage") != 1:
+        return jsonify({
+            "success": False, "verified": False,
+            "error": MSG.LOGIN_STAGE_ORDER,
+        }), 401
 
-    from database.db import get_db as _get_db
-    with _get_db() as db:
-        row = db.execute("SELECT id FROM users WHERE username=?", (username,)).fetchone()
-    if not row:
-        return jsonify({"verified": False})
+    data = request.get_json(silent=True) or {}
+    token = str(data.get("pending", ""))
+    if not token or session.get("login_pending") != token:
+        return jsonify({
+            "success": False, "verified": False,
+            "error": MSG.LOGIN_STAGE_ORDER,
+        }), 400
 
+    entri = pending_keys.periksa(token)
+    if entri is None:
+        return jsonify({
+            "success": False, "verified": False,
+            "error": MSG.LOGIN_PENDING_EXPIRED,
+        }), 401
+
+    user_id, dek = entri
+    frames = data.get("frames")
+    if frames is None and "frame" in data:
+        frames = [data.get("frame")]
     try:
-        img_bytes = base64.b64decode(b64.split(",")[-1])
-        arr = np.frombuffer(img_bytes, dtype=np.uint8)
-        frame = cv2.imdecode(arr, cv2.IMREAD_COLOR)
-    except Exception:
-        return jsonify({"verified": False})
+        hasil = face_mod.verifikasi_wajah(user_id, frames, dek=dek)
+    finally:
+        del dek
 
-    verified = face_mod.verify_face_from_frame(row["id"], frame)
-    return jsonify({"verified": verified})
+    sukses = bool(hasil.get("success"))
+    balasan = {
+        "success": sukses,
+        "verified": sukses,
+        "error": None if sukses else (
+            hasil.get("error") or MSG.LOGIN_BIOMETRIC_FAILED
+        ),
+    }
+    if config.CRYPTIX_DEV_MODE:
+        balasan["confidences"] = hasil.get("confidences")
+        balasan["median"] = hasil.get("median")
+        balasan["lolos"] = hasil.get("lolos")
+    return jsonify(balasan)
 
 
 # ── USB Token registration ────────────────────────────────────────────────────

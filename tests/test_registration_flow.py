@@ -40,11 +40,9 @@ def app(tmp_path, monkeypatch):
     monkeypatch.setattr(config, "ENCRYPTED_FILES_DIR", str(tmp_path / "encrypted"))
     monkeypatch.setattr(config, "STEGO_IMAGES_DIR", str(tmp_path / "stego"))
     monkeypatch.setattr(bc, "CHAIN_HEAD_PATH", str(tmp_path / "chain_head.json"))
-    monkeypatch.setattr(face_mod, "_FACE_DATA_DIR", str(tmp_path / "faces"))
     monkeypatch.setattr(config, "CRYPTIX_DEV_MODE", True)
     monkeypatch.setattr(config, "DEV_DONGLE_DIR", str(tmp_path / "dongle"))
     monkeypatch.setattr(usb_mod, "_get_removable_drives", lambda: [])
-    os.makedirs(str(tmp_path / "faces"), exist_ok=True)
     init_db()
     application = create_app()
     application.config["TESTING"] = True
@@ -402,11 +400,22 @@ class TestPenyiapanKeamanan:
     def test_wajah_menyelesaikan_penyiapan(self, app, client, monkeypatch):
         _daftarkan_dan_konfirmasi(client)
         token = _token_csrf(client, "/setup")
-        monkeypatch.setattr(face_mod, "register_face_from_frames",
-                            lambda uid, frames: True)
+
+        def _daftar_palsu(uid, frames, dek):
+            with get_db() as db:
+                db.execute(
+                    "INSERT INTO biometric_templates "
+                    "(user_id, metode, template, sampel) VALUES (?, 'wajah', ?, ?)",
+                    (uid, b"FG1-palsu", len(frames)),
+                )
+                db.commit()
+            return {"success": True, "sampel": len(frames)}
+
+        monkeypatch.setattr(face_mod, "daftarkan_wajah", _daftar_palsu)
         resp = client.post(
             "/api/register_face",
-            json={"frames": ["data:image/jpeg;base64,AAAA"]},
+            json={"frames": ["data:image/jpeg;base64,AAAA"] * 30,
+                  "duration_ms": 3100},
             headers={"X-CSRFToken": token},
         )
         data = resp.get_json()

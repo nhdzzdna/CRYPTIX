@@ -104,3 +104,12 @@ CREATE TABLE IF NOT EXISTS webauthn_credentials (
     nama          TEXT    NOT NULL DEFAULT '',
     dibuat        TEXT    NOT NULL DEFAULT (datetime('now'))
 );
+
+-- === Sesi G: template wajah terenkripsi (butir 2.6b) ===-------------------------------
+CREATE TABLE IF NOT EXISTS biometric_templates (
+    user_id   INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    metode    TEXT    NOT NULL DEFAULT 'wajah',
+    template  BLOB    NOT NULL,   -- array ROI terkompresi, dienkripsi purpose_key(DEK, "face")
+    sampel    INTEGER NOT NULL,
+    dibuat    TEXT    NOT NULL DEFAULT (datetime('now'))
+);
