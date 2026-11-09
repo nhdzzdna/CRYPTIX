@@ -42,6 +42,7 @@ SCOPES = frozenset({
     "file.download",
     "media.stream",
     "media.winamp",
+    "album.unlock",
     "stego.extract",
     "stego.download",
     "item.delete",
@@ -50,9 +51,13 @@ SCOPES = frozenset({
 })
 
 MEDIA_STREAM_SCOPE = "media.stream"
+ALBUM_UNLOCK_SCOPE = "album.unlock"
 GRANT_TTL_SECONDS = 120
 MEDIA_STREAM_TTL_SECONDS = 15 * 60
-REUSABLE_TTL = {MEDIA_STREAM_SCOPE: MEDIA_STREAM_TTL_SECONDS}
+REUSABLE_TTL = {
+    MEDIA_STREAM_SCOPE: MEDIA_STREAM_TTL_SECONDS,
+    ALBUM_UNLOCK_SCOPE: MEDIA_STREAM_TTL_SECONDS,
+}
 
 _GRANT_HEADER = "X-Reauth-Grant"
 _GRANT_FIELD = "reauth_grant"

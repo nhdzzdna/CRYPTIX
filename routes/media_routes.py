@@ -10,12 +10,15 @@ import hashlib
 
 from flask import (
     Blueprint, render_template, request, redirect, url_for,
-    session, flash, abort, Response, send_file
+    session, flash, abort, Response, send_file, jsonify
 )
+from PIL import Image
 
 import config
 from modules.strings import MSG
-from modules.authentication.reauth import require_grant
+from modules.authentication.reauth import (
+    require_grant, consume_grant, find_active_grant,
+)
 from modules.rate_limit import limiter, REVEAL_LIMIT, user_or_ip_key
 from routes.auth_routes import login_required
 from database.db import get_db
@@ -53,6 +56,23 @@ PLAYABLE_EXTENSIONS = frozenset({
     "mp4", "webm", "mp3", "wav", "ogg", "m4a", "flac",
 })
 DOWNLOAD_ONLY_EXTENSIONS = frozenset({"avi", "mkv", "mov"})
+
+IMAGE_MIME_TYPES = {
+    "png":  "image/png",
+    "jpg":  "image/jpeg",
+    "jpeg": "image/jpeg",
+    "gif":  "image/gif",
+    "bmp":  "image/bmp",
+    "webp": "image/webp",
+}
+
+
+def _mime_any(filename: str) -> str:
+    """MIME untuk media apa pun termasuk gambar."""
+    ext = _extension(filename)
+    return IMAGE_MIME_TYPES.get(ext) or MIME_TYPES.get(
+        ext, "application/octet-stream"
+    )
 
 
 def _extension(filename: str) -> str:
@@ -126,6 +146,49 @@ def index():
     )
 
 
+def _item_context(file_id: int, user_id: int):
+    """Baris koleksi untuk sebuah berkas, atau None bila Tanpa album."""
+    with get_db() as db:
+        return db.execute(
+            """SELECT ci.state AS state, ci.collection_id AS collection_id,
+                      c.locked AS collection_locked
+               FROM collection_items ci
+               JOIN collections c ON c.id = ci.collection_id
+               WHERE ci.file_id=? AND c.user_id=?""",
+            (file_id, user_id),
+        ).fetchone()
+
+
+def _grant_sah(scope: str, resource_id) -> bool:
+    """Periksa grant lewat header atau grant aktif berulang."""
+    session_id = session.get("session_id", "")
+    token = request.headers.get("X-Reauth-Grant") or ""
+    if not token:
+        token = find_active_grant(session_id, scope, resource_id) or ""
+    sah, _ = consume_grant(token, session_id, scope, resource_id)
+    return sah
+
+
+def _akses_item(row, file_id: int):
+    """
+    Periksa aturan akses pratinjau berdasarkan state dan kunci koleksi.
+
+    Returns None bila boleh, atau (pesan, status) untuk penolakan.
+    """
+    item = _item_context(file_id, row["user_id"])
+    if item is None:
+        return None
+    state = item["state"]
+    if state == "locked":
+        if not _grant_sah("media.stream", file_id):
+            return MSG.REAUTH_REQUIRED, 401
+        return None
+    if state == "hidden" or item["collection_locked"]:
+        if not _grant_sah("album.unlock", item["collection_id"]):
+            return MSG.REAUTH_REQUIRED, 403
+    return None
+
+
 def _parse_range_header(header: str, size: int):
     """
     Urai satu rentang byte ``bytes=start-end`` / ``bytes=start-`` / ``bytes=-n``.
@@ -170,6 +233,122 @@ def _range_not_satisfiable(size: int) -> Response:
     response = Response(status=416)
     response.headers["Content-Range"] = f"bytes */{size}"
     response.headers["Accept-Ranges"] = "bytes"
+    return response
+
+
+@media_bp.route("/media-vault/view/<int:file_id>")
+@login_required
+def view(file_id: int):
+    """
+    Pratinjau gambar/audio/video dengan dekripsi di memori.
+
+    Mendukung HTTP Range (206/416) dan tidak pernah menyimpan plaintext
+    ke disk. Akses mengikuti state item dan kunci koleksi.
+    """
+    with get_db() as db:
+        row = db.execute(
+            "SELECT * FROM vault_files WHERE id=? AND user_id=?",
+            (file_id, session["user_id"]),
+        ).fetchone()
+
+    if not row:
+        abort(404)
+
+    ditolak = _akses_item(row, file_id)
+    if ditolak:
+        pesan, status = ditolak
+        return jsonify({"success": False, "error": pesan,
+                        "reason": "grant"}), status
+
+    try:
+        original_name = decrypt_field(
+            row["original_name"], _db_key(),
+            field_aad(row["user_id"], "vault_files", "original_name"),
+        )
+    except ValueError:
+        abort(404)
+
+    size = int(row["file_size"])
+    path = os.path.join(config.ENCRYPTED_FILES_DIR, row["stored_name"])
+    fkey = _file_key()
+    aad = file_aad(row["user_id"], row["stored_name"])
+    mime = _mime_any(original_name)
+
+    range_header = request.headers.get("Range")
+    try:
+        if range_header is not None:
+            parsed = _parse_range_header(range_header, size)
+            if parsed is None:
+                return _range_not_satisfiable(size)
+            start, end = parsed
+            data = decrypt_range(path, fkey, aad, start, end)
+            if len(data) != end - start + 1:
+                return _range_not_satisfiable(size)
+            response = Response(data, status=206, mimetype=mime)
+            response.headers["Content-Range"] = f"bytes {start}-{end}/{size}"
+            response.headers["Accept-Ranges"] = "bytes"
+            response.headers["Content-Length"] = str(len(data))
+        else:
+            data = decrypt_all(path, fkey, aad)
+            if hashlib.sha256(data).hexdigest() != row["sha256_hash"]:
+                raise ValueError("SHA-256 plaintext tidak cocok dengan nilai tercatat.")
+            response = Response(data, status=200, mimetype=mime)
+            response.headers["Accept-Ranges"] = "bytes"
+            response.headers["Content-Length"] = str(len(data))
+    except OSError:
+        abort(404)
+    except Exception:
+        add_block(session["user_id"], "TAMPER_DETECTED", f"file:{file_id}",
+                  row["sha256_ciphertext"])
+        abort(403)
+
+    response.headers["Cache-Control"] = "no-store"
+    response.headers["Pragma"] = "no-cache"
+    return response
+
+
+@media_bp.route("/media-vault/thumb/<int:file_id>")
+@login_required
+def thumb(file_id: int):
+    """Thumbnail gambar diperkecil di memori; video/audio tidak punya."""
+    with get_db() as db:
+        row = db.execute(
+            "SELECT * FROM vault_files WHERE id=? AND user_id=?",
+            (file_id, session["user_id"]),
+        ).fetchone()
+
+    if not row or row["file_type"] != "image":
+        abort(404)
+
+    ditolak = _akses_item(row, file_id)
+    if ditolak:
+        pesan, status = ditolak
+        return jsonify({"success": False, "error": pesan,
+                        "reason": "grant"}), status
+
+    try:
+        path = os.path.join(config.ENCRYPTED_FILES_DIR, row["stored_name"])
+        plaintext = decrypt_all(
+            path, _file_key(), file_aad(row["user_id"], row["stored_name"])
+        )
+        if hashlib.sha256(plaintext).hexdigest() != row["sha256_hash"]:
+            raise ValueError("SHA-256 plaintext tidak cocok dengan nilai tercatat.")
+        with Image.open(io.BytesIO(plaintext)) as gambar:
+            gambar.thumbnail((320, 320))
+            keluaran = io.BytesIO()
+            gambar.convert("RGB").save(keluaran, format="JPEG", quality=82)
+        data = keluaran.getvalue()
+    except OSError:
+        abort(404)
+    except Exception:
+        add_block(session["user_id"], "TAMPER_DETECTED", f"file:{file_id}",
+                  row["sha256_ciphertext"])
+        abort(403)
+
+    response = Response(data, status=200, mimetype="image/jpeg")
+    response.headers["Content-Length"] = str(len(data))
+    response.headers["Cache-Control"] = "no-store"
+    response.headers["Pragma"] = "no-cache"
     return response
 
 
