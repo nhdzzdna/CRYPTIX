@@ -15,32 +15,103 @@
     <div class="stats-row">
       <div class="stat-item">
         <span class="stat-num">{{ stats.total_blocks or 0 }}</span>
-        <span class="stat-lbl">Total Blok</span>
+        <span class="stat-lbl">Total Blok (global)</span>
       </div>
       <div class="stat-item">
-        <span class="stat-num">{{ stats.last_index or '-' }}</span>
+        <span class="stat-num">{{ stats.last_index if stats.last_index is not none else '-' }}</span>
         <span class="stat-lbl">Indeks Terakhir</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-num">{{ (head.head_hash[:12] ~ '…') if head and head.head_hash else '-' }}</span>
+        <span class="stat-lbl">Jangkar Head</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-num">{{ last_verified.timestamp[:19].replace('T', ' ') if last_verified else '—' }}</span>
+        <span class="stat-lbl">Verifikasi Terakhir</span>
       </div>
     </div>
 
     {% if verified is not none %}
-      {% if tampered_count == 0 %}
-        <div class="alert alert-success mt-2">✅ Semua {{ stats.total_blocks }} blok valid. Rantai blockchain utuh.</div>
+      {% if chain_valid %}
+        <div class="alert alert-success mt-2">
+          ✅ Rantai global utuh: {{ stats.total_blocks }} blok valid, tidak ada manipulasi.
+        </div>
       {% else %}
-        <div class="alert alert-danger mt-2">⚠ {{ tampered_count }} blok TERDETEKSI RUSAK / DIMANIPULASI!</div>
+        <div class="alert alert-danger mt-2">
+          ⚠ {{ tampered_count }} blok pada rantai global TERDETEKSI RUSAK / DIMANIPULASI!
+        </div>
       {% endif %}
+    {% else %}
+      <div class="alert alert-info mt-2">
+        Klik <strong>Verifikasi Integritas</strong> untuk memeriksa rantai global
+        dan keutuhan setiap aset milik Anda.
+      </div>
+    {% endif %}
+
+    {% if head and head.head_hash %}
+    <p class="text-muted small mt-2">
+      Jangkar kepala: blok #{{ head.block_index }} —
+      <span class="mono">{{ head.head_hash }}</span>
+    </p>
     {% endif %}
   </div>
 </div>
 
+{% if assets is not none %}
+<div class="card mb-4">
+  <div class="card-header">📦 Keutuhan Aset Milik Anda</div>
+  <div class="card-body p-0">
+    {% if assets %}
+    <table class="table table-sm">
+      <thead>
+        <tr><th>Jenis</th><th>Rujukan</th><th>Status</th><th>Keterangan</th></tr>
+      </thead>
+      <tbody>
+        {% for aset in assets %}
+        <tr>
+          <td>{{ aset.jenis }}</td>
+          <td class="mono">{{ aset.ref }}</td>
+          <td>
+            {% if aset.status == 'OK' %}
+              <span class="badge badge-success">✅ OK</span>
+            {% elif aset.status == 'DIUBAH' %}
+              <span class="badge badge-danger">⚠ DIUBAH</span>
+            {% elif aset.status == 'HILANG' %}
+              <span class="badge badge-warning">🗂 HILANG</span>
+            {% else %}
+              <span class="badge badge-info">❔ TANPA CATATAN</span>
+            {% endif %}
+          </td>
+          <td class="text-muted small">
+            {% if aset.status == 'OK' %}
+              Isi aset cocok dengan catatan dan blok rantai.
+            {% elif aset.status == 'DIUBAH' %}
+              Isi aset berbeda dari catatan atau blok rantai.
+            {% elif aset.status == 'HILANG' %}
+              Berkas tidak ditemukan di disk.
+            {% else %}
+              Tidak ada blok UPLOAD/MODIFY untuk aset ini.
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="p-3 text-muted">Belum ada aset (berkas, catatan, atau kredensial) untuk diperiksa.</p>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
 <div class="card">
-  <div class="card-header">Log Aktivitas Blockchain</div>
+  <div class="card-header">Log Aktivitas Blockchain (milik Anda)</div>
   <div class="card-body p-0">
     {% if blocks %}
     <table class="table table-sm">
       <thead>
         <tr>
-          <th>#</th><th>Waktu</th><th>User</th><th>Aksi</th>
+          <th>#</th><th>Waktu</th><th>Aksi</th>
           <th>Asset Hash</th><th>Block Hash</th>
           {% if verified is not none %}<th>Status</th>{% endif %}
         </tr>
@@ -50,7 +121,6 @@
         <tr class="{% if verified is not none and blk.get('tampered') %}row-danger{% endif %}">
           <td>{{ blk.block_index }}</td>
           <td>{{ blk.timestamp[:19] }}</td>
-          <td>{{ blk.user_id or '-' }}</td>
           <td><span class="badge badge-{{ 'success' if blk.action == 'UPLOAD' else ('danger' if blk.action == 'DELETE' else 'info') }}">{{ blk.action }}</span></td>
           <td class="mono text-truncate" style="max-width:120px;" title="{{ blk.asset_hash }}">{{ blk.asset_hash[:12] }}…</td>
           <td class="mono text-truncate" style="max-width:120px;" title="{{ blk.block_hash }}">{{ blk.block_hash[:12] }}…</td>

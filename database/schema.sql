@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS users (
     usb_volume_serial TEXT,             -- bound volume serial number
     failed_attempts INTEGER NOT NULL DEFAULT 0,   -- Sesi G: kegagalan masuk beruntun
     locked_until    TEXT,                          -- Sesi G: batas waktu kunci sementara
+    session_timeout_minutes INTEGER,               -- Sesi K: batas diam pilihan pengguna
     created_at      TEXT    NOT NULL DEFAULT (datetime('now')),
     last_login      TEXT
 );

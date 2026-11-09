@@ -135,6 +135,19 @@ def kredensial_pengguna(user_id: int) -> list[dict]:
     return [dict(b) for b in baris]
 
 
+def hapus_kredensial(user_id: int, credential_id: str) -> bool:
+    """Hapus satu kredensial milik ``user_id``; False bila bukan miliknya."""
+    if not credential_id:
+        return False
+    with get_db() as db:
+        kursor = db.execute(
+            "DELETE FROM webauthn_credentials WHERE user_id=? AND credential_id=?",
+            (user_id, credential_id),
+        )
+        db.commit()
+        return kursor.rowcount > 0
+
+
 def _deskriptor(credential_id: str) -> PublicKeyCredentialDescriptor:
     return PublicKeyCredentialDescriptor(
         id=base64url_to_bytes(credential_id),

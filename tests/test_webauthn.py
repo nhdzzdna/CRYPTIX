@@ -218,6 +218,18 @@ def _opsi_daftar(client, csrf: str) -> bytes:
     return base64url_to_bytes(data["options"]["challenge"])
 
 
+def _grant(client, scope: str = "biometric.manage") -> str:
+    """Terbitkan grant autentikasi ulang untuk alur Settings."""
+    csrf = _token_meta(client, "/settings")
+    resp = client.post(
+        "/api/reauth",
+        json={"method": "password", "scope": scope, "password": KATA_SANDI},
+        headers={"X-CSRFToken": csrf},
+    )
+    assert resp.status_code == 200, resp.get_data(as_text=True)
+    return resp.get_json()["grant"]
+
+
 # ── Opsi dan tantangan ───────────────────────────────────────────────────────
 
 class TestOpsiDanTantangan:
@@ -329,11 +341,15 @@ class TestPendaftaranAPI:
         # pendaftaran ulang dari sesi masuk (halaman Settings)
         _sesi_masuk(client, _satu_pengguna()["id"], USERNAME)
         csrf = _token_meta(client, "/settings")
+        grant = _grant(client)
         tantangan = _opsi_daftar(client, csrf)
         resp = client.post(
             "/api/webauthn/register/complete",
             json={"response": aut.respons_daftar(tantangan)},
-            headers={"X-CSRFToken": csrf},
+            headers={
+                "X-CSRFToken": csrf,
+                "X-Reauth-Grant": grant,
+            },
         )
         data = resp.get_json()
         assert data["success"] is False
@@ -527,11 +543,15 @@ class TestRegistryDanSettings:
 
         aut = _Autentikator()
         csrf = _token_meta(client, "/settings")
+        grant = _grant(client)
         tantangan = _opsi_daftar(client, csrf)
         resp = client.post(
             "/api/webauthn/register/complete",
             json={"response": aut.respons_daftar(tantangan)},
-            headers={"X-CSRFToken": csrf},
+            headers={
+                "X-CSRFToken": csrf,
+                "X-Reauth-Grant": grant,
+            },
         )
         data = resp.get_json()
         assert data["success"] is True, data

@@ -18,10 +18,10 @@ Recognised intent categories
 
 Security constraints
 ──────────────────────
-  • Agent HANYA membaca metadata (jumlah, status, tipe aksi log).
+  • Agent HANYA membaca metadata (jumlah, status, tipe aksi log, jangkar kepala).
   • Agent TIDAK membaca / menampilkan isi file terenkripsi, kunci, atau password.
   • Password yang diperiksa hanya hidup di memori; tidak disimpan ke DB, log,
-    atau hash chain.
+    riwayat percakapan, atau hash chain.
 """
 
 from __future__ import annotations
@@ -133,7 +133,8 @@ _FEATURE_KB: dict[str, str] = {
         "• **Playfair** — cipher digram 5×5, hanya huruf A–Z.\n"
         "• **ChaCha20** — stream cipher modern, nonce acak per operasi.\n"
         "• **Blowfish-CBC** — block cipher dengan padding PKCS#7.\n"
-        "• **Super Encryption** — pipeline 4 layer (Vigenere→Playfair→ChaCha20→Blowfish)."
+        "• **Super Encryption** — pipeline Vigenere→Playfair→ChaCha20→Blowfish-CBC "
+        "yang diakhiri HMAC-SHA256 untuk mendeteksi perubahan."
     ),
     "steganografi|steganography|lsb": (
         "**Steganografi LSB** menyembunyikan pesan di dalam gambar PNG.\n"
@@ -144,29 +145,32 @@ _FEATURE_KB: dict[str, str] = {
     ),
     "blockchain|security center|integritas": (
         "**Security Center** menampilkan log audit berbasis blockchain.\n"
-        "• Setiap aksi (upload, dekripsi, hapus, login) dicatat sebagai **blok** dengan "
-        "SHA-256 chain.\n"
-        "• Klik **Verifikasi Integritas** untuk memeriksa seluruh rantai.\n"
+        "• Setiap aksi (upload, dekripsi, hapus, login) dicatat sebagai **blok** "
+        "dengan tautan SHA-256, tanda tangan HMAC, dan proof-of-work ringan.\n"
+        "• Jangkar kepala (head hash) disimpan terpisah sebagai pembanding.\n"
+        "• Klik **Verifikasi Integritas** untuk memeriksa seluruh rantai dan status "
+        "tiap aset (OK/DIUBAH/HILANG/TANPA CATATAN).\n"
         "• Blok yang dimanipulasi akan ditandai ⚠ RUSAK."
     ),
     "usb|token|dongle": (
         "**USB Token** adalah lapisan autentikasi tambahan.\n"
-        "• Daftarkan flashdisk di **Settings → Security → USB Token**.\n"
+        "• Daftarkan/daftar ulang flashdisk di **Settings → Dongle**.\n"
         "• HMAC-SHA256 ditandatangani dan ditulis ke file `.cryptix_token` di flashdisk.\n"
-        "• Aktifkan `USB_REQUIRED = True` di `config.py` untuk wajib USB saat login.\n"
-        "• Token terikat pada serial number volume drive."
+        "• Token terikat pada serial number volume drive.\n"
+        "• Status dongle terpasang/tidak tampil di Dashboard dan Settings."
     ),
     "biometrik|wajah|face|sidik jari|fingerprint": (
         "**Biometrik** di CRYPTIX:\n"
-        "• **Face Recognition** — model LBPH dilatih dari 30 sampel webcam. "
-        "Verifikasi saat login via kamera.\n"
-        "• **Fingerprint** — simulasi akademik menggunakan ORB feature matching. "
-        "Upload citra sidik jari yang sama saat registrasi dan login.\n"
-        "• Daftar/perbarui biometrik di **Settings → Security**."
+        "• **WebAuthn** — kredensial platform (Windows Hello, sidik jari perangkat, "
+        "atau kunci keamanan) dengan user verification wajib.\n"
+        "• **Face Recognition** — model LBPH dilatih dari sampel webcam dan "
+        "template-nya disimpan terenkripsi. Verifikasi saat login via kamera.\n"
+        "• Daftar/perbarui biometrik di **Settings → Biometrik**."
     ),
     "media vault|audio|winamp": (
         "**Media Vault** menyimpan file audio/video secara terenkripsi.\n"
-        "• File dienkripsi **AES-256-GCM** sama seperti file biasa.\n"
+        "• File dienkripsi **AES-256-GCM** per potongan (chunk) dengan salt acak "
+        "per berkas dan nonce counter per chunk.\n"
         "• Tombol ▶ Play mendekripsi sementara dan memutar via HTML5.\n"
         "• Jika Winamp terinstal (path dikonfigurasi di `config.py`), gunakan "
         "tombol 🎵 Winamp — file sementara dihapus otomatis setelah 60 detik."
@@ -175,8 +179,10 @@ _FEATURE_KB: dict[str, str] = {
         "**Dashboard** menampilkan ringkasan keamanan Anda:\n"
         "• Total file, kredensial, catatan, dan stego image tersimpan.\n"
         "• Kapasitas penyimpanan terpakai (encrypted files).\n"
-        "• Jumlah blok blockchain.\n"
-        "• 5 aktivitas terbaru dari audit log."
+        "• Status dongle (terpasang/tidak) dan metode biometrik terdaftar "
+        "(WebAuthn + wajah).\n"
+        "• Hasil verifikasi rantai terakhir beserta jangkar kepala (head hash).\n"
+        "• 5 aktivitas terbaru milik Anda dari audit log."
     ),
 }
 
@@ -271,12 +277,18 @@ def _read_security_metadata(user_id: int) -> dict:
     No file content, no keys, no passwords are read.
     """
     from database.db import get_db
-    from modules.blockchain.blockchain import verify_chain
+    from modules.authentication import biometrics, usb_authentication
+    from modules.authentication.face_recognition import template_ada
+    from modules.authentication.webauthn import kredensial_pengguna
+    from modules.blockchain.blockchain import (
+        get_head_info,
+        get_last_verification,
+        verify_chain,
+    )
 
     with get_db() as db:
         user_row = db.execute(
-            "SELECT face_model_path, fingerprint_path, usb_token_id FROM users WHERE id=?",
-            (user_id,),
+            "SELECT usb_token_id FROM users WHERE id=?", (user_id,)
         ).fetchone()
 
         file_count = db.execute(
@@ -295,14 +307,18 @@ def _read_security_metadata(user_id: int) -> dict:
     tampered = sum(1 for b in chain if b.get("tampered"))
 
     return {
-        "file_count":     file_count,
-        "note_count":     note_count,
-        "account_count":  account_count,
-        "total_blocks":   len(chain),
-        "tampered_blocks": tampered,
-        "has_face":        bool(user_row["face_model_path"]) if user_row else False,
-        "has_fingerprint": bool(user_row["fingerprint_path"]) if user_row else False,
-        "has_usb":         bool(user_row["usb_token_id"])     if user_row else False,
+        "file_count":       file_count,
+        "note_count":       note_count,
+        "account_count":    account_count,
+        "total_blocks":     len(chain),
+        "tampered_blocks":  tampered,
+        "has_usb":          bool(user_row["usb_token_id"]) if user_row else False,
+        "dongle_attached":  usb_authentication.dongle_pengguna_terpasang(user_id),
+        "biometric_methods": biometrics.metode_biometrik_terdaftar(user_id),
+        "webauthn_count":   len(kredensial_pengguna(user_id)),
+        "has_face":         template_ada(user_id),
+        "head":             get_head_info(),
+        "last_verification": get_last_verification(user_id),
     }
 
 
@@ -337,6 +353,27 @@ def _handle_security_status(user_id: int) -> str:
             f"Segera periksa Security Center."
         )
 
+    # Chain head anchor
+    head = meta["head"]
+    if head:
+        lines.append(
+            f"⛓ **Jangkar kepala** — blok #{head.get('block_index')} · "
+            f"`{head.get('head_hash', '')[:16]}…` (SHA-256 + HMAC + PoW)"
+        )
+    else:
+        lines.append("⛓ **Jangkar kepala** — belum tersedia.")
+
+    # Last verification (bila pernah dijalankan)
+    verifikasi = meta["last_verification"]
+    if verifikasi:
+        waktu = verifikasi["timestamp"][:19].replace("T", " ")
+        keadaan = "utuh" if verifikasi["valid"] else (
+            f"{verifikasi['tampered_blocks']} blok rusak"
+        )
+        lines.append(
+            f"🔎 **Verifikasi terakhir** — {waktu} UTC · {keadaan}."
+        )
+
     # Data counts
     lines.append(
         f"📁 **File tersimpan**: {meta['file_count']} (terenkripsi AES-256-GCM)"
@@ -346,22 +383,37 @@ def _handle_security_status(user_id: int) -> str:
         f"🔑 **Kredensial**: {meta['account_count']}"
     )
 
-    # USB
-    usb_status = "✅ Terdaftar" if meta["has_usb"] else "⚠️ Belum terdaftar"
-    lines.append(f"🔌 **USB Token**: {usb_status}")
+    # USB / dongle
+    if meta["has_usb"]:
+        usb_status = (
+            "✅ Terdaftar dan terpasang"
+            if meta["dongle_attached"]
+            else "⚠️ Terdaftar, tetapi tidak terpasang"
+        )
+    else:
+        usb_status = "⚠️ Belum terdaftar"
+    lines.append(f"🔌 **Dongle/USB Token**: {usb_status}")
     if not meta["has_usb"]:
         lines.append(
-            "  → Daftarkan USB Token di **Settings → Security** untuk keamanan ekstra."
+            "  → Daftarkan dongle di **Settings → Dongle** untuk keamanan ekstra."
         )
 
-    # Biometrics
-    face_status = "✅ Model tersimpan" if meta["has_face"] else "⚠️ Belum didaftarkan"
-    fp_status   = "✅ Terdaftar"       if meta["has_fingerprint"] else "⚠️ Belum terdaftar"
-    lines.append(f"👤 **Face Recognition**: {face_status}")
-    lines.append(f"🔏 **Fingerprint**: {fp_status}")
+    # Biometrics: registry riil (WebAuthn + wajah)
+    label_metode = {"webauthn": "WebAuthn", "wajah": "Wajah"}
+    metode = [
+        label_metode.get(nama, nama) for nama in meta["biometric_methods"]
+    ]
+    lines.append(
+        "🧬 **Biometrik terdaftar**: "
+        + (", ".join(metode) if metode else "belum ada")
+    )
+    lines.append(
+        f"🔏 **WebAuthn**: {meta['webauthn_count']} kredensial  |  "
+        f"👤 **Wajah**: {'✅ terdaftar' if meta['has_face'] else '⚠️ belum terdaftar'}"
+    )
 
     # Overall assessment
-    strong_count = sum([meta["has_usb"], meta["has_face"], meta["has_fingerprint"]])
+    strong_count = sum([meta["has_usb"], bool(meta["biometric_methods"])])
     if meta["tampered_blocks"] > 0:
         lines.append(
             "\n🔴 **Kesimpulan**: Ada masalah integritas! Periksa Security Center segera."
@@ -378,7 +430,7 @@ def _handle_security_status(user_id: int) -> str:
     else:
         lines.append(
             "\n🟠 **Kesimpulan**: Hanya password yang aktif. Sangat disarankan "
-            "mendaftarkan USB Token dan biometrik."
+            "mendaftarkan dongle dan biometrik."
         )
 
     return "\n".join(lines)
@@ -394,7 +446,8 @@ def _handle_encryption_advice(message: str) -> str:
             "**📁 File / Dokumen / Gambar / Media**\n"
             "→ Gunakan **AES-256-GCM** (My Vault / Documents / Media Vault)\n"
             "  • Alasan: enkripsi authenticated — tag GCM mendeteksi tampering.\n"
-            "  • Setiap file mendapat nonce acak 12-byte; kunci turunan HKDF dari session."
+            "  • Format CRYPTIX1: salt acak 16-byte per berkas dan nonce counter "
+            "per potongan (chunk); kunci diturunkan HKDF dari sesi."
         )
 
     if re.search(r"teks|text|pesan|message|catatan|note|tulisan", msg_lower):
@@ -446,10 +499,12 @@ def _handle_password_check(message: str) -> str:
     if not m:
         return (
             "## 🔐 Cek Kekuatan Password\n\n"
-            "Untuk memeriksa kekuatan password, ketik:\n"
-            "> `cek password: NamaPassword123!`\n\n"
+            "Isi kolom **Password** di bawah chat lalu klik **Cek Password**.\n"
+            "Kolom itu terpisah dari pesan sehingga password tidak masuk riwayat "
+            "percakapan.\n\n"
+            "Lewat pesan teks: `cek password: NamaPassword123!`\n\n"
             "⚠️ **Catatan keamanan**: Password yang Anda kirim **tidak disimpan** "
-            "di database, log, maupun hash chain. Hanya diproses di memori."
+            "di database, log, riwayat, maupun hash chain. Hanya diproses di memori."
         )
 
     password = m.group(2)

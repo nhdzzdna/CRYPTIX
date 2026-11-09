@@ -127,6 +127,12 @@ class MSG:
     SETTINGS_USB_MISSING       = "Dongle terdaftar tidak terpasang atau tidak cocok."
     SETTINGS_USB_NO_DRIVE      = "Tidak ada media penyimpanan lepas yang terdeteksi."
     SETTINGS_USB_REGISTERED    = "Token USB berhasil didaftarkan."
+    SETTINGS_BIOMETRIC_DELETED = "Kredensial WebAuthn berhasil dihapus."
+    SETTINGS_BIOMETRIC_NOT_FOUND = "Kredensial WebAuthn tidak ditemukan untuk akun ini."
+    SETTINGS_BIOMETRIC_LAST    = "Tidak dapat menghapus satu-satunya biometrik. Daftarkan wajah atau kredensial lain terlebih dahulu."
+    SETTINGS_SESSION_TIMEOUT_INVALID = "Pilihan batas sesi tidak valid."
+    SETTINGS_SESSION_TIMEOUT_SAVED = "Batas diam sesi diperbarui."
+    SETTINGS_RECOVERY_FAILED   = "Kunci pemulihan baru tidak dapat dibuat karena sesi atau dongle tidak tersedia."
 
     # ── Assistant ────────────────────────────────────────────────────────────
     ASSISTANT_EMPTY_MESSAGE  = "Pesan tidak boleh kosong."

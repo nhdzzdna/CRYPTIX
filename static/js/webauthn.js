@@ -124,8 +124,12 @@ const CryptixWebAuthn = {
   /**
    * Daftarkan autentikator platform untuk pengguna sesi ini.
    * @param {string} idStatus id elemen paragraf status (boleh kosong)
+   * @param {object} opsiOpsional {nama, grant} — grant hanya wajib dari Settings
    */
-  async daftar(idStatus) {
+  async daftar(idStatus, opsiOpsional) {
+    const opsiTambahan = opsiOpsional || {};
+    const nama = typeof opsiTambahan.nama === "string" ? opsiTambahan.nama : "";
+    const grant = typeof opsiTambahan.grant === "string" ? opsiTambahan.grant : "";
     const st = idStatus ? document.getElementById(idStatus) : null;
     const set = function (pesan, warna) {
       if (st) {
@@ -141,9 +145,14 @@ const CryptixWebAuthn = {
       const opsi = await this._opsiDaftar();
       const kredensial = await navigator.credentials.create({ publicKey: _opsiCipta(opsi) });
       set("Memverifikasi kredensial…");
+      const headers = grant ? { "X-Reauth-Grant": grant } : undefined;
       const resp = await apiFetch("/api/webauthn/register/complete", {
         method: "POST",
-        body: JSON.stringify({ response: _objekRespons(kredensial) }),
+        headers: headers,
+        body: JSON.stringify({
+          response: _objekRespons(kredensial),
+          nama: nama,
+        }),
       });
       const data = await resp.json();
       if (!data.success) {
@@ -167,8 +176,8 @@ const CryptixWebAuthn = {
 window.CryptixWebAuthn = CryptixWebAuthn;
 
 /** Dipanggil tombol pada halaman penyiapan dan Settings. */
-function daftarWebAuthn(idStatus) {
-  return window.CryptixWebAuthn.daftar(idStatus);
+function daftarWebAuthn(idStatus, opsiOpsional) {
+  return window.CryptixWebAuthn.daftar(idStatus, opsiOpsional);
 }
 
 // ── Penangan tahap 2 login ───────────────────────────────────────────────────

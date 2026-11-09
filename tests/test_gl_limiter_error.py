@@ -1,6 +1,4 @@
 """
-tests/test_gl_limiter_error.py
-──────────────────────────────
 Uji tambahan GL: pembatas laju recovery/biometrik dan reveal per pengguna,
 galat JSON untuk API, serta penanganan RuntimeError detektor wajah.
 """
@@ -13,6 +11,7 @@ import config
 from app import create_app
 from database.db import init_db
 from modules.authentication import face_recognition as face_mod
+from modules.authentication.auth import register_user
 from modules.cryptography import pending_keys, session_keys
 from modules.strings import MSG
 
@@ -151,17 +150,63 @@ class TestGalatJson:
 
 
 class TestRuntimeErrorWajah:
-    def test_register_face_runtime_error_json(self, client, monkeypatch):
+    def test_register_face_runtime_error_json(self, app, client, monkeypatch):
+        hasil = register_user(
+            "pengguna_satu",
+            "pengguna_satu@contoh.test",
+            "Rahasia-Uji-2026!",
+        )
+        user_id = hasil["user_id"]
         csrf = _csrf(client)
-        _masuk_sebagai(client, 1, "pengguna_satu")
+        _masuk_sebagai(client, user_id, "pengguna_satu")
 
         def _meledak(*_args, **_kwargs):
             raise RuntimeError("cascade Haar tidak tersedia")
 
         monkeypatch.setattr(face_mod, "daftarkan_wajah", _meledak)
+
+        grant_resp = client.post(
+            "/api/reauth",
+            json={
+                "method": "password",
+                "scope": "biometric.manage",
+                "password": "Rahasia-Uji-2026!",
+            },
+            headers={"X-CSRFToken": csrf},
+        )
+        assert grant_resp.status_code == 200, grant_resp.get_data(as_text=True)
+        grant = grant_resp.get_json()["grant"]
+
         resp = client.post(
             "/api/register_face",
             json={"frames": ["a"] * 30, "duration_ms": 3000},
+            headers={
+                "X-CSRFToken": csrf,
+                "X-Reauth-Grant": grant,
+            },
+        )
+        assert resp.status_code == 500
+        badan = resp.get_json()
+        assert badan["success"] is False
+        assert badan["error"] == MSG.FACE_DETECTOR_UNAVAILABLE
+        teks = resp.get_data(as_text=True)
+        assert "Traceback" not in teks
+        assert "RuntimeError" not in teks
+
+    def test_verify_face_runtime_error_json(self, client, monkeypatch):
+        csrf = _csrf(client)
+        token = pending_keys.letakkan(1, b"\x02" * 32)
+        with client.session_transaction() as sess:
+            sess["login_stage"] = 1
+            sess["login_pending"] = token
+
+        def _meledak(*_args, **_kwargs):
+            raise RuntimeError("cascade Haar tidak tersedia")
+
+        monkeypatch.setattr(face_mod, "verifikasi_wajah", _meledak)
+        resp = client.post(
+            "/api/verify_face",
+            json={"pending": token, "frames": ["a"] * 5},
             headers={"X-CSRFToken": csrf},
         )
         assert resp.status_code == 500

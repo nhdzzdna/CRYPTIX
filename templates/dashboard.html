@@ -36,6 +36,61 @@
   </div>
 </div>
 
+<div class="stats-grid mt-4">
+  <div class="stat-card">
+    <div class="stat-icon">{{ '🔌' if dongle_connected else '🚫' }}</div>
+    <div class="stat-value">{{ 'Terhubung' if dongle_connected else 'Tidak Terpasang' }}</div>
+    <div class="stat-label">Dongle Keamanan</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon">🧬</div>
+    <div class="stat-value">
+      {% if biometric_methods %}{{ biometric_methods|length }}{% else %}0{% endif %}
+    </div>
+    <div class="stat-label">
+      Biometrik Terdaftar
+      {% if biometric_methods %}
+      <div class="text-muted small">
+        {% for metode in biometric_methods %}{{ metode.label }}{% if not loop.last %}, {% endif %}{% endfor %}
+        — WebAuthn: {{ webauthn_credentials }} kredensial, Wajah: {{ 'terdaftar' if face_enrolled else 'belum' }}
+      </div>
+      {% else %}
+      <div class="text-muted small">Belum ada metode terdaftar</div>
+      {% endif %}
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon">
+      {% if last_verified is none %}❔{% elif last_verified.valid %}✅{% else %}⚠{% endif %}
+    </div>
+    <div class="stat-value">
+      {% if last_verified is none %}Belum Diverifikasi
+      {% elif last_verified.valid %}Rantai Utuh
+      {% else %}Rantai Rusak{% endif %}
+    </div>
+    <div class="stat-label">
+      Verifikasi Integritas Terakhir
+      <div class="text-muted small">
+        {% if last_verified %}
+        {{ last_verified.timestamp[:19]|replace('T', ' ') }} UTC ·
+        {{ last_verified.total_blocks }} blok ·
+        {{ last_verified.tampered_blocks }} rusak
+        {% else %}
+        Jalankan Verifikasi di Security Center
+        {% endif %}
+      </div>
+      <div class="text-muted small mono">
+        {% set hash_kepala = last_verified.head_hash if last_verified else head.head_hash if head else None %}
+        {% if hash_kepala %}
+        Jangkar kepala: {{ hash_kepala[:16] }}…
+        {% else %}
+        Jangkar kepala: belum tersedia
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="card mt-4">
   <div class="card-header">Aktivitas Terbaru</div>
   <div class="card-body p-0">
