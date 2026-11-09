@@ -20,6 +20,7 @@ from flask import Blueprint, render_template, request, session, jsonify
 from modules.strings import MSG
 from routes.auth_routes import login_required
 from modules.assistant import history as chat_history
+from modules.assistant import matcher
 from modules.assistant.security_agent import process_message
 
 assistant_bp = Blueprint("assistant", __name__)
@@ -34,9 +35,11 @@ def _session_id() -> str:
 @assistant_bp.route("/assistant")
 @login_required
 def index():
-    """Render the chat page with existing server-side history."""
+    """Render the chat page with existing server-side history and topic buttons."""
     return render_template(
-        "assistant.html", history=chat_history.get(_session_id())
+        "assistant.html",
+        history=chat_history.get(_session_id()),
+        topik=matcher.muat_topik(),
     )
 
 
@@ -55,7 +58,8 @@ def chat():
     {
       "thinking_steps": [...],
       "answer": "...",
-      "intent": "..."
+      "intent": "...",
+      "saran": [{"id": "...", "judul": "..."}]   # opsional
     }
     """
     data = request.get_json(silent=True) or {}
@@ -85,11 +89,14 @@ def chat():
          "intent": result["intent"]},
     ])
 
-    return jsonify({
+    balasan = {
         "thinking_steps": result["thinking_steps"],
         "answer":         result["answer"],
         "intent":         result["intent"],
-    })
+    }
+    if result.get("saran"):
+        balasan["saran"] = result["saran"]
+    return jsonify(balasan)
 
 
 @assistant_bp.route("/assistant/clear", methods=["POST"])
