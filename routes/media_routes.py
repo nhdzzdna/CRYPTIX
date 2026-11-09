@@ -16,6 +16,7 @@ from flask import (
 import config
 from modules.strings import MSG
 from modules.authentication.reauth import require_grant
+from modules.rate_limit import limiter, REVEAL_LIMIT, user_or_ip_key
 from routes.auth_routes import login_required
 from database.db import get_db
 from modules.cryptography import session_keys
@@ -250,6 +251,7 @@ def stream(file_id: int):
 
 
 @media_bp.route("/media-vault/play/<int:file_id>", methods=["POST"])
+@limiter.limit(REVEAL_LIMIT, key_func=user_or_ip_key)
 @login_required
 @require_grant("media.winamp")
 def play(file_id: int):
@@ -307,6 +309,7 @@ def play(file_id: int):
 
 
 @media_bp.route("/media-vault/download/<int:file_id>")
+@limiter.limit(REVEAL_LIMIT, key_func=user_or_ip_key)
 @login_required
 @require_grant("file.download")
 def download(file_id: int):

@@ -53,10 +53,14 @@ def create_app() -> Flask:
     _ERROR_TEXT = {
         400: ("Permintaan Tidak Valid",
               "Permintaan Anda tidak dapat diproses. Periksa kembali input yang dikirim."),
+        401: ("Autentikasi Diperlukan",
+              "Silakan masuk terlebih dahulu untuk mengakses halaman ini."),
         403: ("Akses Ditolak",
               "Anda tidak memiliki izin untuk mengakses sumber daya ini."),
         404: ("Halaman Tidak Ditemukan",
               "Halaman atau sumber daya yang Anda minta tidak ditemukan."),
+        405: ("Metode Tidak Diizinkan",
+              "Metode permintaan tidak diizinkan untuk sumber daya ini."),
         413: ("File Terlalu Besar",
               "Ukuran file melebihi batas maksimum yang diizinkan."),
         429: ("Terlalu Banyak Permintaan",
@@ -65,20 +69,45 @@ def create_app() -> Flask:
               "Terjadi kesalahan internal. Silakan coba kembali beberapa saat lagi."),
     }
 
+    _ERROR_JSON = {
+        400: (MSG.ERROR_BAD_REQUEST, "bad_request"),
+        401: (MSG.ERROR_UNAUTHORIZED, "unauthorized"),
+        403: (MSG.ERROR_FORBIDDEN, "forbidden"),
+        404: (MSG.ERROR_NOT_FOUND, "not_found"),
+        405: (MSG.ERROR_METHOD_NOT_ALLOWED, "method_not_allowed"),
+        413: (MSG.ERROR_TOO_LARGE, "payload_too_large"),
+        429: (MSG.RATE_LIMITED, "rate_limit"),
+        500: (MSG.ERROR_INTERNAL, "internal_error"),
+    }
+
     def _register_error_handler(code: int) -> None:
-        def handler(_err):
+        def handler(err):
+            if _wants_json():
+                pesan, alasan = _ERROR_JSON[code]
+                if code == 500:
+                    _logger.error(
+                        "HTTP 500 pada %s (%s)", request.path,
+                        type(err).__name__,
+                    )
+                return jsonify({
+                    "success": False,
+                    "error": pesan,
+                    "reason": alasan,
+                }), code
             title, description = _ERROR_TEXT[code]
             return render_template(
                 "error.html", code=code, title=title, description=description
             ), code
         app.register_error_handler(code, handler)
 
-    for _status in (400, 403, 404, 413, 429, 500):
+    for _status in (400, 401, 403, 404, 405, 413, 429, 500):
         _register_error_handler(_status)
 
     # ── CSRF: JSON untuk permintaan API, halaman untuk sisanya ────────────────
     def _wants_json() -> bool:
         if request.path.startswith("/api/") or request.is_json:
+            return True
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
             return True
         penerima = request.accept_mimetypes
         return (
@@ -89,7 +118,11 @@ def create_app() -> Flask:
     @app.errorhandler(CSRFError)
     def _csrf_error(_err):
         if _wants_json():
-            return jsonify({"success": False, "error": MSG.CSRF_INVALID}), 400
+            return jsonify({
+                "success": False,
+                "error": MSG.CSRF_INVALID,
+                "reason": "csrf",
+            }), 400
         title, description = _ERROR_TEXT[400]
         return render_template(
             "error.html", code=400, title=title, description=description

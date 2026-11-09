@@ -172,3 +172,13 @@ class MSG:
     # ── Sesi I: Account Vault, Secure Notes, My Vault ─────────────────────────
     ACCOUNT_UPDATED           = "Kredensial berhasil diperbarui."
     VAULT_FILE_CONTENT_INVALID = "Isi file tidak sesuai dengan jenisnya."
+    # ── GL: pembatas laju, galat JSON, dan detektor wajah ─────────────────────
+    RATE_LIMITED              = "Anda terlalu sering mengirim permintaan. Silakan tunggu beberapa saat lalu coba kembali."
+    ERROR_BAD_REQUEST         = "Permintaan Anda tidak dapat diproses. Periksa kembali input yang dikirim."
+    ERROR_UNAUTHORIZED        = "Silakan masuk terlebih dahulu untuk mengakses sumber daya ini."
+    ERROR_FORBIDDEN           = "Anda tidak memiliki izin untuk mengakses sumber daya ini."
+    ERROR_NOT_FOUND           = "Halaman atau sumber daya yang Anda minta tidak ditemukan."
+    ERROR_METHOD_NOT_ALLOWED  = "Metode permintaan tidak diizinkan untuk sumber daya ini."
+    ERROR_TOO_LARGE           = "Ukuran berkas melebihi batas maksimum yang diizinkan."
+    ERROR_INTERNAL            = "Terjadi kesalahan internal. Silakan coba kembali beberapa saat lagi."
+    FACE_DETECTOR_UNAVAILABLE = "Detektor wajah tidak tersedia. Periksa pemasangan OpenCV."

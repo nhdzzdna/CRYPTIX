@@ -11,6 +11,7 @@ from flask import (
 
 from modules.strings import MSG
 from modules.authentication.reauth import require_grant
+from modules.rate_limit import limiter, REVEAL_LIMIT, user_or_ip_key
 from routes.auth_routes import login_required
 from database.db import get_db
 from modules.cryptography import session_keys
@@ -96,6 +97,7 @@ def add():
 
 
 @notes_bp.route("/secure-notes/open/<int:resource_id>", methods=["POST"])
+@limiter.limit(REVEAL_LIMIT, key_func=user_or_ip_key)
 @login_required
 @require_grant("note.open")
 def open_note(resource_id: int):
@@ -120,6 +122,7 @@ def open_note(resource_id: int):
 
 
 @notes_bp.route("/secure-notes/edit/<int:resource_id>", methods=["POST"])
+@limiter.limit(REVEAL_LIMIT, key_func=user_or_ip_key)
 @login_required
 @require_grant("note.edit")
 def edit(resource_id: int):
@@ -158,6 +161,7 @@ def edit(resource_id: int):
 
 
 @notes_bp.route("/secure-notes/delete/<int:resource_id>", methods=["POST"])
+@limiter.limit(REVEAL_LIMIT, key_func=user_or_ip_key)
 @login_required
 @require_grant("item.delete")
 def delete(resource_id: int):
