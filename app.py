@@ -182,6 +182,7 @@ def create_app() -> Flask:
     from routes.account_routes   import account_bp
     from routes.document_routes  import document_bp
     from routes.media_routes     import media_bp
+    from routes.collection_routes import collection_bp
     from routes.notes_routes     import notes_bp
     from routes.crypto_routes    import crypto_bp
     from routes.stego_routes     import stego_bp
@@ -192,7 +193,7 @@ def create_app() -> Flask:
     for bp in [
         auth_bp, dashboard_bp, vault_bp, account_bp, document_bp,
         media_bp, notes_bp, crypto_bp, stego_bp, security_bp, settings_bp,
-        assistant_bp,
+        assistant_bp, collection_bp,
     ]:
         app.register_blueprint(bp)
 
