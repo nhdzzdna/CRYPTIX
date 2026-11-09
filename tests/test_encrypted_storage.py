@@ -166,6 +166,7 @@ class TestAccountVault:
 
         body = client.get("/account-vault").get_data(as_text=True)
         assert "Situs Uji Kredensial" in body
+        assert "pe***" in body
         assert "pengguna-rahasia" not in body
         assert KATA_SANDI not in body
 

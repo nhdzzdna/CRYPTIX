@@ -1,61 +1,172 @@
 {% extends "base.html" %}
-{% block title %}My Vault — CRYPTIX{% endblock %}
-{% block page_title %}My Vault{% endblock %}
+{% block title %}{{ msg.title }} — CRYPTIX{% endblock %}
+{% block page_title %}{{ msg.title }}{% endblock %}
+
+{% macro doc_item(f) %}
+<div class="collection-item" data-doc-item data-file-id="{{ f.id }}"
+     data-kind="document" data-name="{{ f.original_name }}"
+     data-size="{{ f.file_size }}" data-date="{{ f.uploaded_at }}"
+     data-collection-id="{{ f.collection_id or '' }}">
+  <label class="media-select" title="Pilih">
+    <input type="checkbox" data-select-file value="{{ f.id }}" />
+  </label>
+  <div class="collection-item-main">
+    <span class="media-icon">📄</span>
+    <div>
+      <span class="collection-item-name">{{ f.original_name }}</span>
+      <small class="text-muted d-block">
+        {{ "%.1f"|format(f.file_size / 1024) }} KB · {{ f.uploaded_at[:16] }}
+      </small>
+    </div>
+  </div>
+  <div class="collection-item-actions">
+    <form method="POST" action="{{ url_for('vault.decrypt', resource_id=f.id) }}"
+          class="d-inline">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+      <button type="submit" class="btn btn-sm btn-success"
+              data-reauth="file.download"
+              data-reauth-resource="{{ f.id }}">⬇</button>
+    </form>
+    <form method="POST" action="{{ url_for('vault.delete', resource_id=f.id) }}"
+          class="d-inline">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+      <button type="submit" class="btn btn-sm btn-danger"
+              data-reauth="item.delete"
+              data-reauth-resource="{{ f.id }}">🗑</button>
+    </form>
+  </div>
+</div>
+{% endmacro %}
 
 {% block content %}
-<!-- Upload card -->
+<div id="collection-page" data-page="dokumen"
+     data-csrf="{{ csrf_token() }}"></div>
+
+<div id="collection-messages"
+     data-msg-move="{{ msg.move }}"
+     data-msg-state="{{ msg.state }}"
+     data-msg-need-folder="{{ msg.need_folder }}"
+     data-msg-error="{{ msg.error }}"
+     data-msg-delete-confirm="{{ msg.delete_confirm }}"></div>
+
 <div class="card mb-4">
-  <div class="card-header">Upload File Baru</div>
+  <div class="card-header">{{ msg.upload_title }}</div>
   <div class="card-body">
     <form method="POST" action="{{ url_for('vault.upload') }}" enctype="multipart/form-data">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+      <input type="hidden" name="kategori" value="dokumen" />
       <div class="form-row">
-        <input type="file" name="file" class="form-control" required />
-        <button type="submit" class="btn btn-primary">🔒 Enkripsi & Upload</button>
+        <input type="file" name="file" class="form-control"
+               accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt" required />
+        <button type="submit" class="btn btn-primary">🔒 Enkripsi & Unggah</button>
       </div>
     </form>
   </div>
 </div>
 
-<!-- Files table -->
-<div class="card">
-  <div class="card-header">File Terenkripsi ({{ files|length }})</div>
-  <div class="card-body p-0">
-    {% if files %}
-    <table class="table">
-      <thead>
-        <tr><th>Nama File</th><th>Tipe</th><th>Ukuran</th><th>Upload</th><th>Aksi</th></tr>
-      </thead>
-      <tbody>
-        {% for f in files %}
-        <tr>
-          <td>{{ f.original_name }}</td>
-          <td><span class="badge badge-secondary">{{ f.file_type }}</span></td>
-          <td>{{ "%.1f"|format(f.file_size / 1024) }} KB</td>
-          <td>{{ f.uploaded_at[:16] }}</td>
-          <td>
-            <form method="POST" action="{{ url_for('vault.decrypt', resource_id=f.id) }}"
-                  style="display:inline">
-              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-              <button type="submit" class="btn btn-sm btn-success"
-                      data-reauth="file.download"
-                      data-reauth-resource="{{ f.id }}">⬇ Unduh</button>
-            </form>
-            <form method="POST" action="{{ url_for('vault.delete', resource_id=f.id) }}"
-                  style="display:inline">
-              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-              <button type="submit" class="btn btn-sm btn-danger"
-                      data-reauth="item.delete"
-                      data-reauth-resource="{{ f.id }}">🗑</button>
-            </form>
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+<div id="collection-alert" class="alert alert-danger" hidden></div>
+
+<div class="card mb-4">
+  <div class="card-header">{{ msg.folder_section }}</div>
+  <div class="card-body">
+    <form id="folder-create-form" class="d-flex gap-2 align-items-center mb-3" novalidate>
+      <input type="text" id="folder-create-name" class="form-control"
+             placeholder="{{ msg.folder_placeholder }}" maxlength="120" required />
+      <label class="d-flex gap-2 align-items-center">
+        <input type="checkbox" id="folder-create-locked" /> {{ msg.folder_lock_label }}
+      </label>
+      <button type="submit" class="btn btn-primary">{{ msg.folder_create_button }}</button>
+    </form>
+
+    {% if folders %}
+    <div class="album-grid">
+      {% for a in folders %}
+      <button type="button" class="album-card" data-folder-open
+              data-folder-id="{{ a.id }}" data-folder-name="{{ a.name }}"
+              data-folder-locked="{{ 1 if a.locked else 0 }}"
+              {% if a.locked %}data-reauth="album.unlock" data-reauth-resource="{{ a.id }}"{% endif %}>
+        <span class="album-cover{% if a.locked %} album-cover-locked{% endif %}"
+              style="background: hsl({{ (a.id * 47) % 360 }}, 45%, 42%)">
+          <span class="album-lock">{% if a.locked %}🔒{% else %}📁{% endif %}</span>
+        </span>
+        <span class="album-name">{{ a.name }}</span>
+        <span class="album-count">{{ a.jumlah }} {{ msg.count }}{% if a.locked %} · {{ msg.locked_suffix }}{% endif %}</span>
+      </button>
+      {% endfor %}
+    </div>
     {% else %}
-    <p class="p-3 text-muted">Belum ada file. Upload file pertama Anda.</p>
+    <p class="text-muted">{{ msg.empty }}</p>
     {% endif %}
   </div>
 </div>
+
+<section id="folder-detail" class="card mb-4" hidden>
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span id="folder-detail-title"></span>
+    <button type="button" id="folder-back" class="btn btn-sm btn-secondary">← Kembali</button>
+  </div>
+  <div class="card-body">
+    <div class="d-flex gap-2 align-items-center mb-3 flex-wrap">
+      <button type="button" id="folder-rename" class="btn btn-sm btn-secondary">{{ msg.folder_rename }}</button>
+      <button type="button" id="folder-lock-toggle" class="btn btn-sm btn-secondary"
+              data-reauth="album.unlock" data-reauth-resource=""
+              data-label-lock="{{ msg.folder_lock_toggle }}"
+              data-label-unlock="{{ msg.folder_unlock_toggle }}">{{ msg.folder_lock_toggle }}</button>
+      <button type="button" id="folder-delete" class="btn btn-sm btn-danger">{{ msg.folder_delete }}</button>
+      <form id="folder-rename-form" class="d-flex gap-2" hidden novalidate>
+        <input type="text" id="folder-rename-input" class="form-control" maxlength="120" required />
+        <button type="submit" class="btn btn-sm btn-primary">Simpan</button>
+      </form>
+    </div>
+    <div id="folder-items" class="music-track-list" data-doc-list></div>
+    <div id="folder-hidden" class="hidden-section mt-3" hidden>
+      <button type="button" id="folder-hidden-open" class="btn btn-sm btn-secondary"
+              data-reauth="album.unlock" data-reauth-resource="">{{ msg.hidden_button }}</button>
+      <div id="folder-hidden-items" class="music-track-list mt-3" data-doc-list></div>
+    </div>
+  </div>
+</section>
+
+<div class="card mb-4">
+  <div class="card-header">{{ msg.unfiled_section }}</div>
+  <div class="card-body">
+    <div class="d-flex gap-2 align-items-center mb-3 flex-wrap" id="document-tools">
+      <label for="document-search" class="mb-0">{{ msg.search_label }}</label>
+      <input type="search" id="document-search" class="form-control"
+             placeholder="{{ msg.search_placeholder }}" />
+      <label for="document-sort" class="mb-0">{{ msg.sort_label }}</label>
+      <select id="document-sort" class="form-control">
+        <option value="name">{{ msg.sort_name }}</option>
+        <option value="date">{{ msg.sort_date }}</option>
+        <option value="size">{{ msg.sort_size }}</option>
+      </select>
+    </div>
+    <div id="unfiled-items" class="music-track-list" data-doc-list>
+      {% if unfiled %}
+      {% for f in unfiled %}{{ doc_item(f) }}{% endfor %}
+      {% endif %}
+    </div>
+    {% if not unfiled %}
+    <p class="text-muted">{{ msg.unfiled_empty }}</p>
+    {% endif %}
+  </div>
+</div>
+
+<div id="selection-bar" class="selection-bar" hidden>
+  <span id="selection-count">0 dipilih</span>
+  <select id="move-target" class="form-control">
+    <option value="">{{ msg.move_none }}</option>
+    {% for a in folders %}<option value="{{ a.id }}" data-locked="{{ 1 if a.locked else 0 }}">{{ a.name }}</option>{% endfor %}
+  </select>
+  <button type="button" id="move-button" class="btn btn-sm btn-primary">{{ msg.move_button }}</button>
+  <button type="button" id="lock-items-button" class="btn btn-sm btn-secondary"
+          data-reauth="album.unlock" data-reauth-resource="">{{ msg.lock_items }}</button>
+  <button type="button" id="hide-items-button" class="btn btn-sm btn-secondary"
+          data-reauth="album.unlock" data-reauth-resource="">{{ msg.hide_items }}</button>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/collection_folders.js') }}"></script>
+<script src="{{ url_for('static', filename='js/dokumen.js') }}"></script>
 {% endblock %}

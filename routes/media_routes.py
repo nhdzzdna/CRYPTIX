@@ -32,6 +32,9 @@ from modules.media.winamp_integration import (
     is_winamp_available, play_with_winamp, save_temp_audio, cleanup_temp_file
 )
 from modules.blockchain.blockchain import add_block
+from routes.collection_shared import (
+    halaman_koleksi, file_info as _berkas_info,
+)
 
 media_bp = Blueprint("media", __name__)
 
@@ -120,75 +123,16 @@ def _display_name(row, db_key: bytes) -> str:
 @media_bp.route("/media-vault")
 @login_required
 def index():
-    with get_db() as db:
-        rows = db.execute(
-            "SELECT * FROM vault_files WHERE user_id=? "
-            "AND file_type IN ('image','audio','video') ORDER BY uploaded_at DESC",
-            (session["user_id"],),
-        ).fetchall()
-        koleksi_rows = db.execute(
-            "SELECT * FROM collections WHERE user_id=? ORDER BY created_at, id",
-            (session["user_id"],),
-        ).fetchall()
-        item_rows = db.execute(
-            """SELECT ci.file_id, ci.collection_id, ci.state, c.locked
-               FROM collection_items ci
-               JOIN collections c ON c.id = ci.collection_id
-               WHERE c.user_id=? ORDER BY ci.added_at""",
-            (session["user_id"],),
-        ).fetchall()
-
     db_key = _db_key()
-    info = {r["id"]: _media_info(r, db_key) for r in rows}
-    item_map = {r["file_id"]: r for r in item_rows}
-
-    albums = []
-    album_by_id = {}
-    for k in koleksi_rows:
-        nama = _collection_name(k, db_key)
-        album = {
-            "id": k["id"], "name": nama, "kind": k["kind"],
-            "locked": bool(k["locked"]), "cover": None,
-            "jumlah": 0,
-        }
-        album_by_id[k["id"]] = album
-        albums.append(album)
-
-    for fid, item in item_map.items():
-        album = album_by_id.get(item["collection_id"])
-        if album is None:
-            continue
-        if item["state"] == "hidden":
-            continue
-        album["jumlah"] += 1
-        berkas = info.get(fid)
-        if (album["cover"] is None and berkas is not None
-                and berkas["file_type"] == "image"):
-            album["cover"] = berkas["thumb_url"]
-
-    unfiled = [
-        info[fid] for fid in info
-        if fid not in item_map
-    ]
-
-    audio_files = []
-    for fid, berkas in info.items():
-        if berkas["file_type"] != "audio":
-            continue
-        item = item_map.get(fid)
-        if item is not None:
-            if item["state"] != "normal" or item["locked"]:
-                continue
-        audio_files.append(dict(
-            berkas,
-            collection_id=(item["collection_id"] if item is not None else None),
-        ))
+    with get_db() as db:
+        data = halaman_koleksi(
+            db, session["user_id"], "album", ("image", "video"), db_key,
+        )
 
     return render_template(
         "media_vault.html",
-        files=audio_files,
-        albums=albums,
-        unfiled=unfiled,
+        albums=data["folders"],
+        unfiled=data["unfiled"],
         winamp_available=is_winamp_available(),
         download_only_note=MSG.MEDIA_DOWNLOAD_ONLY,
         temp_warning=MSG.MEDIA_TEMP_WARNING,
@@ -217,30 +161,7 @@ def _collection_name(row, db_key: bytes) -> str:
 
 def _media_info(row, db_key: bytes) -> dict:
     """Bentuk data tampilan aman untuk satu berkas media."""
-    nama = _display_name(row, db_key)
-    ext = _extension(nama)
-    jenis = row["file_type"]
-    if jenis == "image":
-        ikon = "📷"
-    elif jenis == "video":
-        ikon = "🎬"
-    else:
-        ikon = "🎵"
-    return {
-        "id": row["id"],
-        "original_name": nama,
-        "file_type": jenis,
-        "extension": ext,
-        "icon": ikon,
-        "view_url": url_for("media.view", file_id=row["id"]),
-        "thumb_url": (url_for("media.thumb", file_id=row["id"])
-                      if jenis == "image" else None),
-        "stream_url": url_for("media.stream", file_id=row["id"]),
-        "playable": ext in PLAYABLE_EXTENSIONS,
-        "download_only": ext in DOWNLOAD_ONLY_EXTENSIONS,
-        "file_size": row["file_size"],
-        "uploaded_at": row["uploaded_at"],
-    }
+    return _berkas_info(row, db_key)
 
 
 def _item_context(file_id: int, user_id: int):

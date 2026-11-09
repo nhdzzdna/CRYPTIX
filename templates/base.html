@@ -20,17 +20,17 @@
       <a href="{{ url_for('dashboard.index') }}"  class="nav-item {% if request.endpoint == 'dashboard.index' %}active{% endif %}">
         <span class="nav-icon">⬛</span> Dashboard
       </a>
-      <a href="{{ url_for('vault.index') }}"      class="nav-item {% if request.endpoint == 'vault.index' %}active{% endif %}">
-        <span class="nav-icon">🗄</span> My Vault
+      <a href="{{ url_for('vault.index') }}"      class="nav-item {% if request.endpoint in ('vault.index', 'documents.index') %}active{% endif %}">
+        <span class="nav-icon">📄</span> {{ MSG.DOCUMENT_TITLE }}
       </a>
       <a href="{{ url_for('account.index') }}"    class="nav-item {% if request.endpoint == 'account.index' %}active{% endif %}">
         <span class="nav-icon">🔑</span> Account Vault
       </a>
-      <a href="{{ url_for('documents.index') }}"  class="nav-item {% if request.endpoint == 'documents.index' %}active{% endif %}">
-        <span class="nav-icon">📄</span> Documents
-      </a>
       <a href="{{ url_for('media.index') }}"      class="nav-item {% if request.endpoint == 'media.index' %}active{% endif %}">
-        <span class="nav-icon">🎵</span> Media Vault
+        <span class="nav-icon">🎵</span> {{ MSG.MEDIA_MENU }}
+      </a>
+      <a href="{{ url_for('collection.musik') }}" class="nav-item {% if request.endpoint == 'collection.musik' %}active{% endif %}">
+        <span class="nav-icon">🎧</span> {{ MSG.MUSIC_TITLE }}
       </a>
       <a href="{{ url_for('notes.index') }}"      class="nav-item {% if request.endpoint == 'notes.index' %}active{% endif %}">
         <span class="nav-icon">📝</span> Secure Notes

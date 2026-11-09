@@ -91,7 +91,14 @@ def _pasang_deteksi(monkeypatch):
             return None
         return np.full((200, 200), _nilai(str(frame)), dtype=np.uint8)
 
+    def _wajah(frame):
+        roi = _roi(frame)
+        return [] if roi is None else [roi]
+
     monkeypatch.setattr(face_mod, "_deteksi_roi", _roi)
+    # Pendaftaran memakai deteksi seluruh wajah agar dapat menolak frame
+    # tanpa wajah atau dengan lebih dari satu wajah.
+    monkeypatch.setattr(face_mod, "_deteksi_semua_wajah", _wajah)
 
 
 def _konfidensi(monkeypatch, angka):
@@ -144,10 +151,17 @@ class TestPendaftaran:
     def test_sampel_kurang_dari_25_ditolak(self, app, pengguna, dek,
                                            monkeypatch):
         monkeypatch.setattr(face_mod, "_decode_frame", lambda item: item)
+        # 24 dari 30 frame terdeteksi (tepat 80%) sehingga lolos ambang
+        # deteksi, tetapi jumlah sampel masih di bawah 25.
         monkeypatch.setattr(
             face_mod, "_deteksi_roi",
-            lambda frame: None if int(str(frame).split("-")[1]) % 3 == 0
+            lambda frame: None if int(str(frame).split("-")[1]) >= 24
             else np.full((200, 200), 7, dtype=np.uint8),
+        )
+        monkeypatch.setattr(
+            face_mod, "_deteksi_semua_wajah",
+            lambda frame: [] if int(str(frame).split("-")[1]) >= 24
+            else [np.full((200, 200), 7, dtype=np.uint8)],
         )
         hasil = face_mod.daftarkan_wajah(
             pengguna["id"], [f"frame-{i}" for i in range(30)], dek

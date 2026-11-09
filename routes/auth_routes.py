@@ -134,6 +134,7 @@ def _simpan_kunci_pulih(user_id: int, recovery_key: str) -> str:
 
 def _respon_tanpa_simpan(template: str, **konteks):
     """Render halaman berisi rahasia dengan header anti-cache (no-store)."""
+    konteks.setdefault("MSG", MSG)
     resp = make_response(render_template(template, **konteks))
     resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
     resp.headers["Pragma"] = "no-cache"
@@ -249,7 +250,7 @@ def account_recovery():
         recovery_key=baru["recovery_key"],
         pending=_simpan_kunci_pulih(row["id"], baru["recovery_key"]),
         next_action=url_for("auth.account_recovery_confirm"),
-        next_label="Kembali ke Halaman Masuk",
+        next_label=MSG.RECOVERY_BACK_LABEL,
     )
 
 
@@ -270,7 +271,7 @@ def account_recovery_confirm():
             recovery_key=recovery_key,
             pending=token,
             next_action=url_for("auth.account_recovery_confirm"),
-            next_label="Kembali ke Halaman Masuk",
+            next_label=MSG.RECOVERY_BACK_LABEL,
         )
     _KUNCI_PULIH.pop(token, None)
     flash(MSG.ACCOUNT_RECOVERY_DONE, "success")
@@ -371,7 +372,7 @@ def setup():
             flash(MSG.SETUP_COMPLETE, "success")
         return redirect(url_for("auth.login"))
 
-    return render_template("setup.html")
+    return render_template("setup.html", MSG=MSG)
 
 
 # ── WebAuthn (butir 2.5) ─────────────────────────────────────────────────────

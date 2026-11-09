@@ -30,6 +30,7 @@ from modules.cryptography.file_encryption import (
     encrypt_stream, decrypt_all, generate_stored_name, file_aad,
 )
 from modules.blockchain.blockchain import add_block
+from routes.collection_shared import halaman_koleksi
 
 vault_bp = Blueprint("vault", __name__)
 
@@ -39,6 +40,14 @@ def _allowed_file(filename: str) -> bool:
 
 
 _IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp"}
+_AUDIO_EXTENSIONS = {".mp3", ".wav", ".flac", ".ogg", ".m4a"}
+
+
+def _tujuan_unggah() -> str:
+    """Halaman kembali setelah unggah sesuai kategori formulir."""
+    if (request.form.get("kategori") or "").strip().lower() == "musik":
+        return "collection.musik"
+    return "vault.index"
 
 
 def _valid_image(raw: bytes) -> bool:
@@ -84,19 +93,56 @@ def _display_name(row, db_key: bytes) -> str:
 @vault_bp.route("/vault")
 @login_required
 def index():
-    with get_db() as db:
-        rows = db.execute(
-            "SELECT * FROM vault_files WHERE user_id=? ORDER BY uploaded_at DESC",
-            (session["user_id"],),
-        ).fetchall()
-
     db_key = _get_db_key()
-    files = []
-    for r in rows:
-        row = dict(r)
-        row["original_name"] = _display_name(r, db_key)
-        files.append(row)
-    return render_template("vault.html", files=files)
+    with get_db() as db:
+        data = halaman_koleksi(
+            db, session["user_id"], "dokumen", ("document",), db_key,
+        )
+    return render_template(
+        "vault.html",
+        folders=data["folders"],
+        unfiled=data["unfiled"],
+        msg=_dokumen_msg(),
+    )
+
+
+def _dokumen_msg() -> dict:
+    """Teks antarmuka halaman Dokumen."""
+    return {
+        "title": MSG.DOCUMENT_TITLE,
+        "upload_title": MSG.DOCUMENT_UPLOAD_TITLE,
+        "folder_section": MSG.DOCUMENT_FOLDER_SECTION,
+        "unfiled_section": MSG.DOCUMENT_UNFILED_SECTION,
+        "empty": MSG.DOCUMENT_EMPTY,
+        "unfiled_empty": MSG.DOCUMENT_UNFILED_EMPTY,
+        "search_label": MSG.DOCUMENT_SEARCH_LABEL,
+        "search_placeholder": MSG.DOCUMENT_SEARCH_PLACEHOLDER,
+        "sort_label": MSG.DOCUMENT_SORT_LABEL,
+        "sort_name": MSG.DOCUMENT_SORT_NAME,
+        "sort_date": MSG.DOCUMENT_SORT_DATE,
+        "sort_size": MSG.DOCUMENT_SORT_SIZE,
+        "folder_placeholder": MSG.FOLDER_CREATE_PLACEHOLDER,
+        "folder_create_button": MSG.FOLDER_CREATE_BUTTON,
+        "folder_lock_label": MSG.FOLDER_LOCK_LABEL,
+        "folder_rename": MSG.FOLDER_RENAME_BUTTON,
+        "folder_delete": MSG.FOLDER_DELETE_BUTTON,
+        "folder_lock_toggle": MSG.FOLDER_LOCK_TOGGLE,
+        "folder_unlock_toggle": MSG.FOLDER_UNLOCK_TOGGLE,
+        "hidden_button": MSG.FOLDER_HIDDEN_BUTTON,
+        "count": MSG.FOLDER_COUNT,
+        "locked_suffix": MSG.FOLDER_LOCKED_SUFFIX,
+        "move_none": MSG.FOLDER_MOVE_TARGET_NONE,
+        "move_button": MSG.FOLDER_MOVE_BUTTON,
+        "lock_items": MSG.COLLECTION_LOCK_ITEMS,
+        "hide_items": MSG.COLLECTION_HIDE_ITEMS,
+        "delete_confirm": MSG.DOCUMENT_DELETE_CONFIRM,
+        "download": MSG.DOCUMENT_DOWNLOAD,
+        "delete_file": MSG.DOCUMENT_DELETE,
+        "move": MSG.COLLECTION_MOVED,
+        "state": MSG.COLLECTION_STATE_CHANGED,
+        "need_folder": MSG.FOLDER_PICK_NOTE,
+        "error": MSG.COLLECTION_ACTION_DENIED,
+    }
 
 
 # ── Upload ────────────────────────────────────────────────────────────────────
@@ -107,25 +153,30 @@ def upload():
     f = request.files.get("file")
     if not f or not f.filename:
         flash(MSG.VAULT_NO_FILE_SELECTED, "warning")
-        return redirect(url_for("vault.index"))
+        return redirect(url_for(_tujuan_unggah()))
 
     filename = secure_filename(f.filename)
     if not _allowed_file(filename):
         flash(MSG.VAULT_FILE_TYPE_DENIED, "danger")
-        return redirect(url_for("vault.index"))
+        return redirect(url_for(_tujuan_unggah()))
+
+    ext = os.path.splitext(filename)[1].lower()
+    kategori = (request.form.get("kategori") or "").strip().lower()
+    if kategori == "musik" and ext not in _AUDIO_EXTENSIONS:
+        flash(MSG.VAULT_FILE_TYPE_DENIED, "danger")
+        return redirect(url_for(_tujuan_unggah()))
 
     raw = f.read()
     if len(raw) > config.MAX_CONTENT_LENGTH:
         flash(MSG.VAULT_FILE_TOO_LARGE, "danger")
-        return redirect(url_for("vault.index"))
+        return redirect(url_for(_tujuan_unggah()))
 
-    ext = os.path.splitext(filename)[1].lower()
     if ext in _IMAGE_EXTENSIONS and not _valid_image(raw):
         flash(MSG.VAULT_FILE_CONTENT_INVALID, "danger")
-        return redirect(url_for("vault.index"))
+        return redirect(url_for(_tujuan_unggah()))
     if ext in _IMAGE_EXTENSIONS:
         file_type = "image"
-    elif ext in {".mp3", ".wav", ".flac", ".ogg", ".m4a"}:
+    elif ext in _AUDIO_EXTENSIONS:
         file_type = "audio"
     elif ext in {".mp4", ".avi", ".mkv", ".mov"}:
         file_type = "video"
@@ -159,7 +210,7 @@ def upload():
     add_block(session["user_id"], "UPLOAD", f"file:{file_id}",
               enc_result["sha256_ciphertext"])
     flash(MSG.VAULT_UPLOAD_SUCCESS.format(filename=filename), "success")
-    return redirect(url_for("vault.index"))
+    return redirect(url_for(_tujuan_unggah()))
 
 
 # ── Download / Decrypt ────────────────────────────────────────────────────────
