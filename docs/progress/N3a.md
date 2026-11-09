@@ -1,10 +1,15 @@
 # N3a — Koleksi dan Album Media (foto dan video)
-- Audit: media_routes.py menyajikan audio/video lewat vault_files; stream memakai grant `media.stream` berulang 15 menit; play/download memakai scope masing-masing; semua query memakai user_id.
-- Audit: media_vault.html masih tabel audio/video; media_vault.js hanya mengisi src setelah grant `media.stream`; tidak ada inline JS.
-- Audit: reauth.py SCOPES + REUSABLE_TTL menjadi titik tambah `album.unlock`; require_grant mengambil resource dari resource_id/file_id/img_id dan mencari grant aktif untuk scope berulang.
-- Audit: vault_routes.py menyimpan original_name terenkripsi AES-GCM dengan field_aad(user_id,"vault_files","original_name"); stored_name acak; pola ini dipakai untuk collections.name_enc.
-- Audit: schema.sql memakai CREATE TABLE IF NOT EXISTS; init_db menjalankan skrip penuh sehingga DB lama otomatis mendapat tabel baru tanpa ALTER.
-- Audit: test_media_routes.py dan test_j2_grants.py bergantung pada stream/play/download yang tidak boleh berubah; halaman media harus tetap memuat audio/video controls, jalur stream, dan csrf_token.
-- Rencana Fase 1: tabel collections + collection_items; blueprint collection_routes.py; scope album.unlock; rute view/thumb dengan Range dan aturan state.
-- Rencana Fase 2: galeri album, penampil modal, pilih banyak, JS media_albums.js, CSS tambahan.
-- Rencana Fase 3: tests/test_n3a_koleksi.py dan verifikasi database lama.
+- Audit: media_routes.py menyajikan audio/video dari vault_files; stream memakai grant `media.stream` berulang 15 menit; play/download memakai scope masing-masing; semua query memakai user_id.
+- Audit: media_vault.html/js lama hanya tabel audio/video dan pengisian src setelah grant `media.stream`.
+- Audit: reauth.py SCOPES + REUSABLE_TTL menjadi titik tambah `album.unlock`; require_grant mencari resource dari resource_id/file_id.
+- Audit: vault_routes.py memakai encrypt_field + field_aad(user_id,"vault_files","original_name"); stored_name acak.
+- Audit: schema.sql CREATE TABLE IF NOT EXISTS; init_db menjalankan skrip penuh sehingga DB lama mendapat tabel baru tanpa ALTER.
+- Fase 1 selesai: tabel `collections` dan `collection_items` (file_id PRIMARY KEY, ON DELETE CASCADE ke koleksi/berkas); blueprint `collection_routes.py`; scope `album.unlock`; rute `/media-vault/view/<id>` (Range 206/416, MIME, no-store) dan `/media-vault/thumb/<id>` (Pillow, video 404).
+- Aturan akses pratinjau: state normal + album tidak terkunci → boleh; album terkunci/state hidden → grant album.unlock; state locked → grant media.stream. Stream/play/download lama tidak diubah.
+- Fase 2 selesai: galeri album + detail album, item terkunci/tersembunyi dimuat lewat API setelah grant, penampil modal (gambar/video/audio, navigasi, ganti nama berkas), pilih banyak + bilah aksi, buat/kunci/hapus/ganti nama album, ikon per jenis, audio tetap bagian Audio.
+- Berkas diubah: database/schema.sql, modules/authentication/reauth.py, modules/strings.py, routes/media_routes.py, routes/collection_routes.py (baru), app.py, templates/media_vault.html, static/js/media_albums.js (baru), static/css/style.css, tests/test_n3a_koleksi.py (baru), docs/progress/N3a.md.
+- Respons galat JSON: `{success:false, error, reason}`; 401 missing/expired, 403 akses koleksi, 404 bukan milik pengguna.
+- Fase 3 selesai: 11 tes baru (CRUD, IDOR, nama terenkripsi, pindah banyak, ganti nama, thumbnail album terkunci tidak bocor, grant berulang lalu kedaluwarsa, Range 206/416, hidden tidak di daftar biasa, init_db DB lama).
+- pytest penuh: 577 passed (190,73 detik). Tes J2 dan media lama tetap lulus; tidak ada asersi yang diubah.
+- Belum diuji otomatis: interaksi JS/peramban (modal, seleksi, drag-free galeri).
+- Uji manual: 1) buat album dan album terkunci; 2) unggah foto/video/audio lewat Upload Media; 3) pilih beberapa item lalu Pindahkan/Kunci/Sembunyikan; 4) buka album terkunci dengan kata sandi, pastikan isi baru tampil setelah grant; 5) buka foto/video/audio di penampil, coba panah dan ganti nama; 6) buka bagian Tersembunyi dengan grant; 7) hapus album dan pastikan isi kembali ke Tanpa album; 8) muat ulang halaman dan pastikan tidak ada URL thumbnail album terkunci di HTML.

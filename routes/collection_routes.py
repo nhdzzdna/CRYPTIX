@@ -90,14 +90,19 @@ def nama_koleksi(row, db_key: bytes) -> str:
         return "[Nama tidak terbaca]"
 
 
-def _grant_sah(scope: str, resource_id) -> bool:
-    """Periksa grant lewat header atau grant aktif berulang."""
+def _grant_alasan(scope: str, resource_id):
+    """Periksa grant lewat header atau grant aktif berulang; kembalikan alasan."""
     session_id = session.get("session_id", "")
     token = request.headers.get("X-Reauth-Grant") or ""
-    if not token:
-        token = find_active_grant(session_id, scope, resource_id) or ""
-    sah, _ = consume_grant(token, session_id, scope, resource_id)
-    return sah
+    if token:
+        return consume_grant(token, session_id, scope, resource_id)
+    token = find_active_grant(session_id, scope, resource_id) or ""
+    return consume_grant(token, session_id, scope, resource_id)
+
+
+def _grant_sah(scope: str, resource_id) -> bool:
+    """Periksa grant lewat header atau grant aktif berulang."""
+    return _grant_alasan(scope, resource_id)[0]
 
 
 def _butuh_grant_koleksi(row) -> bool:
@@ -360,8 +365,10 @@ def list_items(resource_id: int):
         row = _koleksi(db, resource_id, session["user_id"])
         if row is None:
             return _galat(MSG.COLLECTION_NOT_FOUND, "not_found", 404)
-        if row["locked"] and not _grant_sah("album.unlock", resource_id):
-            return _galat(MSG.REAUTH_REQUIRED, "missing", 401)
+        if row["locked"]:
+            sah, alasan = _grant_alasan("album.unlock", resource_id)
+            if not sah:
+                return _galat(MSG.REAUTH_REQUIRED, alasan, 401)
         baris = db.execute(
             """SELECT vf.*, ci.state AS item_state
                FROM collection_items ci
