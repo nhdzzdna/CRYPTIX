@@ -122,28 +122,125 @@ def _display_name(row, db_key: bytes) -> str:
 def index():
     with get_db() as db:
         rows = db.execute(
-            "SELECT * FROM vault_files WHERE user_id=? AND file_type IN ('audio','video') ORDER BY uploaded_at DESC",
+            "SELECT * FROM vault_files WHERE user_id=? "
+            "AND file_type IN ('image','audio','video') ORDER BY uploaded_at DESC",
+            (session["user_id"],),
+        ).fetchall()
+        koleksi_rows = db.execute(
+            "SELECT * FROM collections WHERE user_id=? ORDER BY created_at, id",
+            (session["user_id"],),
+        ).fetchall()
+        item_rows = db.execute(
+            """SELECT ci.file_id, ci.collection_id, ci.state, c.locked
+               FROM collection_items ci
+               JOIN collections c ON c.id = ci.collection_id
+               WHERE c.user_id=? ORDER BY ci.added_at""",
             (session["user_id"],),
         ).fetchall()
 
     db_key = _db_key()
-    files = []
-    for r in rows:
-        row = dict(r)
-        row["original_name"] = _display_name(r, db_key)
-        ext = _extension(row["original_name"])
-        row["extension"] = ext
-        row["mime"] = MIME_TYPES.get(ext, "application/octet-stream")
-        row["playable"] = ext in PLAYABLE_EXTENSIONS
-        row["download_only"] = ext in DOWNLOAD_ONLY_EXTENSIONS
-        files.append(row)
+    info = {r["id"]: _media_info(r, db_key) for r in rows}
+    item_map = {r["file_id"]: r for r in item_rows}
+
+    albums = []
+    album_by_id = {}
+    for k in koleksi_rows:
+        nama = _collection_name(k, db_key)
+        album = {
+            "id": k["id"], "name": nama, "kind": k["kind"],
+            "locked": bool(k["locked"]), "cover": None,
+            "jumlah": 0,
+        }
+        album_by_id[k["id"]] = album
+        albums.append(album)
+
+    for fid, item in item_map.items():
+        album = album_by_id.get(item["collection_id"])
+        if album is None:
+            continue
+        if item["state"] == "hidden":
+            continue
+        album["jumlah"] += 1
+        berkas = info.get(fid)
+        if (album["cover"] is None and berkas is not None
+                and berkas["file_type"] == "image"):
+            album["cover"] = berkas["thumb_url"]
+
+    unfiled = [
+        info[fid] for fid in info
+        if fid not in item_map
+    ]
+
+    audio_files = []
+    for fid, berkas in info.items():
+        if berkas["file_type"] != "audio":
+            continue
+        item = item_map.get(fid)
+        if item is not None:
+            if item["state"] != "normal" or item["locked"]:
+                continue
+        audio_files.append(dict(
+            berkas,
+            collection_id=(item["collection_id"] if item is not None else None),
+        ))
+
     return render_template(
         "media_vault.html",
-        files=files,
+        files=audio_files,
+        albums=albums,
+        unfiled=unfiled,
         winamp_available=is_winamp_available(),
         download_only_note=MSG.MEDIA_DOWNLOAD_ONLY,
         temp_warning=MSG.MEDIA_TEMP_WARNING,
+        hidden_note=MSG.COLLECTION_LOCKED_NOTE,
+        empty_note=MSG.COLLECTION_EMPTY,
+        msg={
+            "move": MSG.COLLECTION_MOVED,
+            "state": MSG.COLLECTION_STATE_CHANGED,
+            "need_collection": MSG.COLLECTION_PICK_ONE,
+            "error": MSG.COLLECTION_ACTION_DENIED,
+            "delete_confirm": MSG.COLLECTION_DELETE_CONFIRM,
+        },
     )
+
+
+def _collection_name(row, db_key: bytes) -> str:
+    """Buka nama koleksi; token gagal ditandai aman."""
+    try:
+        return decrypt_field(
+            row["name_enc"], db_key,
+            field_aad(row["user_id"], "collections", "name_enc"),
+        )
+    except ValueError:
+        return "[Nama tidak terbaca]"
+
+
+def _media_info(row, db_key: bytes) -> dict:
+    """Bentuk data tampilan aman untuk satu berkas media."""
+    nama = _display_name(row, db_key)
+    ext = _extension(nama)
+    jenis = row["file_type"]
+    if jenis == "image":
+        ikon = "📷"
+    elif jenis == "video":
+        ikon = "🎬"
+    else:
+        ikon = "🎵"
+    return {
+        "id": row["id"],
+        "original_name": nama,
+        "file_type": jenis,
+        "extension": ext,
+        "icon": ikon,
+        "view_url": url_for("media.view", file_id=row["id"]),
+        "thumb_url": (url_for("media.thumb", file_id=row["id"])
+                      if jenis == "image" else None),
+        "stream_url": url_for("media.stream", file_id=row["id"]),
+        "playable": ext in PLAYABLE_EXTENSIONS,
+        "download_only": ext in DOWNLOAD_ONLY_EXTENSIONS,
+        "file_size": row["file_size"],
+        "uploaded_at": row["uploaded_at"],
+    }
 
 
 def _item_context(file_id: int, user_id: int):

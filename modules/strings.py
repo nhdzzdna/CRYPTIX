@@ -207,3 +207,6 @@ class MSG:
     FILE_RENAMED               = "Nama berkas diperbarui."
     FILE_NAME_REQUIRED         = "Nama berkas wajib diisi."
     FILE_THUMB_UNAVAILABLE     = "Pratinjau tidak tersedia untuk berkas ini."
+    COLLECTION_PICK_ONE        = "Pilih berkas dari satu album untuk mengubah status."
+    COLLECTION_ACTION_DENIED   = "Tindakan ditolak oleh server."
+    COLLECTION_DELETE_CONFIRM  = "Hapus album ini? Berkas tetap tersimpan di Tanpa album."

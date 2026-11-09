@@ -13,7 +13,7 @@ terenkripsi mengikuti pola vault_files.original_name
 import os
 
 from flask import (
-    Blueprint, jsonify, request, session, abort,
+    Blueprint, jsonify, request, session, abort, url_for,
 )
 
 from database.db import get_db
@@ -315,6 +315,106 @@ def set_item_state(resource_id: int):
 
     return jsonify({"success": True, "message": MSG.COLLECTION_STATE_CHANGED,
                     "state": state, "count": len(file_ids)})
+
+
+# ── Daftar isi album untuk halaman bergaya galeri ─────────────────────────────
+
+def _file_json(row, db_key: bytes, state: str) -> dict:
+    """Data tampilan aman satu berkas; thumbnail dihilangkan bila terkunci."""
+    try:
+        nama = decrypt_field(
+            row["original_name"], db_key,
+            field_aad(row["user_id"], "vault_files", "original_name"),
+        )
+    except ValueError:
+        nama = "[Nama tidak terbaca]"
+    jenis = row["file_type"]
+    if jenis == "image":
+        ikon = "📷"
+    elif jenis == "video":
+        ikon = "🎬"
+    else:
+        ikon = "🎵"
+    tampil_thumb = jenis == "image" and state == "normal"
+    return {
+        "id": row["id"],
+        "name": nama,
+        "file_type": jenis,
+        "icon": ikon,
+        "state": state,
+        "view_url": url_for("media.view", file_id=row["id"]),
+        "thumb_url": (url_for("media.thumb", file_id=row["id"])
+                      if tampil_thumb else None),
+    }
+
+
+@collection_bp.route("/api/collections/<int:resource_id>/items")
+@login_required
+def list_items(resource_id: int):
+    """Isi album yang dapat dilihat; item tersembunyi dikecualikan."""
+    db_key = _db_key()
+    if db_key is None:
+        return _galat(MSG.ERROR_UNAUTHORIZED, "session", 401)
+
+    with get_db() as db:
+        row = _koleksi(db, resource_id, session["user_id"])
+        if row is None:
+            return _galat(MSG.COLLECTION_NOT_FOUND, "not_found", 404)
+        if row["locked"] and not _grant_sah("album.unlock", resource_id):
+            return _galat(MSG.REAUTH_REQUIRED, "missing", 401)
+        baris = db.execute(
+            """SELECT vf.*, ci.state AS item_state
+               FROM collection_items ci
+               JOIN vault_files vf ON vf.id = ci.file_id
+               WHERE ci.collection_id=? AND vf.user_id=?
+               ORDER BY ci.added_at, ci.file_id""",
+            (resource_id, session["user_id"]),
+        ).fetchall()
+        tersembunyi = db.execute(
+            """SELECT COUNT(*) AS n FROM collection_items
+               WHERE collection_id=? AND state='hidden'""",
+            (resource_id,),
+        ).fetchone()["n"]
+
+    terlihat = [
+        _file_json(r, db_key, r["item_state"])
+        for r in baris if r["item_state"] != "hidden"
+    ]
+    return jsonify({
+        "success": True,
+        "collection": {"id": row["id"], "name": nama_koleksi(row, db_key),
+                       "kind": row["kind"], "locked": bool(row["locked"])},
+        "items": terlihat,
+        "hidden_count": int(tersembunyi),
+    })
+
+
+@collection_bp.route("/api/collections/<int:resource_id>/hidden")
+@login_required
+@require_grant("album.unlock")
+def list_hidden(resource_id: int):
+    """Item tersembunyi; hanya setelah grant album.unlock untuk album ini."""
+    db_key = _db_key()
+    if db_key is None:
+        return _galat(MSG.ERROR_UNAUTHORIZED, "session", 401)
+
+    with get_db() as db:
+        row = _koleksi(db, resource_id, session["user_id"])
+        if row is None:
+            return _galat(MSG.COLLECTION_NOT_FOUND, "not_found", 404)
+        baris = db.execute(
+            """SELECT vf.*, ci.state AS item_state
+               FROM collection_items ci
+               JOIN vault_files vf ON vf.id = ci.file_id
+               WHERE ci.collection_id=? AND vf.user_id=? AND ci.state='hidden'
+               ORDER BY ci.added_at, ci.file_id""",
+            (resource_id, session["user_id"]),
+        ).fetchall()
+
+    return jsonify({
+        "success": True,
+        "items": [_file_json(r, db_key, r["item_state"]) for r in baris],
+    })
 
 
 # ── Ganti nama berkas ─────────────────────────────────────────────────────────
