@@ -162,17 +162,23 @@ class TestWaktuLogin:
         assert verifikasi_tahap_satu(USERNAME, KATA_SANDI)["success"] is True
         assert verifikasi_tahap_satu("pemanasan_l1", "salah-l1")["success"] is False
 
-        def rata_rata(username: str, password: str, ulangan: int = 5) -> float:
+        def ukur(username: str, password: str) -> float:
             mulai = time.perf_counter()
-            for _ in range(ulangan):
-                verifikasi_tahap_satu(username, password)
-            return (time.perf_counter() - mulai) / ulangan
+            verifikasi_tahap_satu(username, password)
+            return time.perf_counter() - mulai
 
-        rata_ada = rata_rata(USERNAME, KATA_SANDI)
-        rata_tidak = rata_rata("pengguna_tidak_ada_l1", "kata-sandi-salah-l1")
+        waktu_ada, waktu_tidak = [], []
+        for _ in range(15):
+            # Bergantian, supaya kedua jalur mengalami kondisi mesin yang sama.
+            waktu_ada.append(ukur(USERNAME, KATA_SANDI))
+            waktu_tidak.append(ukur("pengguna_tidak_ada_l1", "kata-sandi-salah-l1"))
+
+        rata_ada = min(waktu_ada)
+        rata_tidak = min(waktu_tidak)
 
         selisih = abs(rata_ada - rata_tidak)
         ambang = max(0.005, 0.5 * max(rata_ada, rata_tidak))
+
         assert selisih <= ambang, (
             f"waktu username ada {rata_ada:.4f}s vs tidak ada {rata_tidak:.4f}s"
         )
