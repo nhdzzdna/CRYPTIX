@@ -49,6 +49,8 @@ _MIN_SAMPEL = 25
 _MIN_VARIASI = 5
 _MAKS_SAMPEL = 60
 _JUMLAH_FRAME_VERIFIKASI = 5
+_AMBANG_IOU = 0.3
+_AMBANG_CAKUPAN = 0.8
 
 
 def _perlu_cv2() -> None:
@@ -83,22 +85,60 @@ def _decode_frame(item) -> np.ndarray | None:
         return None
 
 
+def _irisan_kotak(a, b) -> tuple[int, int, int]:
+    """Kembalikan luas irisan serta luas masing-masing bounding box."""
+    ax, ay, aw, ah = a
+    bx, by, bw, bh = b
+    lebar = max(0, min(ax + aw, bx + bw) - max(ax, bx))
+    tinggi = max(0, min(ay + ah, by + bh) - max(ay, by))
+    return lebar * tinggi, aw * ah, bw * bh
+
+
+def _duplikat(a, b) -> bool:
+    """
+    True bila dua bounding box kemungkinan menandai wajah yang sama.
+
+    Selain IoU, dipakai rasio cakupan (irisan terhadap kotak terkecil) agar
+    deteksi bersarang pada skala berbeda tetap dianggap duplikat.
+    """
+    irisan, luas_a, luas_b = _irisan_kotak(a, b)
+    if irisan <= 0 or luas_a <= 0 or luas_b <= 0:
+        return False
+    iou = irisan / (luas_a + luas_b - irisan)
+    cakupan = irisan / min(luas_a, luas_b)
+    return iou > _AMBANG_IOU or cakupan > _AMBANG_CAKUPAN
+
+
+def _deduplikasi_kotak(kotak) -> list:
+    """
+    Buang bounding box tumpang tindih memakai Non-Maximum Suppression.
+
+    Kotak diurutkan dari yang terluas; kotak yang tumpang tindih dengan
+    kotak terpilih sebelumnya tidak dihitung sebagai wajah terpisah.
+    """
+    terurut = sorted(kotak, key=lambda item: item[2] * item[3], reverse=True)
+    dipilih: list = []
+    for kandidat in terurut:
+        if all(not _duplikat(kandidat, lain) for lain in dipilih):
+            dipilih.append(kandidat)
+    return dipilih
+
+
 def _deteksi_semua_wajah(frame) -> list[np.ndarray]:
     """
     Deteksi seluruh wajah pada frame dan kembalikan ROI abu-abu 200x200.
 
-    Urutan ROI mengikuti luas wajah dari terbesar ke terkecil. Dipisah agar
-    pendaftaran dapat menolak frame tanpa wajah atau dengan lebih dari satu
-    wajah, dan agar dapat diganti pada pengujian.
+    Urutan ROI mengikuti luas wajah dari terbesar ke terkecil. Bounding box
+    yang saling tumpang tindih dideduplikasi agar satu wajah tidak dihitung
+    berkali-kali. Dipisah agar pendaftaran dapat menolak frame tanpa wajah
+    atau dengan lebih dari satu wajah, dan agar dapat diganti pada pengujian.
     """
     _perlu_cv2()
     if frame is None or getattr(frame, "size", 0) == 0:
         return []
     abu = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     wajah = _get_cascade().detectMultiScale(abu, scaleFactor=1.2, minNeighbors=5)
-    kotak = sorted(
-        wajah, key=lambda item: item[2] * item[3], reverse=True
-    )
+    kotak = _deduplikasi_kotak(wajah)
     return [
         cv2.resize(abu[y:y + h, x:x + w], _UKURAN_ROI)
         for x, y, w, h in kotak

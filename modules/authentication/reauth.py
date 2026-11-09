@@ -126,6 +126,31 @@ def _metode_password(user_id: int, payload: dict):
     return True, None
 
 
+@register_method("wajah")
+def _metode_wajah(user_id: int, payload: dict):
+    """Verifikasi frame kamera terhadap template wajah milik sesi aktif."""
+    from modules.authentication import face_recognition
+    from modules.cryptography import session_keys
+
+    frames = payload.get("frames")
+    if not isinstance(frames, list):
+        return False, MSG.FACE_NO_FRAMES
+
+    session_id = session.get("session_id", "")
+    dek = session_keys.get(session_id)
+    if dek is None:
+        return False, MSG.FACE_NO_SESSION_KEY
+
+    try:
+        hasil = face_recognition.verifikasi_wajah(user_id, frames, dek=dek)
+    finally:
+        del dek
+
+    if hasil.get("success"):
+        return True, None
+    return False, MSG.AUTH_FACE_FAILED
+
+
 @register_method("webauthn")
 def _metode_webauthn(user_id: int, payload: dict):
     """Verifikasi WebAuthn untuk autentikasi ulang (tantangan kunci_reauth)."""

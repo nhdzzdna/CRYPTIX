@@ -25,6 +25,7 @@
   var inputPassword = document.getElementById('reauth-password');
   var kotakGalat = document.getElementById('reauth-error');
   var tombolSubmit = document.getElementById('reauth-submit');
+  var tombolWajah = document.getElementById('reauth-face');
   var tombolWebauthn = document.getElementById('reauth-webauthn');
   var tombolBatal = document.getElementById('reauth-cancel');
 
@@ -84,6 +85,9 @@
     if (tombolSubmit) {
       tombolSubmit.disabled = aktif;
     }
+    if (tombolWajah) {
+      tombolWajah.disabled = aktif;
+    }
     if (tombolWebauthn) {
       tombolWebauthn.disabled = aktif;
     }
@@ -103,7 +107,7 @@
     if (konteks) {
       konteks.textContent = 'Tindakan "' + scope + '"' +
         (resource ? ' pada sumber daya ' + resource : '') +
-        ' memerlukan konfirmasi kata sandi atau biometrik.';
+        ' memerlukan verifikasi wajah, WebAuthn, atau kata sandi.';
     }
     modal.style.display = 'flex';
     if (inputPassword) {
@@ -326,6 +330,32 @@
     bukaModal(info.scope, info.resource);
   }, true);
 
+  function mulaiWajah(target) {
+    if (!target) {
+      return;
+    }
+    var penangan = window.CryptixBiometrik &&
+      window.CryptixBiometrik.penangan &&
+      window.CryptixBiometrik.penangan.wajah;
+    if (typeof penangan !== 'function') {
+      tampilkanGalat('Verifikasi wajah tidak tersedia di peramban ini.');
+      return;
+    }
+    setProses(true);
+    sembunyikanGalat();
+
+    penangan().then(function (frames) {
+      if (!Array.isArray(frames) || frames.length < 5) {
+        throw new Error('Pengambilan frame wajah gagal. Coba lagi.');
+      }
+      return mulaiDariPemicu(target.pemicu, 'wajah', { frames: frames });
+    }).catch(function (err) {
+      setProses(false);
+      tampilkanGalat(err && err.message ? err.message
+        : 'Verifikasi wajah gagal.');
+    });
+  }
+
   function mulaiBiometrik(target) {
     if (!target) {
       return;
@@ -376,6 +406,15 @@
       if (inputPassword) {
         inputPassword.value = '';
       }
+    });
+  }
+
+  if (tombolWajah) {
+    tombolWajah.addEventListener('click', function () {
+      if (sedangProses || !tertunda) {
+        return;
+      }
+      mulaiWajah(tertunda);
     });
   }
 

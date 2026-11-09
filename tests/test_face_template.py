@@ -121,6 +121,52 @@ def _csrf(client, halaman="/login") -> str:
     return cocok.group(1)
 
 
+class TestDeteksiWajah:
+    def _pasang_cascade(self, monkeypatch, kotak):
+        class _Cascade:
+            def detectMultiScale(self, _abu, **_kwargs):
+                return list(kotak)
+
+        monkeypatch.setattr(face_mod, "_get_cascade", lambda: _Cascade())
+
+    def test_kotak_tumpang_tindih_dihitung_satu_wajah(self, monkeypatch):
+        # Beberapa bounding box bertumpang tindih untuk satu wajah yang sama.
+        self._pasang_cascade(monkeypatch, [
+            (50, 60, 120, 120),
+            (54, 63, 118, 117),
+            (48, 58, 110, 112),
+        ])
+        frame = np.zeros((240, 240, 3), dtype=np.uint8)
+        hasil = face_mod._deteksi_semua_wajah(frame)
+        assert len(hasil) == 1
+        assert hasil[0].shape == (200, 200)
+
+    def test_dua_wajah_berbeda_dihitung_dua_wajah(self, monkeypatch):
+        self._pasang_cascade(monkeypatch, [
+            (10, 10, 80, 80),
+            (150, 10, 80, 80),
+        ])
+        frame = np.zeros((240, 240, 3), dtype=np.uint8)
+        hasil = face_mod._deteksi_semua_wajah(frame)
+        assert len(hasil) == 2
+        assert all(roi.shape == (200, 200) for roi in hasil)
+
+    def test_registrasi_menolak_frame_lebih_dari_satu_wajah(
+        self, app, pengguna, dek, monkeypatch
+    ):
+        monkeypatch.setattr(face_mod, "_decode_frame", lambda item: item)
+        roi = np.full((200, 200), 9, dtype=np.uint8)
+        # Setiap frame benar-benar berisi dua wajah berbeda.
+        monkeypatch.setattr(
+            face_mod, "_deteksi_semua_wajah", lambda frame: [roi, roi]
+        )
+        hasil = face_mod.daftarkan_wajah(
+            pengguna["id"], [f"frame-{i}" for i in range(30)], dek
+        )
+        assert hasil["success"] is False
+        assert hasil["error"] == MSG.FACE_MULTIPLE_FACES
+
+
 class TestPendaftaran:
     def test_pendaftaran_sukses_dan_terenkripsi(self, app, pengguna, dek,
                                                 monkeypatch):

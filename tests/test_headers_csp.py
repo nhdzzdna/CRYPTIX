@@ -17,8 +17,15 @@ from modules.blockchain import blockchain as bc
 
 CSP = (
     "default-src 'self'; script-src 'self'; "
-    "style-src 'self' 'unsafe-inline'; img-src 'self' data:; "
-    "media-src 'self'; connect-src 'self'; frame-ancestors 'none'"
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+    "font-src 'self' https://fonts.gstatic.com; "
+    "img-src 'self' data:; media-src 'self'; connect-src 'self'; "
+    "frame-ancestors 'none'"
+)
+
+SUMBER_FONT_DIIZINKAN = (
+    "https://fonts.googleapis.com/",
+    "https://fonts.gstatic.com/",
 )
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -100,7 +107,14 @@ def test_tidak_ada_javascript_inline():
 
 def test_tidak_ada_sumber_luar():
     pola = re.compile(r"https?://", re.IGNORECASE)
-    berkas_uji = _berkas_template() + sorted(STATIC_JS.rglob("*.js"))
-    for berkas in berkas_uji:
+    for berkas in sorted(STATIC_JS.rglob("*.js")):
         teks = berkas.read_text(encoding="utf-8")
         assert not pola.search(teks), f"sumber luar di {berkas}"
+
+    pola_url = re.compile(r"https?://[^\s\"'<>)]+", re.IGNORECASE)
+    for berkas in _berkas_template():
+        teks = berkas.read_text(encoding="utf-8")
+        for url in pola_url.findall(teks):
+            assert url.startswith(SUMBER_FONT_DIIZINKAN), (
+                f"sumber luar di {berkas}: {url}"
+            )
