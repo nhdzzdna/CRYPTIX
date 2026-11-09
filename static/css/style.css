@@ -571,3 +571,17 @@ html, body {
 .viewer-prev { left: 10px; }
 .viewer-next { right: 10px; }
 .viewer-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+/* --- N2B: saran topik Security Assistant --- */
+.msg-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-self: flex-start;
+  max-width: 92%;
+  margin: -6px 0 0 40px;
+}
+.msg-suggestions .suggestion-btn {
+  white-space: normal;
+  text-align: left;
+}

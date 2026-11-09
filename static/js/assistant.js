@@ -78,6 +78,30 @@
 
     messagesEl.insertBefore(row, thinkingEl);
     scrollToBottom();
+    return bubble;
+  }
+
+  function appendSuggestions(saran) {
+    if (!Array.isArray(saran) || !saran.length) return;
+
+    const wrap = document.createElement('div');
+    wrap.className = 'msg-suggestions';
+
+    saran.forEach((item) => {
+      if (!item || !item.judul) return;
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'suggestion-btn';
+      btn.textContent = item.judul;
+      btn.setAttribute('data-pertanyaan', item.judul);
+      btn.addEventListener('click', () => sendSuggestion(item.judul));
+      wrap.appendChild(btn);
+    });
+
+    if (wrap.childElementCount) {
+      messagesEl.insertBefore(wrap, thinkingEl);
+      scrollToBottom();
+    }
   }
 
   function escapeHtml(s) {
@@ -106,9 +130,9 @@
 
   function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-  async function sendMessage() {
+  async function sendMessage(abaikanSandi) {
     const message = inputEl.value.trim();
-    const password = passwordEl.value;
+    const password = abaikanSandi ? '' : passwordEl.value;
     if (!message && !password) return;
 
     const bubbleText = password ? '[password diperiksa]' : message;
@@ -139,6 +163,7 @@
 
       hideThinking();
       appendMessage('agent', data.answer);
+      appendSuggestions(data.saran);
     } catch (err) {
       hideThinking();
       appendMessage('agent', '❌ Terjadi kesalahan. Silakan coba lagi.');
@@ -158,7 +183,7 @@
 
   function sendSuggestion(text) {
     inputEl.value = text;
-    sendMessage();
+    sendMessage(true);
   }
 
   async function clearChat() {
@@ -169,7 +194,7 @@
     window.location.reload();
   }
 
-  document.getElementById('send-btn').addEventListener('click', sendMessage);
+  document.getElementById('send-btn').addEventListener('click', () => sendMessage());
   document.getElementById('check-password-btn').addEventListener('click', sendPassword);
 
   const clearBtn = document.getElementById('clear-chat-btn');
@@ -178,7 +203,10 @@
   }
 
   document.querySelectorAll('.suggestion-btn').forEach((btn) => {
-    btn.addEventListener('click', () => sendSuggestion(btn.getAttribute('data-suggestion')));
+    const pertanyaan = btn.getAttribute('data-pertanyaan') || btn.getAttribute('data-suggestion');
+    if (pertanyaan) {
+      btn.addEventListener('click', () => sendSuggestion(pertanyaan));
+    }
   });
 
   scrollToBottom();

@@ -29,6 +29,9 @@ from __future__ import annotations
 import re
 from typing import Any
 
+from modules.assistant.matcher import cari_topik
+from modules.strings import MSG
+
 
 # ── Thinking steps (shown incrementally in the UI) ───────────────────────────
 
@@ -593,6 +596,19 @@ def _handle_fallback() -> str:
     )
 
 
+def _handle_fallback_topik(saran: list[dict]) -> str:
+    """Pesan cadangan jujur saat topik tidak cocok, disertai saran terdekat."""
+    baris = ["## 🤖 Security Assistant\n", MSG.ASSISTANT_TOPIC_FALLBACK]
+    if saran:
+        baris.append("")
+        baris.append(MSG.ASSISTANT_TOPIC_SUGGESTIONS)
+        for item in saran:
+            judul = item.get("judul")
+            if judul:
+                baris.append(f"• {judul}")
+    return "\n".join(baris)
+
+
 # ── Main agent entry point ────────────────────────────────────────────────────
 
 def classify_intent(message: str) -> str:
@@ -646,6 +662,7 @@ def process_message(message: str, user_id: int) -> dict:
       ``answer``        str   — markdown-formatted response
     """
     intent = classify_intent(message)
+    saran: list[dict] = []
 
     if intent == "security_status":
         answer = _handle_security_status(user_id)
@@ -658,10 +675,25 @@ def process_message(message: str, user_id: int) -> dict:
     elif intent == "feature_help":
         answer = _handle_feature_help(message)
     else:
-        answer = _handle_fallback()
+        # Tidak ada intent lama yang cocok: coba basis pengetahuan topik.
+        hasil = cari_topik(message)
+        topik = hasil.get("cocok")
+        if topik:
+            answer = topik["jawaban"]
+            intent = "topik"
+        else:
+            saran = hasil.get("saran") or []
+            if saran:
+                answer = _handle_fallback_topik(saran)
+            else:
+                # knowledge.py belum tersedia atau TOPIK kosong: perilaku lama.
+                answer = _handle_fallback()
 
-    return {
-        "intent":        intent,
+    hasil_akhir = {
+        "intent":         intent,
         "thinking_steps": THINKING_STEPS,
-        "answer":        answer,
+        "answer":         answer,
     }
+    if saran:
+        hasil_akhir["saran"] = saran
+    return hasil_akhir

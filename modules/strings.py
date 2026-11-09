@@ -210,3 +210,6 @@ class MSG:
     COLLECTION_PICK_ONE        = "Pilih berkas dari satu album untuk mengubah status."
     COLLECTION_ACTION_DENIED   = "Tindakan ditolak oleh server."
     COLLECTION_DELETE_CONFIRM  = "Hapus album ini? Berkas tetap tersimpan di Tanpa album."
+    # --- N2B: pencocokan topik Security Assistant -----------------------------------------
+    ASSISTANT_TOPIC_FALLBACK    = "Saya belum punya jawaban untuk itu."
+    ASSISTANT_TOPIC_SUGGESTIONS = "Mungkin Anda ingin bertanya tentang topik berikut:"

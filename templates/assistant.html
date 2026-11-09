@@ -70,21 +70,16 @@
       </div>
     </div>
 
-    <!-- Quick suggestion buttons -->
+    <!-- Quick suggestion buttons (dirender server dari judul topik) -->
+    {% if topik %}
     <div class="quick-suggestions">
-      <button class="suggestion-btn" data-suggestion="Bagaimana status keamanan akun saya?">
-        🛡 Status Keamanan
+      {% for item in topik[:6] %}
+      <button type="button" class="suggestion-btn" data-pertanyaan="{{ item.judul }}">
+        {{ item.judul }}
       </button>
-      <button class="suggestion-btn" data-suggestion="Bagaimana cara enkripsi file PDF saya?">
-        🔐 Rekomen Enkripsi
-      </button>
-      <button class="suggestion-btn" data-suggestion="Jelaskan log aktivitas saya.">
-        📋 Log Aktivitas
-      </button>
-      <button class="suggestion-btn" data-suggestion="Bagaimana cara pakai Steganografi?">
-        ℹ️ Panduan Fitur
-      </button>
+      {% endfor %}
     </div>
+    {% endif %}
 
     <!-- Input area -->
     <div class="chat-input-area">
