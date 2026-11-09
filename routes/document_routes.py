@@ -1,48 +1,36 @@
 """
 routes/document_routes.py
 ───────────────────────────
-Documents: view encrypted documents stored in My Vault.
-Filters vault_files to file_type = 'document'.
+Halaman Dokumen (alias lama /documents): hanya berkas file_type='document',
+dikelompokkan dalam folder kind='dokumen' beserta Tanpa folder.
 """
 
 from flask import Blueprint, render_template, session, abort
 
 from routes.auth_routes import login_required
+from routes.collection_shared import halaman_koleksi
+from routes.vault_routes import _dokumen_msg
 from database.db import get_db
 from modules.cryptography import session_keys
 from modules.cryptography.key_management import purpose_key
-from modules.cryptography.database_encryption import decrypt_field, field_aad
 
 document_bp = Blueprint("documents", __name__)
-
-
-def _display_name(row, db_key: bytes) -> str:
-    """Buka nama asli dokumen untuk daftar; token gagal ditandai aman."""
-    try:
-        return decrypt_field(
-            row["original_name"], db_key,
-            field_aad(row["user_id"], "vault_files", "original_name"),
-        )
-    except ValueError:
-        return "[Nama tidak terbaca]"
 
 
 @document_bp.route("/documents")
 @login_required
 def index():
-    with get_db() as db:
-        rows = db.execute(
-            "SELECT * FROM vault_files WHERE user_id=? AND file_type='document' ORDER BY uploaded_at DESC",
-            (session["user_id"],),
-        ).fetchall()
-
     dek = session_keys.get(session.get("session_id", ""))
     if dek is None:
         abort(403)
     db_key = purpose_key(dek, "database")
-    files = []
-    for r in rows:
-        row = dict(r)
-        row["original_name"] = _display_name(r, db_key)
-        files.append(row)
-    return render_template("documents.html", files=files)
+    with get_db() as db:
+        data = halaman_koleksi(
+            db, session["user_id"], "dokumen", ("document",), db_key,
+        )
+    return render_template(
+        "vault.html",
+        folders=data["folders"],
+        unfiled=data["unfiled"],
+        msg=_dokumen_msg(),
+    )

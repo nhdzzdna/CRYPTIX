@@ -93,19 +93,17 @@ def _display_name(row, db_key: bytes) -> str:
 @vault_bp.route("/vault")
 @login_required
 def index():
-    with get_db() as db:
-        rows = db.execute(
-            "SELECT * FROM vault_files WHERE user_id=? ORDER BY uploaded_at DESC",
-            (session["user_id"],),
-        ).fetchall()
-
     db_key = _get_db_key()
-    files = []
-    for r in rows:
-        row = dict(r)
-        row["original_name"] = _display_name(r, db_key)
-        files.append(row)
-    return render_template("vault.html", files=files)
+    with get_db() as db:
+        data = halaman_koleksi(
+            db, session["user_id"], "dokumen", ("document",), db_key,
+        )
+    return render_template(
+        "vault.html",
+        folders=data["folders"],
+        unfiled=data["unfiled"],
+        msg=_dokumen_msg(),
+    )
 
 
 def _dokumen_msg() -> dict:
