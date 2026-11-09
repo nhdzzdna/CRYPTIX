@@ -391,7 +391,8 @@ class TestPenyiapanKeamanan:
         _daftarkan_dan_konfirmasi(client)
         body = client.get("/setup").get_data(as_text=True)
         assert 'name="fingerprint_image"' not in body
-        assert "daftarWebAuthn" in body
+        assert 'id="btn-setup-webauthn"' in body
+        assert "js/setup.js" in body
         # unggah citra sidik jari tidak lagi menjadi bagian wizard
         aturan = next(r for r in app.url_map.iter_rules() if r.rule == "/setup")
         assert "POST" not in aturan.methods

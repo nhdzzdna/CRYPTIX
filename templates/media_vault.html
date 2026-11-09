@@ -78,7 +78,7 @@
                class="btn btn-sm btn-success"
                data-reauth="file.download" data-reauth-resource="{{ f.id }}">⬇</a>
             <form method="POST" action="{{ url_for('vault.delete', resource_id=f.id) }}" style="display:inline"
-                  onsubmit="return confirm('Hapus?')">
+                  data-confirm="Hapus?">
 
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
               <button type="submit" class="btn btn-sm btn-success"

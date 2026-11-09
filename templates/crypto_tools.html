@@ -12,7 +12,7 @@
       <div class="form-grid-2">
         <div class="form-group">
           <label>Algoritma</label>
-          <select name="cipher" id="cipher-select" class="form-control" onchange="updateForm()">
+          <select name="cipher" id="cipher-select" class="form-control">
             <option value="super">Super Encryption (Semua Layer)</option>
             <option value="vigenere">Vigenere Cipher</option>
             <option value="playfair">Playfair Cipher</option>
@@ -22,7 +22,7 @@
         </div>
         <div class="form-group">
           <label>Aksi</label>
-          <select name="action" id="action-select" class="form-control" onchange="updateForm()">
+          <select name="action" id="action-select" class="form-control">
             <option value="encrypt">Enkripsi</option>
             <option value="decrypt">Dekripsi</option>
           </select>
@@ -73,7 +73,7 @@
   <div class="card-header">Hasil</div>
   <div class="card-body">
     <pre class="output-box mono">{{ result }}</pre>
-    <button class="btn btn-sm btn-secondary mt-2" onclick="copyResult()">📋 Salin</button>
+    <button class="btn btn-sm btn-secondary mt-2" id="copy-result-btn">📋 Salin</button>
   </div>
 </div>
 {% endif %}
@@ -121,18 +121,5 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
-function updateForm() {
-  const c = document.getElementById('cipher-select').value;
-  const a = document.getElementById('action-select').value;
-  document.getElementById('key-field').style.display        = c === 'super' ? 'none'  : 'block';
-  document.getElementById('passphrase-field').style.display = c === 'super' ? 'block' : 'none';
-  document.getElementById('steps-field').style.display      = (c === 'super' && a === 'encrypt') ? 'block' : 'none';
-}
-function copyResult() {
-  const pre = document.querySelector('.output-box');
-  navigator.clipboard.writeText(pre.textContent);
-}
-updateForm();
-</script>
+<script src="{{ url_for('static', filename='js/crypto_tools.js') }}"></script>
 {% endblock %}

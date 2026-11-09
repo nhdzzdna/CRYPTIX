@@ -20,6 +20,15 @@
     return null;
   }
 
+  document.addEventListener('submit', function (event) {
+    var form = event.target;
+    if (form && form.matches && form.matches('[data-confirm]')) {
+      if (!window.confirm(form.getAttribute('data-confirm'))) {
+        event.preventDefault();
+      }
+    }
+  });
+
   document.addEventListener('cryptix:reauth-grant', function (event) {
     var detail = event.detail || {};
     if (detail.scope !== 'media.stream') {
