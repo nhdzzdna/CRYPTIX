@@ -10,13 +10,12 @@ klien:
   • verifikasi wajah      — 20 permintaan per menit
   • autentikasi ulang     — 20 permintaan per menit
   • pemulihan akun        — 10 permintaan per menit
-
-Rute reveal belum tersedia pada revisi ini; batasnya ditambahkan bersama
-rute tersebut pada sesi yang mengerjakannya.
+  • reveal data per user  — 20 permintaan per menit
 """
 
 from __future__ import annotations
 
+from flask import session
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 
@@ -24,6 +23,16 @@ LOGIN_LIMIT = "15 per minute"
 FACE_VERIFY_LIMIT = "20 per minute"
 REAUTH_LIMIT = "20 per minute"
 RECOVERY_LIMIT = "10 per minute"
+REVEAL_LIMIT = "20 per minute"
+
+
+def user_or_ip_key() -> str:
+    """Kunci limiter per pengguna sesi, jatuh ke alamat IP bila belum masuk."""
+    user_id = session.get("user_id") or session.get("setup_user_id")
+    if user_id is not None:
+        return f"user:{user_id}"
+    return get_remote_address()
+
 
 limiter = Limiter(
     key_func=get_remote_address,

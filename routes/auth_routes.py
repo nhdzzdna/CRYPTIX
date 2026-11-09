@@ -254,6 +254,7 @@ def account_recovery():
 
 
 @auth_bp.route("/account-recovery/confirm", methods=["POST"])
+@limiter.limit(RECOVERY_LIMIT)
 def account_recovery_confirm():
     """Konfirmasi penyimpanan kunci pemulihan baru lalu arahkan ke masuk."""
     token = request.form.get("pending", "")
@@ -562,6 +563,7 @@ def login():
 
 
 @auth_bp.route("/login/biometric", methods=["POST"])
+@limiter.limit(FACE_VERIFY_LIMIT)
 def login_biometric():
     """
     Tahap 2: verifikasi seluruh metode biometrik terdaftar sesuai
@@ -660,6 +662,11 @@ def register_face():
 
     try:
         hasil = face_mod.daftarkan_wajah(user_id, frames, dek)
+    except RuntimeError:
+        return jsonify({
+            "success": False,
+            "error": MSG.FACE_DETECTOR_UNAVAILABLE,
+        }), 500
     finally:
         del dek
 
@@ -718,6 +725,11 @@ def verify_face():
         frames = [data.get("frame")]
     try:
         hasil = face_mod.verifikasi_wajah(user_id, frames, dek=dek)
+    except RuntimeError:
+        return jsonify({
+            "success": False,
+            "error": MSG.FACE_DETECTOR_UNAVAILABLE,
+        }), 500
     finally:
         del dek
 
