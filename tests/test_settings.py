@@ -16,6 +16,7 @@ import pytest
 import config
 from app import create_app
 from database.db import get_db, init_db
+from modules.authentication import reauth
 from modules.authentication import webauthn
 from modules.authentication import face_recognition as face_mod
 from modules.authentication import usb_authentication as usb_mod
@@ -61,6 +62,7 @@ def app(tmp_path, monkeypatch):
     application.config["TESTING"] = True
     application.config["TEST_RECOVERY_KEY"] = hasil["recovery_key"]
     application.config["TEST_DEK"] = dek
+    reauth.clear()
     return application
 
 
