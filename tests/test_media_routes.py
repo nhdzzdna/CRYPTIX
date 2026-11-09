@@ -276,9 +276,9 @@ class TestMediaHalaman:
         _buat_media(1, "video.avi", ISI_AUDIO)
 
         body = client.get("/media-vault").get_data(as_text=True)
-        assert "<audio controls" in body
         assert "<video controls" in body
-        assert "/media-vault/stream/" in body
+        assert "<audio controls" not in body
+        assert "/media-vault/view/" in body
         assert MSG.MEDIA_DOWNLOAD_ONLY in body
 
     def test_play_html5_diarahkan_ke_stream(self, client):
