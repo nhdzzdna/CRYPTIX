@@ -10,6 +10,7 @@ import json
 import os
 import re
 
+from flask_wtf import csrf
 import pytest
 
 import config
