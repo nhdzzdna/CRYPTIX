@@ -12,6 +12,7 @@ from werkzeug.utils import secure_filename
 
 from modules.strings import MSG
 from modules.authentication.reauth import require_grant
+from modules.rate_limit import limiter, REVEAL_LIMIT, user_or_ip_key
 from routes.auth_routes import login_required
 from database.db import get_db
 from modules.cryptography import session_keys
@@ -110,6 +111,7 @@ def add():
 
 
 @account_bp.route("/account-vault/reveal/<int:resource_id>", methods=["POST"])
+@limiter.limit(REVEAL_LIMIT, key_func=user_or_ip_key)
 @login_required
 @require_grant("account.reveal")
 def reveal(resource_id: int):
@@ -150,6 +152,7 @@ def reveal(resource_id: int):
 
 
 @account_bp.route("/account-vault/edit/<int:resource_id>", methods=["POST"])
+@limiter.limit(REVEAL_LIMIT, key_func=user_or_ip_key)
 @login_required
 @require_grant("account.reveal")
 def edit(resource_id: int):
@@ -202,6 +205,7 @@ def edit(resource_id: int):
 
 
 @account_bp.route("/account-vault/delete/<int:resource_id>", methods=["POST"])
+@limiter.limit(REVEAL_LIMIT, key_func=user_or_ip_key)
 @login_required
 @require_grant("item.delete")
 def delete(resource_id: int):

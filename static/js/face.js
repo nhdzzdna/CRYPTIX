@@ -62,12 +62,21 @@ window.CryptixBiometrik = window.CryptixBiometrik || { penangan: {} };
     return stream;
   }
 
+  async function bacaJson(resp) {
+    const teks = await resp.text();
+    try {
+      return JSON.parse(teks);
+    } catch (_) {
+      return { success: false, error: "Pendaftaran wajah gagal." };
+    }
+  }
+
   async function kirimPendaftaran(hasil, statusEl) {
     const resp = await apiFetch("/api/register_face", {
       method: "POST",
       body: JSON.stringify(hasil),
     });
-    const data = await resp.json();
+    const data = await bacaJson(resp);
     if (!data.success) {
       throw new Error(data.error || "Pendaftaran wajah gagal.");
     }
