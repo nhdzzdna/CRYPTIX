@@ -17,8 +17,7 @@
     <video id="setup-video" autoplay playsinline style="display:none;width:100%;border-radius:8px;"></video>
     <canvas id="setup-canvas" style="display:none;"></canvas>
     <div class="webcam-buttons">
-      <button type="button" class="btn btn-primary btn-sm"
-              onclick="CryptixFace.daftar('setup-video', 'setup-canvas', 'setup-face-status')">
+      <button type="button" class="btn btn-primary btn-sm" id="btn-setup-face">
         Daftarkan Wajah (30 frame / 3 detik)
       </button>
     </div>
@@ -34,8 +33,7 @@
       Daftarkan autentikator platform perangkat ini (sidik jari terintegrasi
       atau Windows Hello) sebagai metode verifikasi tahap kedua.
     </p>
-    <button type="button" class="btn btn-primary btn-sm" id="btn-setup-webauthn"
-            onclick="daftarWebAuthn('setup-webauthn-status')">Daftarkan WebAuthn</button>
+    <button type="button" class="btn btn-primary btn-sm" id="btn-setup-webauthn">Daftarkan WebAuthn</button>
     <p id="setup-webauthn-status" class="form-hint"></p>
   </div>
 </div>
@@ -44,4 +42,5 @@
 {% block scripts %}
 <script src="{{ url_for('static', filename='js/webauthn.js') }}"></script>
 <script src="{{ url_for('static', filename='js/face.js') }}"></script>
+<script src="{{ url_for('static', filename='js/setup.js') }}"></script>
 {% endblock %}

@@ -8,6 +8,11 @@ function toggleSidebar() {
   if (sidebar) sidebar.classList.toggle("open");
 }
 
+document.addEventListener("DOMContentLoaded", function () {
+  const tombol = document.getElementById("sidebar-toggle");
+  if (tombol) tombol.addEventListener("click", toggleSidebar);
+});
+
 // Close sidebar when clicking outside on mobile
 document.addEventListener("click", function (e) {
   const sidebar = document.getElementById("sidebar");

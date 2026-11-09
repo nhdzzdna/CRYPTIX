@@ -128,6 +128,26 @@ def create_app() -> Flask:
             "error.html", code=400, title=title, description=description
         ), 400
 
+    # ── Header keamanan untuk seluruh respons aplikasi ────────────────────────
+    _CSP = (
+        "default-src 'self'; script-src 'self'; "
+        "style-src 'self' 'unsafe-inline'; img-src 'self' data:; "
+        "media-src 'self'; connect-src 'self'; frame-ancestors 'none'"
+    )
+
+    @app.after_request
+    def _set_security_headers(response):
+        if not request.path.startswith("/static/"):
+            if "Cache-Control" not in response.headers:
+                response.headers["Cache-Control"] = "no-store"
+            if "Pragma" not in response.headers:
+                response.headers["Pragma"] = "no-cache"
+        response.headers.setdefault("X-Content-Type-Options", "nosniff")
+        response.headers.setdefault("X-Frame-Options", "DENY")
+        response.headers.setdefault("Referrer-Policy", "no-referrer")
+        response.headers.setdefault("Content-Security-Policy", _CSP)
+        return response
+
     # ── Ensure storage dirs exist ─────────────────────────────────────────────
     for d in [
         config.ENCRYPTED_FILES_DIR,

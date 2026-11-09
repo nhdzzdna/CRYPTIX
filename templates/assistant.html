@@ -19,7 +19,7 @@
       </div>
       <form method="POST" action="{{ url_for('assistant.clear_history') }}" id="clear-form">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-        <button type="button" class="btn btn-ghost btn-sm" onclick="clearChat()">🗑 Bersihkan</button>
+        <button type="button" class="btn btn-ghost btn-sm" id="clear-chat-btn">🗑 Bersihkan</button>
       </form>
     </div>
 
@@ -72,16 +72,16 @@
 
     <!-- Quick suggestion buttons -->
     <div class="quick-suggestions">
-      <button class="suggestion-btn" onclick="sendSuggestion('Bagaimana status keamanan akun saya?')">
+      <button class="suggestion-btn" data-suggestion="Bagaimana status keamanan akun saya?">
         🛡 Status Keamanan
       </button>
-      <button class="suggestion-btn" onclick="sendSuggestion('Bagaimana cara enkripsi file PDF saya?')">
+      <button class="suggestion-btn" data-suggestion="Bagaimana cara enkripsi file PDF saya?">
         🔐 Rekomen Enkripsi
       </button>
-      <button class="suggestion-btn" onclick="sendSuggestion('Jelaskan log aktivitas saya.')">
+      <button class="suggestion-btn" data-suggestion="Jelaskan log aktivitas saya.">
         📋 Log Aktivitas
       </button>
-      <button class="suggestion-btn" onclick="sendSuggestion('Bagaimana cara pakai Steganografi?')">
+      <button class="suggestion-btn" data-suggestion="Bagaimana cara pakai Steganografi?">
         ℹ️ Panduan Fitur
       </button>
     </div>
@@ -95,7 +95,7 @@
         rows="1"
         maxlength="500"
       ></textarea>
-      <button id="send-btn" class="btn btn-primary send-btn" onclick="sendMessage()">
+      <button id="send-btn" class="btn btn-primary send-btn">
         ➤ Kirim
       </button>
     </div>
@@ -110,8 +110,7 @@
         autocapitalize="off"
         spellcheck="false"
       />
-      <button id="check-password-btn" type="button" class="btn btn-ghost send-btn"
-              onclick="sendPassword()">
+      <button id="check-password-btn" type="button" class="btn btn-ghost send-btn">
         🔑 Cek Password
       </button>
     </div>
@@ -157,200 +156,7 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
-// ── Helpers ────────────────────────────────────────────────────────────────
-const messagesEl = document.getElementById('chat-messages');
-const inputEl    = document.getElementById('user-input');
-const passwordEl = document.getElementById('password-input');
-const thinkingEl = document.getElementById('thinking-indicator');
-const thinkTextEl= document.getElementById('thinking-text');
-
-// Auto-resize textarea
-inputEl.addEventListener('input', () => {
-  inputEl.style.height = 'auto';
-  inputEl.style.height = Math.min(inputEl.scrollHeight, 120) + 'px';
-});
-
-// Send on Enter (Shift+Enter for newline)
-inputEl.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault();
-    sendMessage();
-  }
-});
-
-// Enter di kolom password juga mengirim pemeriksaan (bukan pesan)
-passwordEl.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') {
-    e.preventDefault();
-    sendPassword();
-  }
-});
-
-function scrollToBottom() {
-  messagesEl.scrollTop = messagesEl.scrollHeight;
-}
-
-// ── Markdown renderer (minimal, no external libs) ─────────────────────────
-function renderMarkdown(text) {
-  return text
-    // headers
-    .replace(/^## (.+)$/gm, '<h3 class="msg-h3">$1</h3>')
-    .replace(/^# (.+)$/gm,  '<h2 class="msg-h2">$1</h2>')
-    // bold
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    // italic
-    .replace(/\*(.+?)\*/g, '<em>$1</em>')
-    // inline code
-    .replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>')
-    // blockquote
-    .replace(/^> (.+)$/gm, '<blockquote class="bq">$1</blockquote>')
-    // horizontal rule
-    .replace(/^---$/gm, '<hr class="msg-hr"/>')
-    // unordered list items
-    .replace(/^[•\-\*] (.+)$/gm, '<li>$1</li>')
-    // wrap consecutive <li> in <ul>
-    .replace(/(<li>.*<\/li>(\s*<li>.*<\/li>)*)/gs, '<ul class="msg-ul">$1</ul>')
-    // numbered list
-    .replace(/^\d+\. (.+)$/gm, '<li>$1</li>')
-    // double newline → paragraph break
-    .replace(/\n\n/g, '</p><p class="msg-p">')
-    // single newline → <br>
-    .replace(/\n/g, '<br>');
-}
-
-// ── Append message bubble to DOM ──────────────────────────────────────────
-function appendMessage(role, content) {
-  const row = document.createElement('div');
-  row.className = `msg-row msg-${role}`;
-
-  const avatar = document.createElement('div');
-  avatar.className = role === 'agent' ? 'msg-avatar' : 'msg-avatar user-avatar';
-  avatar.textContent = role === 'agent' ? '🤖' : '👤';
-
-  const bubble = document.createElement('div');
-  bubble.className = `msg-bubble ${role === 'agent' ? 'agent-bubble' : 'user-bubble'}`;
-
-  const inner = document.createElement('div');
-  inner.className = 'msg-content';
-  inner.innerHTML = role === 'agent' ? renderMarkdown(content) : escapeHtml(content);
-  bubble.appendChild(inner);
-
-  if (role === 'agent') {
-    row.appendChild(avatar);
-    row.appendChild(bubble);
-  } else {
-    row.appendChild(bubble);
-    row.appendChild(avatar);
-  }
-
-  // Insert before thinking indicator
-  messagesEl.insertBefore(row, thinkingEl);
-  scrollToBottom();
-}
-
-function escapeHtml(s) {
-  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-          .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-}
-
-// ── Thinking animation ────────────────────────────────────────────────────
-const THINKING_STEPS = [
-  "Memahami pertanyaan…",
-  "Membaca data aplikasi…",
-  "Menyusun jawaban…"
-];
-
-async function showThinkingSteps() {
-  thinkingEl.style.display = 'flex';
-  scrollToBottom();
-  for (const step of THINKING_STEPS) {
-    thinkTextEl.textContent = step;
-    await delay(600);
-  }
-}
-
-function hideThinking() {
-  thinkingEl.style.display = 'none';
-}
-
-function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
-
-// ── Send message / password ───────────────────────────────────────────────
-async function sendMessage() {
-  const message = inputEl.value.trim();
-  const password = passwordEl.value;
-  if (!message && !password) return;
-
-  // Password TIDAK pernah ditampilkan; riwayat hanya memuat penanda.
-  const bubbleText = password ? '[password diperiksa]' : message;
-  const payload = password ? { password } : { message };
-
-  // Disable input dan langsung kosongkan kolom password dari DOM.
-  inputEl.value = '';
-  passwordEl.value = '';
-  inputEl.style.height = 'auto';
-  inputEl.disabled = true;
-  passwordEl.disabled = true;
-  document.getElementById('send-btn').disabled = true;
-  document.getElementById('check-password-btn').disabled = true;
-
-  // Show user bubble
-  appendMessage('user', bubbleText);
-
-  // Show thinking animation
-  await showThinkingSteps();
-
-  try {
-    const resp = await apiFetch('/assistant/chat', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload),
-    });
-
-    if (!resp.ok) throw new Error('Server error ' + resp.status);
-    const data = await resp.json();
-
-    hideThinking();
-    appendMessage('agent', data.answer);
-  } catch (err) {
-    hideThinking();
-    appendMessage('agent', '❌ Terjadi kesalahan. Silakan coba lagi.');
-  }
-
-  // Re-enable input
-  inputEl.disabled = false;
-  passwordEl.disabled = false;
-  document.getElementById('send-btn').disabled = false;
-  document.getElementById('check-password-btn').disabled = false;
-  inputEl.focus();
-}
-
-function sendPassword() {
-  if (!passwordEl.value) return;
-  sendMessage();
-}
-
-function sendSuggestion(text) {
-  inputEl.value = text;
-  sendMessage();
-}
-
-// ── Clear chat ─────────────────────────────────────────────────────────────
-async function clearChat() {
-  if (!confirm('Hapus seluruh riwayat percakapan?')) return;
-  await apiFetch('/assistant/clear', {
-    method: 'POST',
-  });
-  window.location.reload();
-}
-
-// ── Initial scroll ─────────────────────────────────────────────────────────
-scrollToBottom();
-</script>
-
+<script src="{{ url_for('static', filename='js/assistant.js') }}"></script>
 <style>
 /* ── Assistant Layout ──────────────────────────────────────────────────── */
 .assistant-layout {
