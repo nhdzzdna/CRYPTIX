@@ -19,6 +19,7 @@ from modules.cryptography import session_keys
 from modules.cryptography.key_management import purpose_key
 from modules.cryptography.database_encryption import decrypt_record, encrypt_record
 from modules.blockchain.blockchain import add_block, account_hash, content_hash
+from modules.username_masking import samarkan_username
 
 account_bp = Blueprint("account", __name__)
 
@@ -36,7 +37,8 @@ def _db_key() -> bytes:
 def index():
     with get_db() as db:
         rows = db.execute(
-            """SELECT id, site_name_enc, updated_at FROM account_vault
+            """SELECT id, site_name_enc, username_enc, updated_at
+               FROM account_vault
                WHERE user_id=? ORDER BY created_at DESC""",
             (session["user_id"],),
         ).fetchall()
@@ -47,16 +49,21 @@ def index():
     for r in rows:
         try:
             dec = decrypt_record(
-                {"site_name_enc": r["site_name_enc"]},
+                {
+                    "site_name_enc": r["site_name_enc"],
+                    "username_enc": r["username_enc"],
+                },
                 key, uid, "account_vault",
             )
         except Exception:
             entries.append({"id": r["id"], "site_name": "[Decryption Error]",
+                            "username_masked": "***",
                             "updated_at": r["updated_at"]})
             continue
         entries.append({
             "id": r["id"],
             "site_name": dec["site_name_enc"],
+            "username_masked": samarkan_username(dec["username_enc"]),
             "updated_at": r["updated_at"],
         })
     return render_template("account_vault.html", entries=entries)

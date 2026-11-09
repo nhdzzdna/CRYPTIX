@@ -2,7 +2,41 @@
 {% block title %}Media Vault — CRYPTIX{% endblock %}
 {% block page_title %}Media Vault{% endblock %}
 
+{% macro media_card(f) %}
+<div class="media-item" data-media-item data-file-id="{{ f.id }}"
+     data-kind="{{ f.file_type }}" data-name="{{ f.original_name }}"
+     data-view-url="{{ f.view_url }}"
+     data-thumb-url="{{ f.thumb_url or '' }}" data-locked="0"
+     data-collection-id="{{ f.collection_id or '' }}">
+  <label class="media-select" title="Pilih">
+    <input type="checkbox" data-select-file value="{{ f.id }}" />
+  </label>
+  <button type="button" class="media-open" data-open-media>
+    {% if f.thumb_url %}
+    <img class="media-thumb" src="{{ f.thumb_url }}" alt="{{ f.original_name }}" />
+    {% else %}
+    <span class="media-placeholder"
+          style="background: hsl({{ (f.id * 47) % 360 }}, 45%, 42%)">{{ f.icon }}</span>
+    {% endif %}
+  </button>
+  <div class="media-caption">
+    <span class="media-icon">{{ f.icon }}</span>
+    <span class="media-name">{{ f.original_name }}</span>
+  </div>
+  {% if f.download_only %}
+  <small class="text-muted">{{ download_only_note }}</small>
+  {% endif %}
+</div>
+{% endmacro %}
+
 {% block content %}
+<div id="media-messages"
+     data-msg-move="{{ msg.move }}"
+     data-msg-state="{{ msg.state }}"
+     data-msg-need-collection="{{ msg.need_collection }}"
+     data-msg-error="{{ msg.error }}"
+     data-msg-delete-confirm="{{ msg.delete_confirm }}"></div>
+
 <div class="card mb-4">
   <div class="card-header">Upload Media</div>
   <div class="card-body">
@@ -10,7 +44,7 @@
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
       <div class="form-row">
         <input type="file" name="file" class="form-control"
-               accept=".mp3,.wav,.flac,.ogg,.m4a,.mp4,.webm,.avi,.mkv,.mov" required />
+               accept=".png,.jpg,.jpeg,.gif,.bmp,.webp,.mp3,.wav,.flac,.ogg,.m4a,.mp4,.webm,.avi,.mkv,.mov" required />
         <button type="submit" class="btn btn-primary">🔒 Enkripsi & Upload</button>
       </div>
     </form>
@@ -19,91 +53,134 @@
 
 {% if winamp_available %}
 <div class="alert alert-info">
-  🎵 Winamp terdeteksi — audio dapat diputar langsung di Winamp.<br />
+  🎵 Audio tersedia di halaman Musik dengan pemutar HTML5 dan Winamp.<br />
   <small>{{ temp_warning }}</small>
 </div>
-{% else %}
-<div class="alert alert-warning">⚠ Winamp tidak ditemukan. Pemutaran audio/video memakai pemutar HTML5.</div>
 {% endif %}
 
-<div class="card">
-  <div class="card-header">Media Terenkripsi ({{ files|length }})</div>
-  <div class="card-body p-0">
-    {% if files %}
-    <table class="table">
-      <thead>
-        <tr><th>Nama</th><th>Tipe</th><th>Ukuran</th><th>Upload</th><th>Pemutar</th><th>Aksi</th></tr>
-      </thead>
-      <tbody>
-        {% for f in files %}
-        <tr>
-          <td>{{ f.original_name }}</td>
-          <td><span class="badge badge-secondary">{{ f.file_type }}</span></td>
-          <td>{{ "%.1f"|format(f.file_size / 1024) }} KB</td>
-          <td>{{ f.uploaded_at[:16] }}</td>
-          <td>
-            {% if f.playable and f.file_type == 'audio' %}
-            <audio controls preload="none"
-                   data-stream-url="{{ url_for('media.stream', file_id=f.id) }}"
-                   data-stream-resource="{{ f.id }}"></audio>
-            <button type="button" class="btn btn-sm btn-primary mt-1"
-                    data-reauth="media.stream" data-reauth-resource="{{ f.id }}">▶ Putar</button>
-            {% elif f.playable and f.file_type == 'video' %}
-            <video controls preload="none" width="240"
-                   data-stream-url="{{ url_for('media.stream', file_id=f.id) }}"
-                   data-stream-resource="{{ f.id }}"></video>
-            <button type="button" class="btn btn-sm btn-primary mt-1"
-                    data-reauth="media.stream" data-reauth-resource="{{ f.id }}">▶ Putar</button>
-            {% else %}
-            <span class="text-muted">{{ download_only_note }}</span>
-            {% endif %}
-          </td>
-          <td>
-            {% if f.playable and f.file_type == 'audio' %}
-            <small class="text-muted d-block">Codec harus didukung browser.</small>
-            {% endif %}
-            {% if winamp_available and f.file_type == 'audio' %}
-            <form method="POST" action="{{ url_for('media.play', file_id=f.id) }}" style="display:inline"
-                  data-reauth="media.winamp" data-reauth-resource="{{ f.id }}">
-              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-              <input type="hidden" name="player" value="winamp" />
-              <button type="submit" class="btn btn-sm btn-secondary">🎵 Winamp</button>
-            </form>
-            {% endif %}
+<div id="media-alert" class="alert alert-danger" hidden></div>
 
-            <form method="POST" action="{{ url_for('vault.decrypt', resource_id=f.id) }}"
-                  style="display:inline">
+<div class="card mb-4">
+  <div class="card-header">Album</div>
+  <div class="card-body">
+    <form id="album-create-form" class="d-flex gap-2 align-items-center mb-3" novalidate>
+      <input type="text" id="album-create-name" class="form-control"
+             placeholder="Nama album" maxlength="120" required />
+      <label class="d-flex gap-2 align-items-center">
+        <input type="checkbox" id="album-create-locked" /> Kunci album
+      </label>
+      <button type="submit" class="btn btn-primary">Buat album</button>
+    </form>
 
-            <a href="{{ url_for('media.download', file_id=f.id) }}"
-               class="btn btn-sm btn-success"
-               data-reauth="file.download" data-reauth-resource="{{ f.id }}">⬇</a>
-            <form method="POST" action="{{ url_for('vault.delete', resource_id=f.id) }}" style="display:inline"
-                  data-confirm="Hapus?">
-
-              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-              <button type="submit" class="btn btn-sm btn-success"
-                      data-reauth="file.download"
-                      data-reauth-resource="{{ f.id }}">⬇</button>
-            </form>
-            <form method="POST" action="{{ url_for('vault.delete', resource_id=f.id) }}"
-                  style="display:inline">
-              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-              <button type="submit" class="btn btn-sm btn-danger"
-                      data-reauth="item.delete"
-                      data-reauth-resource="{{ f.id }}">🗑</button>
-            </form>
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+    {% if albums %}
+    <div class="album-grid">
+      {% for a in albums %}
+      <button type="button" class="album-card" data-album-open
+              data-album-id="{{ a.id }}" data-album-name="{{ a.name }}"
+              data-album-locked="{{ 1 if a.locked else 0 }}"
+              data-album-kind="{{ a.kind }}"
+              {% if a.locked %}data-reauth="album.unlock" data-reauth-resource="{{ a.id }}"{% endif %}>
+        <span class="album-cover{% if a.locked %} album-cover-locked{% endif %}"
+              {% if not a.cover %}style="background: hsl({{ (a.id * 47) % 360 }}, 45%, 42%)"{% endif %}>
+          {% if a.locked %}
+          <span class="album-lock">🔒</span>
+          {% elif a.cover %}
+          <img class="album-cover-img" src="{{ a.cover }}" alt="{{ a.name }}" />
+          {% else %}
+          <span class="album-lock">🗂</span>
+          {% endif %}
+        </span>
+        <span class="album-name">{{ a.name }}</span>
+        <span class="album-count">{{ a.jumlah }} berkas{% if a.locked %} · terkunci{% endif %}</span>
+      </button>
+      {% endfor %}
+    </div>
     {% else %}
-    <p class="p-3 text-muted">Belum ada media.</p>
+    <p class="text-muted">{{ empty_note }}</p>
     {% endif %}
+  </div>
+</div>
+
+<section id="album-detail" class="card mb-4" hidden>
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span id="album-detail-title"></span>
+    <button type="button" id="album-back" class="btn btn-sm btn-secondary">← Kembali</button>
+  </div>
+  <div class="card-body">
+    <div class="d-flex gap-2 align-items-center mb-3">
+      <button type="button" id="album-rename" class="btn btn-sm btn-secondary">Ganti nama album</button>
+      <button type="button" id="album-lock-toggle" class="btn btn-sm btn-secondary"
+              data-reauth="album.unlock" data-reauth-resource="">Kunci album</button>
+      <button type="button" id="album-delete" class="btn btn-sm btn-danger">Hapus album</button>
+      <form id="album-rename-form" class="d-flex gap-2" hidden novalidate>
+        <input type="text" id="album-rename-input" class="form-control" maxlength="120" required />
+        <button type="submit" class="btn btn-sm btn-primary">Simpan nama</button>
+      </form>
+    </div>
+    <div id="album-items" class="media-grid"></div>
+    <div id="album-hidden" class="hidden-section mt-3" hidden>
+      <button type="button" id="album-hidden-open" class="btn btn-sm btn-secondary"
+              data-reauth="album.unlock" data-reauth-resource="">Tampilkan Tersembunyi</button>
+      <div id="album-hidden-items" class="media-grid mt-3"></div>
+    </div>
+  </div>
+</section>
+
+<div class="card mb-4">
+  <div class="card-header">Tanpa album</div>
+  <div class="card-body">
+    {% if unfiled %}
+    <div class="media-grid">
+      {% for f in unfiled %}{{ media_card(f) }}{% endfor %}
+    </div>
+    {% else %}
+    <p class="text-muted">Tidak ada berkas di luar album.</p>
+    {% endif %}
+  </div>
+</div>
+
+<div id="selection-bar" class="selection-bar" hidden>
+  <span id="selection-count">0 dipilih</span>
+  <select id="move-target" class="form-control">
+    <option value="">Tanpa album</option>
+    {% for a in albums %}<option value="{{ a.id }}" data-locked="{{ 1 if a.locked else 0 }}">{{ a.name }}</option>{% endfor %}
+  </select>
+  <button type="button" id="move-button" class="btn btn-sm btn-primary">Pindahkan ke album</button>
+  <button type="button" id="lock-items-button" class="btn btn-sm btn-secondary"
+          data-reauth="album.unlock" data-reauth-resource="">Kunci</button>
+  <button type="button" id="hide-items-button" class="btn btn-sm btn-secondary"
+          data-reauth="album.unlock" data-reauth-resource="">Sembunyikan</button>
+</div>
+
+<div class="card">
+  <div class="card-header">Foto dan video</div>
+  <div class="card-body">
+    <p class="text-muted">Berkas audio dipindahkan ke halaman Musik.</p>
+  </div>
+</div>
+
+<div id="media-viewer" class="modal-overlay" style="display:none;"
+     role="dialog" aria-modal="true" aria-labelledby="viewer-title">
+  <div class="viewer-box">
+    <button type="button" id="viewer-close" class="viewer-close" aria-label="Tutup">×</button>
+    <button type="button" id="viewer-prev" class="viewer-nav" aria-label="Sebelumnya">‹</button>
+    <div id="viewer-stage" class="viewer-stage">
+      <video controls preload="none" hidden></video>
+    </div>
+    <button type="button" id="viewer-next" class="viewer-nav" aria-label="Berikutnya">›</button>
+    <div class="viewer-bar">
+      <span id="viewer-title"></span>
+      <button type="button" id="viewer-rename" class="btn btn-sm btn-secondary">Ganti nama berkas</button>
+      <form id="viewer-rename-form" class="d-flex gap-2" hidden novalidate>
+        <input type="text" id="viewer-rename-input" class="form-control" maxlength="255" required />
+        <button type="submit" class="btn btn-sm btn-primary">Simpan</button>
+      </form>
+    </div>
   </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script src="{{ url_for('static', filename='js/media_vault.js') }}"></script>
+<script src="{{ url_for('static', filename='js/media_albums.js') }}"></script>
 {% endblock %}

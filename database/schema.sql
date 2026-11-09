@@ -114,3 +114,20 @@ CREATE TABLE IF NOT EXISTS biometric_templates (
     sampel    INTEGER NOT NULL,
     dibuat    TEXT    NOT NULL DEFAULT (datetime('now'))
 );
+
+-- === N3a: koleksi/album media ===--------------------------------------------------------
+CREATE TABLE IF NOT EXISTS collections (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id     INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    kind        TEXT    NOT NULL DEFAULT 'album',   -- album/musik/dokumen
+    name_enc    TEXT    NOT NULL,                   -- terenkripsi: "v1:<nonce>:<ct>"
+    locked      INTEGER NOT NULL DEFAULT 0,
+    created_at  TEXT    NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS collection_items (
+    file_id       INTEGER PRIMARY KEY REFERENCES vault_files(id) ON DELETE CASCADE,
+    collection_id INTEGER NOT NULL REFERENCES collections(id) ON DELETE CASCADE,
+    state         TEXT    NOT NULL DEFAULT 'normal', -- normal/locked/hidden
+    added_at      TEXT    NOT NULL DEFAULT (datetime('now'))
+);
