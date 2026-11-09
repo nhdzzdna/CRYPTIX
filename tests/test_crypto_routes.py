@@ -10,14 +10,29 @@ import re
 
 import pytest
 
+import config
 from app import create_app
+from database.db import get_db, init_db
 from modules.cryptography import session_keys
 
 PASSPHRASE = "passphrase-rute-uji-42"
 
 
 @pytest.fixture()
-def app():
+def app(tmp_path, monkeypatch):
+    monkeypatch.setattr(config, "DATABASE_PATH", str(tmp_path / "crypto_uji.db"))
+    monkeypatch.setattr(config, "ENCRYPTED_FILES_DIR", str(tmp_path / "encrypted"))
+    monkeypatch.setattr(config, "STEGO_IMAGES_DIR", str(tmp_path / "stego"))
+    monkeypatch.setattr(config, "TEMPORARY_FILES_DIR", str(tmp_path / "temporary"))
+    init_db()
+    with get_db() as db:
+        db.execute(
+            """INSERT INTO users
+               (id, username, email, password_hash, salt) VALUES (?,?,?,?,?)""",
+            (1, "pengujian", "pengujian@contoh.test", "hash", "garam"),
+        )
+        db.commit()
+
     application = create_app()
     application.config["TESTING"] = True
     return application
