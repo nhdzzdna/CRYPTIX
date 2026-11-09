@@ -1,12 +1,12 @@
 /**
- * static/js/face.js — pendaftaran dan verifikasi wajah (butir 2.6).
+ * static/js/face.js - pendaftaran dan verifikasi wajah.
  *
  * Pendaftaran: 30 frame atau lebih selama sedikitnya 3 detik, lalu dikirim
  * ke /api/register_face beserta duration_ms. Verifikasi tahap 2 login: lima
- * frame dikirim sebagai bukti metode "wajah" ke /login/biometric.
+ * frame dikirim sebagai bukti metode "wajah".
  *
  * Semua pengambilan frame terjadi di memori peramban; tidak ada citra wajah
- * yang disimpan ke server selain template terenkripsi.
+ * yang disimpan ke server selain templat terenkripsi.
  */
 "use strict";
 
@@ -21,17 +21,30 @@ window.CryptixBiometrik = window.CryptixBiometrik || { penangan: {} };
     el.style.color = warna || "";
   }
 
+  function teksPanel(panel, nama, cadangan) {
+    if (panel && panel.dataset && panel.dataset[nama]) {
+      return panel.dataset[nama];
+    }
+    return cadangan;
+  }
+
   function sekarang() {
     return (window.performance && performance.now)
       ? performance.now()
       : Date.now();
   }
 
+  function tidur(ms) {
+    return new Promise(function (resolve) {
+      window.setTimeout(resolve, ms);
+    });
+  }
+
   function tangkap(video, canvas, jumlah, durasiMs, onProgress) {
     return new Promise(function (resolve) {
       const mulai = sekarang();
       const frames = [];
-      const timer = setInterval(function () {
+      const timer = window.setInterval(function () {
         if (!video.videoWidth) {
           return;
         }
@@ -44,7 +57,7 @@ window.CryptixBiometrik = window.CryptixBiometrik || { penangan: {} };
           onProgress(frames.length, berlalu);
         }
         if (frames.length >= jumlah && berlalu >= durasiMs) {
-          clearInterval(timer);
+          window.clearInterval(timer);
           resolve({
             frames: frames,
             duration_ms: Math.round(berlalu),
@@ -62,18 +75,17 @@ window.CryptixBiometrik = window.CryptixBiometrik || { penangan: {} };
     return stream;
   }
 
-  async function kirimPendaftaran(hasil, statusEl, grant) {
-    const headers = grant ? { "X-Reauth-Grant": grant } : undefined;
   async function bacaJson(resp) {
     const teks = await resp.text();
     try {
       return JSON.parse(teks);
     } catch (_) {
-      return { success: false, error: "Pendaftaran wajah gagal." };
+      return { success: false, error: null };
     }
   }
 
-  async function kirimPendaftaran(hasil, statusEl) {
+  async function kirimPendaftaran(hasil, statusEl, grant, panel) {
+    const headers = grant ? { "X-Reauth-Grant": grant } : {};
     const resp = await apiFetch("/api/register_face", {
       method: "POST",
       headers: headers,
@@ -81,15 +93,118 @@ window.CryptixBiometrik = window.CryptixBiometrik || { penangan: {} };
     });
     const data = await bacaJson(resp);
     if (!data.success) {
-      throw new Error(data.error || "Pendaftaran wajah gagal.");
+      throw new Error(
+        data.error || teksPanel(panel, "msgFailed", "Pendaftaran wajah gagal.")
+      );
     }
-    setStatus(statusEl, "\u2705 " + data.message, "#22c55e");
+    setStatus(statusEl, data.message, "#22c55e");
     if (data.setup_done) {
-      setTimeout(function () {
+      window.setTimeout(function () {
         window.location.href = "/login";
       }, 800);
     }
     return data;
+  }
+
+  function rasioWarnaKulit(video) {
+    const luas = 64 * 48;
+    const kecil = document.createElement("canvas");
+    kecil.width = 64;
+    kecil.height = 48;
+    const konteks = kecil.getContext("2d", { willReadFrequently: true });
+    if (!konteks) {
+      return 0;
+    }
+    konteks.drawImage(video, 0, 0, 64, 48);
+    const data = konteks.getImageData(0, 0, 64, 48).data;
+    let cocok = 0;
+    for (let i = 0; i < data.length; i += 4) {
+      const r = data[i];
+      const g = data[i + 1];
+      const b = data[i + 2];
+      const terang = Math.max(r, g, b);
+      const gelap = Math.min(r, g, b);
+      if (r > 95 && g > 40 && b > 20 && r > g && r > b &&
+          terang - gelap > 15) {
+        cocok += 1;
+      }
+    }
+    return cocok / luas;
+  }
+
+  function mulaiDeteksiLangsung(video, panel) {
+    const el = document.getElementById("setup-face-live");
+    if (!el) {
+      return { berhenti: function () {} };
+    }
+
+    let aktif = true;
+    let detektor = null;
+    if (typeof window.FaceDetector === "function") {
+      try {
+        detektor = new window.FaceDetector({
+          fastMode: true,
+          maxDetectedFaces: 2,
+        });
+      } catch (_) {
+        detektor = null;
+      }
+    }
+
+    async function putaran() {
+      while (aktif) {
+        await tidur(500);
+        if (!aktif) {
+          return;
+        }
+        if (video.readyState < 2 || !video.videoWidth) {
+          continue;
+        }
+        if (detektor) {
+          try {
+            const wajah = await detektor.detect(video);
+            if (wajah.length > 1) {
+              el.textContent = teksPanel(panel, "msgMultiple", "");
+            } else if (wajah.length === 1) {
+              el.textContent = teksPanel(panel, "msgDetected", "");
+            } else {
+              el.textContent = teksPanel(panel, "msgNotDetected", "");
+            }
+          } catch (_) {
+            el.textContent = teksPanel(panel, "msgDetectOff", "");
+          }
+        } else {
+          // Cadangan tanpa FaceDetector: perkiraan kasar keberadaan wajah
+          // dari warna kulit pada bingkai kecil. Server tetap memverifikasi
+          // jumlah dan persentase deteksi sebelum menyimpan templat.
+          el.textContent = rasioWarnaKulit(video) >= 0.08
+            ? teksPanel(panel, "msgDetected", "")
+            : teksPanel(panel, "msgNotDetected", "");
+        }
+      }
+    }
+
+    putaran();
+    return {
+      berhenti: function () {
+        aktif = false;
+      },
+    };
+  }
+
+  function perbaruiProgres(panel, jumlah, teks) {
+    const bilah = document.getElementById("setup-face-progress");
+    const label = document.getElementById("setup-face-progress-text");
+    if (bilah) {
+      bilah.max = 30;
+      bilah.value = Math.min(jumlah, 30);
+    }
+    if (label) {
+      label.textContent = teks || "";
+    }
+    if (panel) {
+      panel.dataset.jumlahFrame = String(jumlah);
+    }
   }
 
   async function daftar(videoId, canvasId, statusId, opsiOpsional) {
@@ -101,20 +216,44 @@ window.CryptixBiometrik = window.CryptixBiometrik || { penangan: {} };
     if (!video || !canvas) {
       throw new Error("Elemen kamera tidak ditemukan.");
     }
-    setStatus(statusEl, "Menyiapkan kamera\u2026");
+    const panel = video.closest("[data-msg-preparing]");
     let stream = null;
+    let pemantau = null;
+    setStatus(statusEl, teksPanel(panel, "msgPreparing", "Menyiapkan kamera..."));
+    perbaruiProgres(panel, 0, "");
     try {
       stream = await bukaKamera(video);
+      pemantau = mulaiDeteksiLangsung(video, panel);
       const hasil = await tangkap(video, canvas, 30, 3000, function (n) {
-        setStatus(statusEl, "Sampel: " + n + "/30");
+        const teks = teksPanel(panel, "msgCapturing", "Mengambil gambar: {n} dari 30")
+          .replace("{n}", String(n));
+        setStatus(statusEl, teks);
+        perbaruiProgres(panel, n, teks);
       });
-      setStatus(statusEl, "Mengirim sampel\u2026");
-      return await kirimPendaftaran(hasil, statusEl, grant);
+      if (pemantau) {
+        pemantau.berhenti();
+        pemantau = null;
+      }
+      setStatus(statusEl, teksPanel(panel, "msgSending", "Mengirim sampel..."));
+      return await kirimPendaftaran(hasil, statusEl, grant, panel);
     } catch (err) {
-      setStatus(statusEl, "\u274c " + (err.message || "Pendaftaran wajah gagal."),
-        "#ef4444");
+      const galatKamera = err && (
+        err.name === "NotAllowedError" ||
+        err.name === "NotFoundError" ||
+        err.name === "NotReadableError" ||
+        err.name === "SecurityError"
+      );
+      const pesan = galatKamera
+        ? teksPanel(panel, "msgCameraFailed", "Kamera tidak dapat dibuka.")
+        : (err && err.message
+          ? err.message
+          : teksPanel(panel, "msgFailed", "Pendaftaran wajah gagal."));
+      setStatus(statusEl, "\u274c " + pesan, "#ef4444");
       throw err;
     } finally {
+      if (pemantau) {
+        pemantau.berhenti();
+      }
       if (stream) {
         stream.getTracks().forEach(function (t) { t.stop(); });
       }

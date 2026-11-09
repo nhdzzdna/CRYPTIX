@@ -11,17 +11,31 @@
 </p>
 
 <!-- Face Registration -->
-<div class="card mb-3">
+<div class="card mb-3" id="setup-face-panel"
+     data-msg-detected="{{ MSG.SETUP_FACE_DETECTED }}"
+     data-msg-not-detected="{{ MSG.SETUP_FACE_NOT_DETECTED }}"
+     data-msg-multiple="{{ MSG.SETUP_FACE_MULTIPLE }}"
+     data-msg-detect-off="{{ MSG.SETUP_FACE_DETECT_OFF }}"
+     data-msg-preparing="{{ MSG.SETUP_FACE_PREPARING }}"
+     data-msg-capturing="{{ MSG.SETUP_FACE_CAPTURING }}"
+     data-msg-sending="{{ MSG.SETUP_FACE_SENDING }}"
+     data-msg-camera-failed="{{ MSG.SETUP_FACE_CAMERA_FAILED }}"
+     data-msg-failed="{{ MSG.SETUP_FACE_FAILED }}">
   <div class="card-header">📷 Pendaftaran Wajah</div>
   <div class="card-body">
+    <p class="form-hint">{{ MSG.SETUP_FACE_GUIDE }}</p>
+    <p class="form-hint">{{ MSG.SETUP_FACE_PRIVACY }}</p>
     <video id="setup-video" autoplay playsinline style="display:none;width:100%;border-radius:8px;"></video>
     <canvas id="setup-canvas" style="display:none;"></canvas>
     <div class="webcam-buttons">
       <button type="button" class="btn btn-primary btn-sm" id="btn-setup-face">
-        Daftarkan Wajah (30 frame / 3 detik)
+        {{ MSG.SETUP_FACE_BUTTON }}
       </button>
     </div>
-    <p id="setup-face-status" class="form-hint"></p>
+    <p id="setup-face-live" class="form-hint face-live" role="status" aria-live="polite"></p>
+    <progress id="setup-face-progress" class="face-progress" max="30" value="0"></progress>
+    <p id="setup-face-progress-text" class="form-hint"></p>
+    <p id="setup-face-status" class="form-hint" role="status" aria-live="polite"></p>
   </div>
 </div>
 
