@@ -3,7 +3,7 @@ tests/test_file_encryption.py
 ──────────────────────────────
 Uji enkripsi berkas per chunk AES-256-GCM: struktur header, roundtrip,
 rentang dekripsi, penolakan pemotongan/penukaran/pemodifan chunk, dan nama
-simpan acak. Bagian terakhir menguji API lama yang masih ber-DEPRECATED.
+simpan acak.
 """
 
 import hashlib
@@ -15,19 +15,13 @@ import pytest
 
 from cryptography.exceptions import InvalidTag
 
-import config
-
 from modules.cryptography.file_encryption import (
     CHUNK_SIZE,
     decrypt_all,
-    decrypt_file,
     decrypt_range,
-    encrypt_file,
     encrypt_stream,
     file_aad,
     generate_stored_name,
-    load_encrypted_file,
-    save_encrypted_file,
 )
 
 HEADER_LENGTH = 37
@@ -233,26 +227,3 @@ class TestNamaSimpan:
 
     def test_berbeda_setiap_panggilan(self):
         assert generate_stored_name() != generate_stored_name()
-
-
-class TestApiLamaDeprecated:
-    """API lama tetap berfungsi sampai dihapus pada tahap transisi akhir."""
-
-    def test_encrypt_file_roundtrip(self):
-        key = _key()
-        data = b"isi berkas lama"
-        res = encrypt_file(data, key)
-        assert decrypt_file(res["ciphertext"], res["nonce_hex"], key) == data
-        assert res["sha256_hex"] == hashlib.sha256(data).hexdigest()
-
-    def test_encrypt_file_kunci_salah_ditolak(self):
-        res = encrypt_file(b"data", _key("satu"))
-        with pytest.raises(InvalidTag):
-            decrypt_file(res["ciphertext"], res["nonce_hex"], _key("dua"))
-
-    def test_simpan_dan_muat_berkas(self, tmp_path, monkeypatch):
-        monkeypatch.setattr(config, "ENCRYPTED_FILES_DIR", str(tmp_path))
-        hasil = encrypt_file(b"isi", _key())
-        nama = save_encrypted_file(hasil["ciphertext"], "arsip.enc")
-        assert os.path.isfile(nama)
-        assert load_encrypted_file("arsip.enc") == hasil["ciphertext"]

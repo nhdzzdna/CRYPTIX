@@ -29,8 +29,6 @@ import hashlib
 import os
 import secrets
 
-import config
-
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from cryptography.hazmat.primitives import hashes as _hashes
@@ -338,48 +336,3 @@ def decrypt_range(path, key: bytes, aad: bytes, start: int, end: int) -> bytes:
 def generate_stored_name() -> str:
     """Nama simpan acak heksadesimal tanpa ekstensi asli, misalnya "<hex>.bin"."""
     return f"{secrets.token_hex(16)}.bin"
-
-
-# ── API lama (DEPRECATED — dihapus pada tugas T8 dan T11) ────────────────────
-# Dipertahankan agar pemanggil lama tetap terimpor selama transisi; format
-# berkasnya (satu nonce dan tag untuk seluruh berkas) digantikan oleh format
-# per chunk di atas dan tidak lagi dipakai aplikasi.
-
-def encrypt_file(plaintext_bytes: bytes, file_key: bytes) -> dict:
-    """DEPRECATED: gunakan encrypt_stream(). Enkripsi seluruh berkas sekali jadi."""
-    if len(file_key) != 32:
-        raise ValueError("AES-256-GCM requires a 32-byte key.")
-
-    nonce = os.urandom(12)
-    ct_with_tag = AESGCM(file_key).encrypt(nonce, plaintext_bytes, None)
-    ciphertext = ct_with_tag[:-16]
-    tag = ct_with_tag[-16:]
-
-    return {
-        "ciphertext": ct_with_tag,
-        "nonce_hex": nonce.hex(),
-        "tag_hex": tag.hex(),
-        "sha256_hex": hashlib.sha256(plaintext_bytes).hexdigest(),
-    }
-
-
-def decrypt_file(ciphertext_with_tag: bytes, nonce_hex: str, file_key: bytes) -> bytes:
-    """DEPRECATED: gunakan decrypt_all(). Dekripsi blob berkas tunggal."""
-    nonce = bytes.fromhex(nonce_hex)
-    return AESGCM(file_key).decrypt(nonce, ciphertext_with_tag, None)
-
-
-def save_encrypted_file(ciphertext: bytes, stored_name: str) -> str:
-    """DEPRECATED: gunakan encrypt_stream(output=path). Tulis blob terenkripsi."""
-    dest = os.path.join(config.ENCRYPTED_FILES_DIR, stored_name)
-    os.makedirs(config.ENCRYPTED_FILES_DIR, exist_ok=True)
-    with open(dest, "wb") as f:
-        f.write(ciphertext)
-    return dest
-
-
-def load_encrypted_file(stored_name: str) -> bytes:
-    """DEPRECATED: gunakan decrypt_all(path). Baca seluruh isi berkas terenkripsi."""
-    path = os.path.join(config.ENCRYPTED_FILES_DIR, stored_name)
-    with open(path, "rb") as f:
-        return f.read()

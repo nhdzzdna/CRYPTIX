@@ -14,8 +14,6 @@ CREATE TABLE IF NOT EXISTS users (
     kek_salt        TEXT,               -- salt PBKDF2 pembentuk KEK (butir 1.1)
     wrapped_dek     TEXT,               -- "v1:<nonce>:<ct>", DEK dibungkus KEK
     recovery_wrapped_dek TEXT,          -- "v1:<nonce>:<ct>", DEK dibungkus kunci pemulihan
-    face_model_path TEXT,               -- path to saved LBPH .yml file
-    fingerprint_path TEXT,              -- path to stored fingerprint image
     usb_token_id    TEXT,               -- id token pada berkas .cryptix_token
     usb_verifier    TEXT,               -- HMAC-SHA256(rahasia dongle, "cryptix-usb-verifier") hex
     usb_volume_serial TEXT,             -- bound volume serial number
