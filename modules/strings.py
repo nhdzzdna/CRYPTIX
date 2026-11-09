@@ -32,8 +32,6 @@ class MSG:
     RECOVERY_CHECK_REQUIRED = "Centang konfirmasi bahwa kunci pemulihan sudah disimpan untuk melanjutkan."
     RECOVERY_ONLY_ONCE      = "Kunci pemulihan hanya ditampilkan satu kali dan tidak dapat dilihat kembali."
     SETUP_BIOMETRIC_REQUIRED = "Daftarkan setidaknya satu biometrik (wajah atau sidik jari) untuk menyelesaikan penyiapan."
-    SETUP_FP_REQUIRED       = "Pilih berkas citra sidik jari terlebih dahulu."
-    SETUP_FP_FAILED         = "Pendaftaran sidik jari gagal. Gunakan citra PNG/JPG/BMP yang jelas."
     SETUP_COMPLETE          = "Penyiapan keamanan selesai. Anda dapat mulai menggunakan CRYPTIX."
 
     LOGIN_FAILED            = "{error}"   # error string comes from auth module
@@ -52,7 +50,6 @@ class MSG:
     AUTH_REGISTER_ERROR      = "Pendaftaran gagal karena kesalahan sistem."
 
     # ── Biometrics ────────────────────────────────────────────────────────────
-    FINGERPRINT_INVALID_FORMAT   = "Gambar sidik jari harus berformat PNG/JPG/BMP."
     FACE_NO_FRAMES               = "Tidak ada bingkai yang diterima."
     FACE_MODEL_SAVED             = "Model wajah berhasil disimpan."
     FACE_NOT_ENOUGH_SAMPLES      = "Tidak cukup sampel wajah yang terdeteksi."
