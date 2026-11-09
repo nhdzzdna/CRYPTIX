@@ -599,3 +599,38 @@ html, body {
 .viewer-prev { left: 10px; }
 .viewer-next { right: 10px; }
 .viewer-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+/* -- N3b: halaman Musik dan Dokumen --------------------------------------- */
+.music-track-list { display: flex; flex-direction: column; gap: 6px; }
+.music-track,
+.collection-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid rgba(0, 0, 0, .12);
+  border-radius: 8px;
+  background: var(--card-bg);
+}
+.music-track-play {
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  background: rgba(0, 0, 0, .12);
+  font-size: 14px;
+}
+.music-track-name { flex: 1; word-break: break-word; }
+.music-now-playing { margin-bottom: 8px; font-weight: 600; }
+#music-audio { width: 100%; }
+.collection-item-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+.collection-item-name { word-break: break-word; }
+.collection-item-actions { display: flex; gap: 6px; }
+.d-inline { display: inline; }

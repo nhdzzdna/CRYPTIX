@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+{% block title %}{{ msg.title }} — CRYPTIX{% endblock %}
+{% block page_title %}{{ msg.title }}{% endblock %}
+
+{% macro track_row(f) %}
+<div class="music-track" data-track data-file-id="{{ f.id }}"
+     data-kind="audio" data-name="{{ f.original_name }}"
+     data-view-url="{{ f.view_url }}" data-locked="0"
+     data-collection-id="{{ f.collection_id or '' }}">
+  <label class="media-select" title="{{ msg.pick }}">
+    <input type="checkbox" data-select-file value="{{ f.id }}" />
+  </label>
+  <button type="button" class="music-track-play" data-track-play
+          title="{{ msg.play }}">▶</button>
+  <span class="music-track-name">{{ f.original_name }}</span>
+</div>
+{% endmacro %}
+
+{% block content %}
+<div id="collection-page" data-page="musik"
+     data-csrf="{{ csrf_token() }}"></div>
+
+<div id="collection-messages"
+     data-msg-move="{{ msg.move }}"
+     data-msg-state="{{ msg.state }}"
+     data-msg-need-folder="{{ msg.need_folder }}"
+     data-msg-error="{{ msg.error }}"
+     data-msg-delete-confirm="{{ msg.delete_confirm }}"
+     data-msg-no-track="{{ msg.no_track }}"></div>
+
+<div class="card mb-4">
+  <div class="card-header">{{ msg.upload_title }}</div>
+  <div class="card-body">
+    <form method="POST" action="{{ url_for('vault.upload') }}" enctype="multipart/form-data">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+      <input type="hidden" name="kategori" value="musik" />
+      <div class="form-row">
+        <input type="file" name="file" class="form-control"
+               accept=".mp3,.wav,.flac,.ogg,.m4a" required />
+        <button type="submit" class="btn btn-primary">🔒 Enkripsi & Unggah</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% if winamp_available %}
+<div class="alert alert-info">
+  🎵 Winamp terdeteksi — trek dapat dibuka langsung di Winamp.<br />
+  <small>{{ msg.temp_warning }}</small>
+</div>
+{% endif %}
+
+<div id="collection-alert" class="alert alert-danger" hidden></div>
+
+<div class="card mb-4">
+  <div class="card-header">{{ msg.player }}</div>
+  <div class="card-body">
+    <div id="music-now-playing" class="music-now-playing">{{ msg.no_track }}</div>
+    <audio id="music-audio" controls preload="none"></audio>
+    <div class="d-flex gap-2 align-items-center mt-2 flex-wrap">
+      <button type="button" id="music-prev" class="btn btn-sm btn-secondary">⏮ {{ msg.prev }}</button>
+      <button type="button" id="music-play-toggle" class="btn btn-sm btn-primary">▶ {{ msg.play }}</button>
+      <button type="button" id="music-next" class="btn btn-sm btn-secondary">{{ msg.next }} ⏭</button>
+      <form id="music-winamp-form" method="POST" action="{{ url_for('media.play', file_id=0) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        <input type="hidden" name="player" value="winamp" />
+        <button type="submit" id="music-winamp" class="btn btn-sm btn-secondary"
+                data-reauth="media.winamp" data-reauth-resource="" hidden>
+          {{ msg.winamp }}
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-4">
+  <div class="card-header">{{ msg.folder_section }}</div>
+  <div class="card-body">
+    <form id="folder-create-form" class="d-flex gap-2 align-items-center mb-3" novalidate>
+      <input type="text" id="folder-create-name" class="form-control"
+             placeholder="{{ msg.folder_placeholder }}" maxlength="120" required />
+      <label class="d-flex gap-2 align-items-center">
+        <input type="checkbox" id="folder-create-locked" /> {{ msg.folder_lock_label }}
+      </label>
+      <button type="submit" class="btn btn-primary">{{ msg.folder_create_button }}</button>
+    </form>
+
+    {% if folders %}
+    <div class="album-grid">
+      {% for a in folders %}
+      <button type="button" class="album-card" data-folder-open
+              data-folder-id="{{ a.id }}" data-folder-name="{{ a.name }}"
+              data-folder-locked="{{ 1 if a.locked else 0 }}"
+              {% if a.locked %}data-reauth="album.unlock" data-reauth-resource="{{ a.id }}"{% endif %}>
+        <span class="album-cover{% if a.locked %} album-cover-locked{% endif %}"
+              style="background: hsl({{ (a.id * 47) % 360 }}, 45%, 42%)">
+          <span class="album-lock">{% if a.locked %}🔒{% else %}🎵{% endif %}</span>
+        </span>
+        <span class="album-name">{{ a.name }}</span>
+        <span class="album-count">{{ a.jumlah }} {{ msg.count }}{% if a.locked %} · {{ msg.locked_suffix }}{% endif %}</span>
+      </button>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-muted">{{ msg.empty }}</p>
+    {% endif %}
+  </div>
+</div>
+
+<section id="folder-detail" class="card mb-4" hidden>
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span id="folder-detail-title"></span>
+    <button type="button" id="folder-back" class="btn btn-sm btn-secondary">← Kembali</button>
+  </div>
+  <div class="card-body">
+    <div class="d-flex gap-2 align-items-center mb-3 flex-wrap">
+      <button type="button" id="folder-rename" class="btn btn-sm btn-secondary">{{ msg.folder_rename }}</button>
+      <button type="button" id="folder-lock-toggle" class="btn btn-sm btn-secondary"
+              data-reauth="album.unlock" data-reauth-resource=""
+              data-label-lock="{{ msg.folder_lock_toggle }}"
+              data-label-unlock="{{ msg.folder_unlock_toggle }}">{{ msg.folder_lock_toggle }}</button>
+      <button type="button" id="folder-delete" class="btn btn-sm btn-danger">{{ msg.folder_delete }}</button>
+      <form id="folder-rename-form" class="d-flex gap-2" hidden novalidate>
+        <input type="text" id="folder-rename-input" class="form-control" maxlength="120" required />
+        <button type="submit" class="btn btn-sm btn-primary">Simpan</button>
+      </form>
+    </div>
+    <div id="folder-items" class="music-track-list" data-track-list></div>
+    <div id="folder-hidden" class="hidden-section mt-3" hidden>
+      <button type="button" id="folder-hidden-open" class="btn btn-sm btn-secondary"
+              data-reauth="album.unlock" data-reauth-resource="">{{ msg.hidden_button }}</button>
+      <div id="folder-hidden-items" class="music-track-list mt-3" data-track-list></div>
+    </div>
+  </div>
+</section>
+
+<div class="card mb-4">
+  <div class="card-header">{{ msg.unfiled_section }}</div>
+  <div class="card-body">
+    <div id="unfiled-items" class="music-track-list" data-track-list>
+      {% if unfiled %}
+      {% for f in unfiled %}{{ track_row(f) }}{% endfor %}
+      {% endif %}
+    </div>
+    {% if not unfiled %}
+    <p class="text-muted">{{ msg.unfiled_empty }}</p>
+    {% endif %}
+  </div>
+</div>
+
+<div id="selection-bar" class="selection-bar" hidden>
+  <span id="selection-count">0 dipilih</span>
+  <select id="move-target" class="form-control">
+    <option value="">{{ msg.move_none }}</option>
+    {% for a in folders %}<option value="{{ a.id }}" data-locked="{{ 1 if a.locked else 0 }}">{{ a.name }}</option>{% endfor %}
+  </select>
+  <button type="button" id="move-button" class="btn btn-sm btn-primary">{{ msg.move_button }}</button>
+  <button type="button" id="lock-items-button" class="btn btn-sm btn-secondary"
+          data-reauth="album.unlock" data-reauth-resource="">{{ msg.lock_items }}</button>
+  <button type="button" id="hide-items-button" class="btn btn-sm btn-secondary"
+          data-reauth="album.unlock" data-reauth-resource="">{{ msg.hide_items }}</button>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/collection_folders.js') }}"></script>
+<script src="{{ url_for('static', filename='js/musik.js') }}"></script>
+{% endblock %}

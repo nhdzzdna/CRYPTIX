@@ -13,11 +13,13 @@ terenkripsi mengikuti pola vault_files.original_name
 import os
 
 from flask import (
-    Blueprint, jsonify, request, session, abort, url_for,
+    Blueprint, jsonify, request, session, abort, url_for, render_template,
 )
 
 from database.db import get_db
 from modules.strings import MSG
+from modules.media.winamp_integration import is_winamp_available
+from routes.collection_shared import halaman_koleksi
 from modules.authentication.reauth import (
     require_grant, consume_grant, find_active_grant,
 )
@@ -34,6 +36,12 @@ collection_bp = Blueprint("collection", __name__)
 KINDS = frozenset({"album", "musik", "dokumen"})
 STATES = frozenset({"normal", "locked", "hidden"})
 _NAMA_MAKS = 120
+
+
+@collection_bp.app_context_processor
+def _sediakan_msg():
+    """Teks antarmuka dari MSG untuk template yang membutuhkannya."""
+    return {"MSG": MSG}
 
 
 def _db_key() -> bytes | None:
@@ -110,6 +118,62 @@ def _butuh_grant_koleksi(row) -> bool:
     if not row["locked"]:
         return False
     return not _grant_sah("album.unlock", row["id"])
+
+
+# ── Halaman Musik ─────────────────────────────────────────────────────────────
+
+@collection_bp.route("/musik")
+@login_required
+def musik():
+    """Daftar audio dalam folder kind='musik' dan pemutar HTML5."""
+    db_key = _db_key()
+    if db_key is None:
+        abort(403)
+    with get_db() as db:
+        data = halaman_koleksi(db, session["user_id"], "musik", ("audio",), db_key)
+
+    return render_template(
+        "musik.html",
+        folders=data["folders"],
+        unfiled=data["unfiled"],
+        winamp_available=is_winamp_available(),
+        msg={
+            "title": MSG.MUSIC_TITLE,
+            "upload_title": MSG.MUSIC_UPLOAD_TITLE,
+            "folder_section": MSG.MUSIC_FOLDER_SECTION,
+            "unfiled_section": MSG.MUSIC_UNFILED_SECTION,
+            "player": MSG.MUSIC_SECTION,
+            "empty": MSG.MUSIC_EMPTY,
+            "unfiled_empty": MSG.MUSIC_UNFILED_EMPTY,
+            "delete_confirm": MSG.MUSIC_DELETE_CONFIRM,
+            "no_track": MSG.MUSIC_NO_TRACK,
+            "prev": MSG.MUSIC_PREV,
+            "next": MSG.MUSIC_NEXT,
+            "play": MSG.MUSIC_PLAY,
+            "pause": MSG.MUSIC_PAUSE,
+            "winamp": MSG.MUSIC_WINAMP_BUTTON,
+            "pick": MSG.MUSIC_TRACK_PICK,
+            "temp_warning": MSG.MEDIA_TEMP_WARNING,
+            "folder_placeholder": MSG.FOLDER_CREATE_PLACEHOLDER,
+            "folder_create_button": MSG.FOLDER_CREATE_BUTTON,
+            "folder_lock_label": MSG.FOLDER_LOCK_LABEL,
+            "folder_rename": MSG.FOLDER_RENAME_BUTTON,
+            "folder_delete": MSG.FOLDER_DELETE_BUTTON,
+            "folder_lock_toggle": MSG.FOLDER_LOCK_TOGGLE,
+            "folder_unlock_toggle": MSG.FOLDER_UNLOCK_TOGGLE,
+            "hidden_button": MSG.FOLDER_HIDDEN_BUTTON,
+            "count": MSG.FOLDER_COUNT,
+            "locked_suffix": MSG.FOLDER_LOCKED_SUFFIX,
+            "move_none": MSG.FOLDER_MOVE_TARGET_NONE,
+            "move_button": MSG.FOLDER_MOVE_BUTTON,
+            "lock_items": MSG.COLLECTION_LOCK_ITEMS,
+            "hide_items": MSG.COLLECTION_HIDE_ITEMS,
+            "move": MSG.COLLECTION_MOVED,
+            "state": MSG.COLLECTION_STATE_CHANGED,
+            "need_folder": MSG.FOLDER_PICK_NOTE,
+            "error": MSG.COLLECTION_ACTION_DENIED,
+        },
+    )
 
 
 # ── Buat koleksi ──────────────────────────────────────────────────────────────

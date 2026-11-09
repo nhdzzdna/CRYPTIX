@@ -53,11 +53,9 @@
 
 {% if winamp_available %}
 <div class="alert alert-info">
-  🎵 Winamp terdeteksi — audio dapat diputar langsung di Winamp.<br />
+  🎵 Audio tersedia di halaman Musik dengan pemutar HTML5 dan Winamp.<br />
   <small>{{ temp_warning }}</small>
 </div>
-{% else %}
-<div class="alert alert-warning">⚠ Winamp tidak ditemukan. Pemutaran audio/video memakai pemutar HTML5.</div>
 {% endif %}
 
 <div id="media-alert" class="alert alert-danger" hidden></div>
@@ -155,36 +153,9 @@
 </div>
 
 <div class="card">
-  <div class="card-header">Audio ({{ files|length }})</div>
+  <div class="card-header">Foto dan video</div>
   <div class="card-body">
-    {% if files %}
-    <div class="media-grid">
-      {% for f in files %}
-      <div class="media-item" data-media-item data-file-id="{{ f.id }}"
-           data-kind="audio" data-name="{{ f.original_name }}"
-           data-view-url="{{ f.view_url }}" data-thumb-url="" data-locked="0"
-           data-collection-id="{{ f.collection_id or '' }}">
-        <label class="media-select" title="Pilih">
-          <input type="checkbox" data-select-file value="{{ f.id }}" />
-        </label>
-        <div class="audio-card">
-          <span class="media-icon">🎵</span>
-          <span class="media-name">{{ f.original_name }}</span>
-          <audio controls preload="none"
-                 data-stream-url="{{ f.stream_url }}"
-                 data-stream-resource="{{ f.id }}"></audio>
-          <button type="button" class="btn btn-sm btn-primary mt-1"
-                  data-reauth="media.stream" data-reauth-resource="{{ f.id }}">▶ Putar</button>
-          {% if not f.playable %}
-          <small class="text-muted d-block">{{ download_only_note }}</small>
-          {% endif %}
-        </div>
-      </div>
-      {% endfor %}
-    </div>
-    {% else %}
-    <p class="text-muted">Belum ada audio.</p>
-    {% endif %}
+    <p class="text-muted">Berkas audio dipindahkan ke halaman Musik.</p>
   </div>
 </div>
 
