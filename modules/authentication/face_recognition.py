@@ -33,6 +33,7 @@ import config
 from database.db import get_db
 from modules.authentication import biometrics
 from modules.cryptography.key_management import purpose_key
+from modules.strings import MSG
 
 try:
     import cv2
@@ -82,21 +83,32 @@ def _decode_frame(item) -> np.ndarray | None:
         return None
 
 
-def _deteksi_roi(frame) -> np.ndarray | None:
+def _deteksi_semua_wajah(frame) -> list[np.ndarray]:
     """
-    Deteksi wajah terbesar pada frame dan kembalikan ROI abu-abu 200x200.
+    Deteksi seluruh wajah pada frame dan kembalikan ROI abu-abu 200x200.
 
-    Dipisah sebagai fungsi tersendiri agar dapat diganti pada pengujian.
+    Urutan ROI mengikuti luas wajah dari terbesar ke terkecil. Dipisah agar
+    pendaftaran dapat menolak frame tanpa wajah atau dengan lebih dari satu
+    wajah, dan agar dapat diganti pada pengujian.
     """
     _perlu_cv2()
     if frame is None or getattr(frame, "size", 0) == 0:
-        return None
+        return []
     abu = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     wajah = _get_cascade().detectMultiScale(abu, scaleFactor=1.2, minNeighbors=5)
-    if len(wajah) == 0:
-        return None
-    x, y, w, h = max(wajah, key=lambda kotak: kotak[2] * kotak[3])
-    return cv2.resize(abu[y:y + h, x:x + w], _UKURAN_ROI)
+    kotak = sorted(
+        wajah, key=lambda item: item[2] * item[3], reverse=True
+    )
+    return [
+        cv2.resize(abu[y:y + h, x:x + w], _UKURAN_ROI)
+        for x, y, w, h in kotak
+    ]
+
+
+def _deteksi_roi(frame) -> np.ndarray | None:
+    """Kembalikan ROI wajah terbesar pada frame, atau None bila tidak ada."""
+    wajah = _deteksi_semua_wajah(frame)
+    return wajah[0] if wajah else None
 
 
 def _latih(samples: np.ndarray):
@@ -198,16 +210,26 @@ def daftarkan_wajah(user_id: int, frames: list, dek: bytes) -> dict:
     -------
     dict ``success`` (bool), ``sampel`` (int), dan ``error`` bila gagal.
     """
-    if not isinstance(frames, list):
-        return {"success": False, "error": "Frame wajah tidak valid."}
+    if not isinstance(frames, list) or not frames:
+        return {"success": False, "error": MSG.FACE_NO_FRAMES}
+
     samples: list[np.ndarray] = []
-    for item in frames[:_MAKS_SAMPEL]:
-        roi = _deteksi_roi(_decode_frame(item))
-        if roi is not None:
-            samples.append(roi)
+    terdeteksi = 0
+    for item in frames:
+        wajah = _deteksi_semua_wajah(_decode_frame(item))
+        if len(wajah) > 1:
+            return {"success": False, "error": MSG.FACE_MULTIPLE_FACES}
+        if not wajah:
+            continue
+        terdeteksi += 1
+        if len(samples) < _MAKS_SAMPEL:
+            samples.append(wajah[0])
+
+    if terdeteksi / len(frames) < 0.8:
+        return {"success": False, "error": MSG.FACE_LOW_DETECTION_RATE}
 
     if len(samples) < _MIN_SAMPEL:
-        return {"success": False, "error": "Tidak cukup sampel wajah yang terdeteksi."}
+        return {"success": False, "error": MSG.FACE_NOT_ENOUGH_SAMPLES}
 
     unik = {hashlib.sha256(s.tobytes()).hexdigest() for s in samples}
     if len(unik) < _MIN_VARIASI:

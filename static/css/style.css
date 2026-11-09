@@ -429,6 +429,34 @@ html, body {
   .stats-grid { grid-template-columns: 1fr; }
 }
 
+/* N1: kotak kunci pemulihan dan panduan pendaftaran wajah */
+.recovery-key-box {
+  margin: 12px 0;
+  padding: 14px;
+  border: 1px solid #f0c36d;
+  border-radius: 8px;
+  background: #fff8e6;
+}
+.recovery-key-text {
+  display: block;
+  font-size: 1rem;
+  word-break: break-all;
+  user-select: all;
+}
+.recovery-key-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.face-progress {
+  width: 100%;
+  height: 12px;
+  margin-top: 8px;
+}
+.face-live {
+  font-weight: 600;
+}
 /* --- N3a: galeri album media ------------------------------------------------------------- */
 .album-grid {
   display: grid;

@@ -1,28 +1,51 @@
 {% extends "auth_base.html" %}
-{% block title %}Kunci Pemulihan — CRYPTIX{% endblock %}
+{% block title %}{{ MSG.RECOVERY_PAGE_TITLE }} - CRYPTIX{% endblock %}
 {% block card_class %}style="max-width:560px;"{% endblock %}
-{% block auth_title %}Simpan Kunci Pemulihan{% endblock %}
+{% block auth_title %}{{ MSG.RECOVERY_PAGE_TITLE }}{% endblock %}
 
 {% block auth_content %}
-<p class="form-hint">
-  Kunci ini ditampilkan <strong>satu kali saja</strong> dan tidak dapat dilihat
-  kembali. Simpan di tempat aman; kunci diperlukan untuk membuka kembali data
-  bila kata sandi atau dongle hilang.
-</p>
+<div id="recovery-panel"
+     data-msg-copy-ok="{{ MSG.RECOVERY_COPY_OK }}"
+     data-msg-copy-failed="{{ MSG.RECOVERY_COPY_FAILED }}"
+     data-msg-download-ok="{{ MSG.RECOVERY_DOWNLOAD_OK }}"
+     data-filename="{{ MSG.RECOVERY_FILENAME }}"
+     data-file-header="{{ MSG.RECOVERY_FILE_HEADER }}"
+     data-file-hint="{{ MSG.RECOVERY_FILE_HINT }}">
+  <p class="form-hint">{{ MSG.RECOVERY_KEY_EXPLAIN }}</p>
+  <p class="form-hint">{{ MSG.RECOVERY_ONCE_HINT }}</p>
 
-<div class="alert alert-warning">
-  <code id="recovery-key" style="user-select:all; word-break:break-all;">{{ recovery_key }}</code>
-</div>
-
-<form method="POST" action="{{ next_action or url_for('auth.recovery_confirm') }}">
-  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-  <input type="hidden" name="pending" value="{{ pending }}" />
-  <div class="form-group form-check">
-    <label>
-      <input type="checkbox" name="confirm_saved" id="confirm_saved" value="1" required />
-      Saya sudah menyimpannya
-    </label>
+  <div class="recovery-key-box">
+    <code id="recovery-key" class="recovery-key-text">{{ recovery_key }}</code>
   </div>
-  <button type="submit" class="btn btn-primary btn-full">{{ next_label or 'Lanjut ke Penyiapan Keamanan' }}</button>
-</form>
+
+  <div class="recovery-key-actions">
+    <button type="button" class="btn btn-secondary btn-sm" id="btn-copy-recovery">
+      {{ MSG.RECOVERY_COPY_LABEL }}
+    </button>
+    <button type="button" class="btn btn-secondary btn-sm" id="btn-download-recovery">
+      {{ MSG.RECOVERY_DOWNLOAD_LABEL }}
+    </button>
+  </div>
+  <p id="recovery-status" class="form-hint" role="status" aria-live="polite"></p>
+
+  <form method="POST" action="{{ next_action or url_for('auth.recovery_confirm') }}"
+        id="recovery-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+    <input type="hidden" name="pending" value="{{ pending }}" />
+    <div class="form-group form-check">
+      <label>
+        <input type="checkbox" name="confirm_saved" id="confirm_saved" value="1" required />
+        {{ MSG.RECOVERY_CONFIRM_LABEL }}
+      </label>
+    </div>
+    <button type="submit" class="btn btn-primary btn-full"
+            id="btn-recovery-continue" disabled>
+      {{ next_label or MSG.RECOVERY_CONTINUE_LABEL }}
+    </button>
+  </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/recovery.js') }}"></script>
 {% endblock %}
