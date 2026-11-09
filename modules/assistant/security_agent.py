@@ -29,6 +29,7 @@ from __future__ import annotations
 import re
 from typing import Any
 
+from modules.assistant import knowledge
 from modules.assistant.matcher import cari_topik
 from modules.strings import MSG
 
@@ -103,6 +104,13 @@ _FEATURE_HELP_PATTERNS = re.compile(
     r"jelaskan\s*(fitur|menu|cara\s+(pakai|memakai|kerja))|"
     r"apa\s*itu\s*(" + _FEATURE_MENU_NAMES + r")|"
     r"(" + _FEATURE_MENU_NAMES + r")\s*(itu|adalah|cara|fungsi|apa|bagaimana|digunakan))",
+    re.I,
+)
+
+# Penanda pertanyaan status. Bila muncul, status keamanan tetap diprioritaskan
+# di atas panduan fitur, misalnya "apakah wajah saya terdaftar?".
+_STATUS_MARKERS = re.compile(
+    r"\b(status|terdaftar|aktif|terpasang|sudah|belum|valid|rusak|integritas)\b",
     re.I,
 )
 
@@ -569,6 +577,12 @@ def _handle_explain_log(user_id: int) -> str:
 
 
 def _handle_feature_help(message: str) -> str:
+    # Basis pengetahuan fitur CRYPTIX diperiksa lebih dulu. Bila tidak cocok,
+    # panduan lama tetap dipakai sebagai cadangan.
+    topik = knowledge.cari_topik(message)
+    if topik is not None:
+        return f"## ℹ️ {topik.judul}\n\n{topik.jawaban}"
+
     msg_lower = message.lower()
     for keywords, explanation in _FEATURE_KB.items():
         for kw in keywords.split("|"):
@@ -618,10 +632,12 @@ def classify_intent(message: str) -> str:
     Check order (most-specific first to avoid false matches):
       1. password_check — checked before security_status to avoid "password aman?" → status
       2. feature_help   — checked before security_status to avoid "cara pakai USB" → status
-      3. security_status
-      4. encryption_advice
-      5. explain_log
-      6. fallback
+      3. feature_help   — topik pengetahuan spesifik tanpa penanda status/log
+      4. security_status
+      5. encryption_advice
+      6. explain_log
+      7. feature_help   — sisa pertanyaan cara pakai/fitur
+      8. fallback
 
     Parameters
     ----------
@@ -636,12 +652,24 @@ def classify_intent(message: str) -> str:
         return "password_check"
     if _FEATURE_HELP_PATTERNS.search(message):
         return "feature_help"
+    # Panduan fitur yang spesifik (mis. "catatan aman") menang atas kata status
+    # yang terlalu umum, kecuali pesan memang memuat penanda status atau
+    # meminta ringkasan log aktivitas.
+    if not _STATUS_MARKERS.search(message) and not _EXPLAIN_LOG_PATTERNS.search(
+        message
+    ):
+        if knowledge.cari_topik(message) is not None:
+            return "feature_help"
     if _SECURITY_STATUS_PATTERNS.search(message):
         return "security_status"
     if _ENCRYPTION_ADVICE_PATTERNS.search(message):
         return "encryption_advice"
     if _EXPLAIN_LOG_PATTERNS.search(message):
         return "explain_log"
+    # Pertanyaan cara pakai/fitur yang tidak tertangkap pola di atas tetap
+    # dijawab dari basis pengetahuan sebagai panduan fitur.
+    if knowledge.cari_topik(message) is not None:
+        return "feature_help"
     return "fallback"
 
 

@@ -185,6 +185,324 @@ class MSG:
     ERROR_TOO_LARGE           = "Ukuran berkas melebihi batas maksimum yang diizinkan."
     ERROR_INTERNAL            = "Terjadi kesalahan internal. Silakan coba kembali beberapa saat lagi."
     FACE_DETECTOR_UNAVAILABLE = "Detektor wajah tidak tersedia. Periksa pemasangan OpenCV."
+
+    # ── Security Assistant: basis pengetahuan fitur ───────────────────────────
+    ASSISTANT_KB_DAFTAR_AKUN = (
+        "Buka halaman **Daftar**, isi nama pengguna, email, dan kata sandi, lalu "
+        "pilih **Dongle USB** yang terpasang sebelum menekan **Daftar**.\n"
+        "• Kata sandi minimal 12 karakter dan harus memuat minimal 3 dari 4 jenis "
+        "karakter: huruf kecil, huruf besar, angka, dan simbol.\n"
+        "• Kata sandi tidak boleh memuat nama pengguna atau termasuk daftar kata "
+        "sandi umum.\n"
+        "• Setelah pendaftaran, kunci pemulihan ditampilkan satu kali. Simpan "
+        "kunci itu di tempat aman.\n"
+        "• Pendaftaran memerlukan dongle, kecuali mode pengembangan memakai folder "
+        "dongle simulasi."
+    )
+    ASSISTANT_KB_LOGIN_DUA_TAHAP = (
+        "Login berlangsung dalam dua tahap.\n"
+        "• **Tahap 1**: isi nama pengguna dan kata sandi, pastikan dongle "
+        "terpasang, lalu klik **Masuk**.\n"
+        "• **Tahap 2**: selesaikan verifikasi biometrik memakai WebAuthn atau "
+        "wajah melalui tombol **Verifikasi**.\n"
+        "• Kunci sesi sementara di server hanya berlaku sekitar 3 menit. Bila "
+        "kedaluwarsa, mulai lagi dari tahap 1."
+    )
+    ASSISTANT_KB_DONGLE_USB = (
+        "Dongle adalah lapisan autentikasi tambahan berupa flashdisk.\n"
+        "• Saat didaftarkan, CRYPTIX menulis berkas `.cryptix_token` berisi token "
+        "dan rahasia acak ke dongle.\n"
+        "• Server hanya menyimpan ID token, verifier HMAC-SHA256, dan serial "
+        "volume; rahasia dongle tidak disimpan sebagai plaintext.\n"
+        "• Setiap permintaan sesi memeriksa keberadaan dan kecocokan dongle. Bila "
+        "dongle dicabut, sesi diakhiri.\n"
+        "• Daftar ulang lewat **Settings → 🔐 Perangkat & Sesi → USB Token / "
+        "Dongle → 🔌 Daftar Ulang Dongle**."
+    )
+    ASSISTANT_KB_SETUP_AWAL = (
+        "Setelah akun dibuat, halaman **/setup** meminta Anda mendaftarkan minimal "
+        "satu biometrik sebelum menu lain dapat dibuka.\n"
+        "• Pilih **Daftarkan Wajah (30 frame / 3 detik)** atau **Daftarkan "
+        "WebAuthn**.\n"
+        "• Tidak ada tombol lewati; penyiapan ini wajib agar login dua tahap dapat "
+        "diselesaikan.\n"
+        "• Pendaftaran wajah memerlukan kamera dan detektor wajah OpenCV yang "
+        "tersedia."
+    )
+    ASSISTANT_KB_WAJAH = (
+        "Buka **Settings → 🧬 Autentikasi Biometrik → 📷 Daftar Ulang Wajah** atau "
+        "halaman setup.\n"
+        "• Pendaftaran memerlukan minimal 30 frame dan sekitar 3 detik.\n"
+        "• Sistem menyimpan 25–60 sampel ROI dan menolak bila kurang dari 5 sampel "
+        "yang berbeda.\n"
+        "• Yang disimpan hanya templat ROI terenkripsi AES-256-GCM dengan format "
+        "`FG1 + nonce + ciphertext`, bukan foto wajah.\n"
+        "• Pendaftaran gagal bila detektor wajah OpenCV tidak tersedia."
+    )
+    ASSISTANT_KB_VERIFIKASI_WAJAH = (
+        "Saat login tahap 2, pilih verifikasi wajah dan hadapkan wajah ke kamera.\n"
+        "• Sistem memerlukan minimal 5 frame, menolak rangkaian frame yang identik, "
+        "dan menerima bila minimal 3 frame lolos.\n"
+        "• Median keyakinan harus berada pada ambang yang ditetapkan; nilai default "
+        "adalah 70.\n"
+        "• Tidak ada deteksi liveness atau anti-spoof. Pastikan hanya Anda yang "
+        "berada di depan kamera."
+    )
+    ASSISTANT_KB_WEBAUTHN = (
+        "WebAuthn memakai authenticator platform seperti Windows Hello, sidik jari "
+        "perangkat, atau kunci keamanan, dengan user verification wajib.\n"
+        "• Daftarkan lewat **Settings → 🧬 Autentikasi Biometrik → WebAuthn → 🔐 "
+        "Tambah WebAuthn** atau halaman setup.\n"
+        "• Tantangan berlaku 300 detik dan hanya dapat dipakai sekali.\n"
+        "• Kredensial disimpan di database dan dapat dihapus dari halaman yang "
+        "sama."
+    )
+    ASSISTANT_KB_BIOMETRIK = (
+        "CRYPTIX mendukung dua metode biometrik: **WebAuthn** dan **wajah**.\n"
+        "• WebAuthn memakai authenticator platform atau kunci keamanan.\n"
+        "• Wajah diverifikasi melalui kamera dengan templat ROI terenkripsi.\n"
+        "• Kebijakan default `all_enrolled`: semua metode yang terdaftar harus "
+        "lolos saat login tahap 2.\n"
+        "• Anda tidak dapat menghapus satu-satunya metode biometrik; daftarkan "
+        "metode lain terlebih dahulu."
+    )
+    ASSISTANT_KB_KUNCI_PEMULIHAN = (
+        "Kunci pemulihan dibuat saat pendaftaran dan ditampilkan satu kali.\n"
+        "• Kunci ini membungkus DEK secara terpisah dari kata sandi dan dongle, "
+        "sehingga akses dapat dipulihkan bila kata sandi atau dongle hilang.\n"
+        "• Simpan kunci di tempat aman dan jangan membagikannya.\n"
+        "• Tidak ada escrow di server. Bila kunci pemulihan hilang, data "
+        "terenkripsi tidak dapat dipulihkan."
+    )
+    ASSISTANT_KB_PEMULIHAN_AKUN = (
+        "Buka halaman **/account-recovery**, lalu isi nama pengguna, kunci "
+        "pemulihan, kata sandi baru, dan pilih dongle baru yang terpasang. Klik "
+        "**Pulihkan Akun**.\n"
+        "• CRYPTIX membuka DEK lama dengan kunci pemulihan, membungkus ulang DEK "
+        "dengan kata sandi dan dongle baru, lalu menampilkan kunci pemulihan baru.\n"
+        "• DEK tidak berubah, sehingga berkas dan templat wajah lama tetap valid.\n"
+        "• Tanpa kunci pemulihan, pemulihan tidak mungkin dilakukan."
+    )
+    ASSISTANT_KB_GANTI_PASSWORD = (
+        "Buka **Settings → Ganti Password**, isi kata sandi lama, kata sandi baru, "
+        "dan konfirmasi, lalu klik **Ganti Password**.\n"
+        "• Kata sandi baru harus memenuhi kebijakan: minimal 12 karakter, minimal "
+        "3 dari 4 jenis karakter, bukan kata sandi umum, dan tidak memuat nama "
+        "pengguna.\n"
+        "• CRYPTIX membungkus ulang DEK dengan kata sandi baru, mereset hitungan "
+        "gagal login, lalu mengakhiri sesi.\n"
+        "• Dongle harus terpasang selama proses ini."
+    )
+    ASSISTANT_KB_REVEAL_AKUN = (
+        "Di **Account Vault**, klik **👁 Tampilkan** pada kredensial yang ingin "
+        "dilihat.\n"
+        "• CRYPTIX meminta autentikasi ulang lewat modal **Verifikasi** atau "
+        "**Biometrik**.\n"
+        "• Setelah berhasil, grant sekali pakai berlaku 120 detik untuk scope "
+        "`account.reveal`.\n"
+        "• Username dan kata sandi hanya didekripsi untuk tampilan sementara; "
+        "setiap reveal baru memerlukan grant baru.\n"
+        "• Edit memakai scope `account.reveal`, hapus memakai `item.delete`, dan "
+        "aksi ini dibatasi 20 permintaan per menit."
+    )
+    ASSISTANT_KB_ACCOUNT_VAULT = (
+        "**Account Vault** menyimpan kredensial situs: nama situs, username, kata "
+        "sandi, URL, dan catatan.\n"
+        "• Setiap field dienkripsi terpisah dengan AES-256-GCM dalam format "
+        "`v1:<nonce>:<ciphertext>`.\n"
+        "• AAD mengikat `user_id`, nama tabel, dan nama kolom.\n"
+        "• Tambah lewat **Tambah Kredensial → 🔒 Simpan Terenkripsi**.\n"
+        "• Username ditampilkan tersamar sampai grant reveal dipakai."
+    )
+    ASSISTANT_KB_CATATAN_AMAN = (
+        "**Secure Notes** menyimpan judul dan isi catatan rahasia.\n"
+        "• Isi catatan di-Super-Encrypt lebih dahulu, lalu seluruh field dienkripsi "
+        "AES-256-GCM sebelum masuk database.\n"
+        "• Tambah lewat **Tambah Catatan → 🔒 Simpan Terenkripsi**.\n"
+        "• Untuk membaca, klik **📖 Buka**.\n"
+        "• Buka, edit, dan hapus memerlukan grant autentikasi ulang serta dibatasi "
+        "20 permintaan per menit."
+    )
+    ASSISTANT_KB_UNGGAH_BERKAS = (
+        "Buka **My Vault**, pilih berkas lewat **Upload File Baru**, lalu klik "
+        "**🔒 Enkripsi & Upload**.\n"
+        "• Berkas dienkripsi AES-256-GCM per potongan 1 MiB dengan header "
+        "`CRYPTIX1`, salt acak, dan AAD yang mengikat pengguna serta metadata.\n"
+        "• Unduh lewat **⬇ Unduh**; aksi ini memerlukan grant `file.download` dan "
+        "SHA-256 plaintext diperiksa setelah dekripsi.\n"
+        "• Batas unggah 64 MB dan hanya ekstensi yang diizinkan.\n"
+        "• Halaman **Documents** hanya menampilkan berkas bertipe dokumen dari "
+        "My Vault; unggah dan hapus tetap dilakukan di My Vault."
+    )
+    ASSISTANT_KB_MEDIA_VAULT = (
+        "**Media Vault** menyimpan audio dan video terenkripsi.\n"
+        "• Unggah lewat **Upload Media → 🔒 Enkripsi & Upload**, lalu putar dengan "
+        "**▶ Putar**.\n"
+        "• Streaming memakai HTTP Range sehingga plaintext tidak ditulis ke disk.\n"
+        "• Format yang dapat diputar: mp4, webm, mp3, wav, ogg, m4a, dan flac. AVI, "
+        "MKV, dan MOV hanya dapat diunduh.\n"
+        "• Tombol **🎵 Winamp** mendekripsi ke berkas sementara, membukanya di "
+        "Winamp, lalu menghapusnya setelah 60 detik dengan upaya penimpaan nol. "
+        "Fitur ini memerlukan `WINAMP_PATH` yang valid."
+    )
+    ASSISTANT_KB_STEGANOGRAFI = (
+        "Buka **Steganography**, pilih gambar carrier PNG/JPG/BMP dengan ukuran "
+        "maksimal 4000×4000, tentukan muatan **Teks** atau **Berkas**, isi "
+        "passphrase bila perlu, lalu klik **🖼 Sisipkan**.\n"
+        "• Muatan teks di-Super-Encrypt secara default; muatan berkas selalu "
+        "dienkripsi AES-256-GCM.\n"
+        "• Kapasitas sekitar `(lebar × tinggi × 3 − 112) / 8` byte.\n"
+        "• Hasil selalu PNG; menyimpan ulang sebagai JPEG akan merusak muatan.\n"
+        "• Ekstrak lewat **Ekstrak dari Gambar Unggahan → 🔍 Ekstrak**."
+    )
+    ASSISTANT_KB_VERIFIKASI_INTEGRITAS = (
+        "Buka **Security Center** lalu klik **🔍 Verifikasi Integritas**.\n"
+        "• CRYPTIX menghitung ulang hash setiap blok, proof-of-work ringan, dan "
+        "tanda tangan HMAC-SHA256.\n"
+        "• Head hash dibandingkan dengan jangkar di `instance/chain_head.json` dan "
+        "berkas dongle bila tersedia.\n"
+        "• Status aset Anda: **OK**, **DIUBAH**, **HILANG**, atau **TANPA "
+        "CATATAN**.\n"
+        "• Ini rantai lokal single-node, sehingga bersifat tamper-evident, bukan "
+        "tamper-proof."
+    )
+    ASSISTANT_KB_SECURITY_CENTER = (
+        "**Security Center** menampilkan statistik rantai, blok aktivitas milik "
+        "Anda, dan status aset.\n"
+        "• Tombol **🔍 Verifikasi Integritas** memeriksa seluruh rantai dan aset "
+        "Anda.\n"
+        "• Status aset yang ditampilkan: OK, DIUBAH, HILANG, atau TANPA CATATAN.\n"
+        "• Ringkasan verifikasi terakhir disimpan di memori proses dan hilang saat "
+        "server restart.\n"
+        "• Gunakan halaman ini untuk menindaklanjuti blok yang ditandai rusak."
+    )
+    ASSISTANT_KB_BATAS_SESI = (
+        "Batas diam sesi default 10 menit dan batas absolut 60 menit.\n"
+        "• Ubah batas diam lewat **Settings → 🔐 Perangkat & Sesi → Batas Diam "
+        "Sesi → Simpan Batas Sesi**.\n"
+        "• Cookie hanya memuat ID sesi acak; kunci enkripsi sesi disimpan di memori "
+        "server.\n"
+        "• Saat batas tercapai, sesi berakhir dan Anda harus login ulang.\n"
+        "• Karena penyimpanan di memori, restart server juga mengakhiri semua sesi."
+    )
+    ASSISTANT_KB_AKUN_TERKUNCI = (
+        "Akun terkunci sementara setelah percobaan login gagal berulang.\n"
+        "• 5 kali gagal → 60 detik; 10 kali → 5 menit; 15 kali → 15 menit; 20 kali "
+        "atau lebih → 30 menit.\n"
+        "• Hitungan mencakup kata sandi salah, dongle tidak cocok atau tidak "
+        "terpasang, dan kegagalan membuka kunci.\n"
+        "• Login yang berhasil mereset hitungan.\n"
+        "• Tidak ada pembukaan manual; tunggu hingga masa kunci berakhir lalu coba "
+        "lagi."
+    )
+    ASSISTANT_KB_SUPER_ENCRYPTION = (
+        "**Super Encryption** menggabungkan empat lapisan secara berurutan: "
+        "Vigenère → Playfair → ChaCha20 → Blowfish-CBC.\n"
+        "• Setiap pesan memakai salt acak 16 byte dan kunci turunan HKDF.\n"
+        "• Hasil diakhiri HMAC-SHA256 (encrypt-then-MAC) dengan format "
+        "`CXSE2.<salt>.<token>.<mac>`.\n"
+        "• Gunakan di **Crypto Tools** dengan memilih **Super Encryption (Semua "
+        "Layer)** dan mengisi passphrase.\n"
+        "• Ini komposisi edukatif, bukan skema AEAD standar."
+    )
+    ASSISTANT_KB_AES_GCM = (
+        "CRYPTIX memakai **AES-256-GCM** untuk berkas, kredensial, catatan, "
+        "templat wajah, dan muatan steganografi.\n"
+        "• Berkas memakai format `CRYPTIX1` dengan salt acak 16 byte, nonce per "
+        "potongan, dan AAD yang mengikat pengguna serta metadata.\n"
+        "• Kunci diturunkan dari DEK sesi melalui HKDF dengan label berbeda per "
+        "tujuan.\n"
+        "• GCM memberi kerahasiaan sekaligus deteksi perubahan melalui tag "
+        "autentikasi."
+    )
+    ASSISTANT_KB_ENKRIPSI_DATABASE = (
+        "Berkas SQLite tidak dienkripsi seluruhnya; yang dienkripsi adalah field "
+        "sensitif.\n"
+        "• Kredensial dan catatan disimpan sebagai `v1:<nonce>:<ciphertext>` "
+        "dengan AES-256-GCM.\n"
+        "• AAD mengikat `user_id`, nama tabel, dan nama kolom.\n"
+        "• Kunci berasal dari DEK sesi melalui HKDF dengan label khusus database, "
+        "terpisah dari kunci berkas.\n"
+        "• Salinan berkas database tetap memuat metadata, tetapi bukan plaintext "
+        "field sensitif."
+    )
+    ASSISTANT_KB_MODE_PENGEMBANGAN = (
+        "Mode pengembangan diaktifkan dengan `CRYPTIX_DEV_MODE=True`.\n"
+        "• CRYPTIX memakai folder simulasi sebagai dongle bila tidak ada "
+        "flashdisk.\n"
+        "• Endpoint verifikasi wajah ikut mengembalikan keyakinan per frame dan "
+        "median.\n"
+        "• Mode ini melemahkan asumsi keamanan perangkat keras, sehingga hanya "
+        "untuk pengembangan, bukan penggunaan sehari-hari."
+    )
+    ASSISTANT_KB_CRYPTO_TOOLS = (
+        "**Crypto Tools** menguji algoritma secara mandiri.\n"
+        "• **Vigenère**: substitusi klasik pada ASCII 32–126.\n"
+        "• **Playfair**: digram 5×5 dengan J digabung ke I.\n"
+        "• **ChaCha20**: stream cipher dengan nonce acak 16 byte.\n"
+        "• **Blowfish-CBC**: block cipher dengan PKCS#7 dan IV acak 8 byte.\n"
+        "• **Super Encryption**: empat lapisan ditambah HMAC-SHA256.\n"
+        "• Pilih algoritma dan operasi Enkripsi/Dekripsi, lalu klik **⚙ Proses**. "
+        "Hasil tidak disimpan."
+    )
+    ASSISTANT_KB_DASHBOARD = (
+        "**Dashboard** merangkum kondisi akun Anda.\n"
+        "• Jumlah berkas, kredensial, catatan, dan gambar stego.\n"
+        "• Kapasitas penyimpanan terpakai.\n"
+        "• Status dongle terpasang dan metode biometrik terdaftar (WebAuthn dan "
+        "wajah).\n"
+        "• Hasil verifikasi rantai terakhir beserta jangkar kepala.\n"
+        "• Lima aktivitas terbaru milik Anda dari log audit."
+    )
+    ASSISTANT_KB_REAUTH = (
+        "Autentikasi ulang atau step-up diminta saat membuka data sensitif atau "
+        "mengubah pengaturan.\n"
+        "• CRYPTIX menampilkan modal **Verifikasi** untuk kata sandi atau "
+        "**Biometrik** untuk WebAuthn/wajah.\n"
+        "• Grant umumnya berlaku sekali pakai selama 120 detik dan terikat pada "
+        "sesi, scope, serta resource. Khusus `media.stream`, grant dapat dipakai "
+        "ulang selama 15 menit.\n"
+        "• Grant dikirim lewat header `X-Reauth-Grant` atau field `reauth_grant`, "
+        "tidak lewat URL.\n"
+        "• Grant disimpan di memori dan hilang saat server restart."
+    )
+    ASSISTANT_KB_CSRF = (
+        "Semua permintaan pengubah data wajib menyertakan token CSRF.\n"
+        "• Halaman menyediakan token pada meta `csrf-token`.\n"
+        "• Form menyertakan token sebagai field tersembunyi, sedangkan JavaScript "
+        "mengirimnya lewat header `X-CSRFToken`.\n"
+        "• Tanpa token yang cocok, server menolak permintaan.\n"
+        "• Jangan membuka CRYPTIX lewat situs lain atau membagikan token Anda."
+    )
+    ASSISTANT_KB_RATE_LIMIT = (
+        "CRYPTIX membatasi laju permintaan untuk mencegah penyalahgunaan.\n"
+        "• Login 15/menit, verifikasi wajah 20/menit, dan autentikasi ulang "
+        "20/menit.\n"
+        "• Pemulihan akun 10/menit.\n"
+        "• Reveal, edit, dan hapus data sensitif 20/menit.\n"
+        "• Batas dihitung per sesi pengguna dengan cadangan alamat IP. Bila terkena "
+        "batas, tunggu sebentar lalu coba lagi."
+    )
+    ASSISTANT_KB_LOGOUT = (
+        "Sesi login memakai cookie yang hanya berisi ID sesi acak; DEK dan kunci "
+        "turunannya disimpan di memori server.\n"
+        "• **Logout** tersedia lewat tombol POST di sidebar.\n"
+        "• CRYPTIX menulis blok LOGOUT, menghapus kunci sesi server, dan "
+        "membersihkan cookie.\n"
+        "• Tidak ada fitur logout semua perangkat.\n"
+        "• Restart server juga mengakhiri semua sesi."
+    )
+    ASSISTANT_KB_ASSISTANT = (
+        "**Security Assistant** berbasis aturan: tanpa model bahasa dan tanpa "
+        "panggilan jaringan.\n"
+        "• Ia dapat menjelaskan status keamanan akun, merekomendasikan enkripsi, "
+        "memeriksa kekuatan kata sandi, merangkum log aktivitas, dan menjawab "
+        "panduan fitur.\n"
+        "• Riwayat disimpan di server, maksimal 40 entri per sesi, dan tidak masuk "
+        "cookie.\n"
+        "• Kolom password terpisah hanya diproses di memori; riwayat mencatat "
+        "`[password diperiksa]`."
+    )
     # ── N1: kunci pemulihan, pendaftaran wajah, username tersamar ─────────────
     RECOVERY_PAGE_TITLE       = "Simpan Kunci Pemulihan"
     RECOVERY_KEY_EXPLAIN      = "Kunci ini membuka akun bila password atau dongle hilang. Tidak dapat ditampilkan lagi."
