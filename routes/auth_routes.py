@@ -769,7 +769,7 @@ def verify_face():
 @login_required
 @require_grant("settings.change")
 def register_usb():
-    """Tulis berkas token ke dongle terpilih (atau drive pertama) dan simpan verifier."""
+    """Tulis berkas token ke dongle terpilih dan simpan verifier."""
     dek = session_keys.get(session.get("session_id", ""))
     if dek is None:
         return jsonify({"success": False, "error": MSG.SESSION_EXPIRED}), 401
