@@ -25,21 +25,40 @@ document.addEventListener("DOMContentLoaded", function () {
 
   function tampilkanGalat(el, pesan) {
     el.textContent = pesan || "";
-    el.style.color = pesan ? "#ef4444" : "";
+    el.classList.toggle("visible", Boolean(pesan));
   }
 
   // ── Status dongle pada mesin ini (tanpa username) ─────────────────────────
+  // Badge hijau bila terdeteksi, kuning bila tidak (warna via class CSS).
   const statusDongle = document.getElementById("dongle-status");
+  const statusDongleTeks = document.getElementById("dongle-status-text");
+  function aturStatusDongle(pesan, kelas) {
+    if (statusDongleTeks) {
+      statusDongleTeks.textContent = pesan;
+    } else if (statusDongle) {
+      statusDongle.textContent = pesan;
+    }
+    if (statusDongle) {
+      statusDongle.classList.remove("is-ok", "is-off");
+      if (kelas) {
+        statusDongle.classList.add(kelas);
+      }
+    }
+  }
   apiFetch("/api/dongle/status")
     .then(function (r) { return r.json(); })
     .then(function (data) {
-      statusDongle.textContent = data.detected
-        ? "Dongle terdeteksi."
-        : "Dongle tidak terdeteksi — colokkan dongle lalu muat ulang halaman.";
-      statusDongle.style.color = data.detected ? "#22c55e" : "#ef4444";
+      if (data.detected) {
+        aturStatusDongle("Dongle terdeteksi.", "is-ok");
+      } else {
+        aturStatusDongle(
+          "Dongle tidak terdeteksi — colokkan dongle lalu muat ulang halaman.",
+          "is-off"
+        );
+      }
     })
     .catch(function () {
-      statusDongle.textContent = "Status dongle tidak dapat diperiksa.";
+      aturStatusDongle("Status dongle tidak dapat diperiksa.", null);
     });
 
   // ── Tahap 1 ───────────────────────────────────────────────────────────────
