@@ -331,7 +331,12 @@ a { color: var(--accent-primary); }
   padding: 28px;
 }
 
-/* ── Auth pages ─────────────────────────────────────────────────────────────── */
+/* ── Auth pages ───────────────────────────────────────────────────────────────
+   Halaman autentikasi memakai split layout: panel kiri branding CRYPTIX dengan
+   pola grid kunci, panel kanan form. Kelas dasar (.auth-page, .auth-container,
+   .auth-card, .auth-logo, .auth-title, .auth-link) tetap dipakai oleh
+   templates/error.html sehingga tampilan halaman error tidak berubah.
+   ─────────────────────────────────────────────────────────────────────────── */
 .auth-page {
   display: flex;
   align-items: center;
@@ -378,6 +383,402 @@ a { color: var(--accent-primary); }
 }
 .auth-link a { color: var(--accent-primary); text-decoration: none; }
 .auth-link a:hover { text-decoration: underline; }
+
+/* ── Auth: split layout (login, daftar, pemulihan) ─────────────────────────── */
+.auth-page:has(> .auth-shell) { padding: 0; }
+.auth-shell {
+  width: 100%;
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: minmax(380px, 44%) 1fr;
+}
+
+/* Panel kiri: branding + pola grid kunci */
+.auth-brand-panel {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 56px 56px 48px;
+  background:
+    radial-gradient(ellipse 90% 65% at 12% 8%, rgba(45, 212, 191, .07), transparent 60%),
+    var(--bg-surface);
+  border-right: 1px solid var(--border-primary);
+}
+.auth-brand-grid {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  opacity: .5;
+  mask-image: radial-gradient(ellipse 85% 75% at 35% 45%, #000 25%, transparent 78%);
+  -webkit-mask-image: radial-gradient(ellipse 85% 75% at 35% 45%, #000 25%, transparent 78%);
+}
+.auth-brand-grid .grid-line {
+  fill: none;
+  stroke: var(--border-primary);
+  stroke-width: 1;
+}
+.auth-brand-grid .key-mark {
+  fill: none;
+  stroke: var(--accent-primary);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  opacity: .45;
+}
+.auth-brand-inner {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+  max-width: 460px;
+}
+.auth-brand-panel .auth-logo {
+  justify-content: flex-start;
+  gap: 12px;
+  margin-bottom: 0;
+  font-size: 1.4rem;
+  letter-spacing: .14em;
+}
+.auth-brand-panel .auth-logo .logo-icon {
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  border: 1px solid rgba(45, 212, 191, .32);
+  background: var(--accent-soft);
+}
+.auth-brand-panel .auth-logo .logo-icon svg { width: 24px; height: 24px; }
+.auth-brand-title {
+  font-family: var(--font-display);
+  font-size: 1.65rem;
+  font-weight: 600;
+  line-height: 1.28;
+  color: var(--text-primary);
+  margin: 0 0 10px;
+  max-width: 21ch;
+}
+.auth-brand-tagline {
+  margin: 0;
+  font-size: .92rem;
+  line-height: 1.65;
+  color: var(--text-secondary);
+  max-width: 42ch;
+}
+.auth-brand-points {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 14px;
+}
+.auth-brand-points li {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: .86rem;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+.auth-brand-points svg {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  color: var(--accent-primary);
+}
+.auth-brand-foot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  padding-top: 18px;
+  border-top: 1px solid var(--border-primary);
+  font-size: .78rem;
+  color: var(--text-secondary);
+}
+.auth-brand-foot svg { flex: none; width: 15px; height: 15px; color: var(--accent-primary); }
+
+/* Panel kanan: form autentikasi.
+   "safe center" mencegah form panjang terpotong di layar pendek; baris
+   sebelumnya adalah fallback untuk peramban lama. */
+.auth-form-panel {
+  display: flex;
+  align-items: center;
+  align-items: safe center;
+  justify-content: center;
+  padding: 48px 24px;
+}
+.auth-shell .auth-container { max-width: 500px; }
+.auth-shell .auth-card {
+  padding: 34px 32px;
+  box-shadow: var(--shadow-lg);
+}
+.auth-card-head { margin-bottom: 22px; }
+.auth-shell .auth-title {
+  text-align: left;
+  font-size: 1.4rem;
+  margin-bottom: 6px;
+}
+.auth-subtitle {
+  margin: 0;
+  font-size: .88rem;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+.auth-subtitle:empty { display: none; }
+.auth-flash .alert:last-child { margin-bottom: 18px; }
+.auth-card .btn svg { width: 16px; height: 16px; }
+
+/* Input password dengan tombol tampil/sembunyikan */
+.auth-input-wrap { position: relative; display: flex; align-items: center; }
+.auth-input-wrap .form-control { padding-right: 46px; }
+.auth-pw-toggle {
+  position: absolute;
+  right: 5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: color var(--transition), background-color var(--transition);
+}
+.auth-pw-toggle:hover { color: var(--text-primary); background: var(--bg-hover); }
+.auth-pw-toggle:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.auth-pw-toggle svg { width: 17px; height: 17px; }
+
+/* Meteran kekuatan password (petunjuk visual kebijakan server) */
+.auth-pw-meter { margin-top: 8px; }
+.auth-pw-meter-bar {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 5px;
+}
+.auth-pw-seg {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--border-primary);
+  transition: background-color var(--transition);
+}
+.auth-pw-meter-label {
+  margin: 6px 0 0;
+  font-size: .78rem;
+  color: var(--text-secondary);
+  min-height: 1.2em;
+}
+.auth-pw-meter[data-level="1"] .auth-pw-seg.on { background: var(--status-danger); }
+.auth-pw-meter[data-level="2"] .auth-pw-seg.on { background: var(--status-warning); }
+.auth-pw-meter[data-level="3"] .auth-pw-seg.on { background: var(--accent-primary); }
+.auth-pw-meter[data-level="4"] .auth-pw-seg.on { background: var(--status-success); }
+.auth-pw-meter[data-level="1"] .auth-pw-meter-label { color: var(--status-danger); }
+.auth-pw-meter[data-level="3"] .auth-pw-meter-label { color: var(--accent-primary); }
+.auth-pw-meter[data-level="4"] .auth-pw-meter-label { color: var(--status-success); }
+
+/* Badge status dongle pada halaman masuk */
+.auth-dongle-badge {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 13px;
+  margin: 2px 0 16px;
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius);
+  background: var(--bg-primary);
+  color: var(--text-secondary);
+  font-size: .82rem;
+  line-height: 1.45;
+  transition: border-color var(--transition), background-color var(--transition),
+              color var(--transition);
+}
+.auth-dongle-badge svg { flex: none; width: 16px; height: 16px; }
+.auth-dongle-badge.is-ok {
+  border-color: rgba(34, 197, 94, .35);
+  background: rgba(34, 197, 94, .09);
+  color: #86EFAC;
+}
+.auth-dongle-badge.is-off {
+  border-color: rgba(234, 179, 8, .38);
+  background: rgba(234, 179, 8, .09);
+  color: #FDE68A;
+}
+
+/* Pesan galat di bawah field terkait */
+.auth-field-error {
+  display: none;
+  font-size: .8rem;
+  color: var(--status-danger);
+  margin: 6px 0 14px;
+}
+.auth-field-error.visible { display: block; }
+
+/* Tautan balikan di bawah tombol utama */
+.auth-alt-links { margin-top: 18px; }
+.auth-alt-links .auth-link { margin-top: 8px; }
+.auth-alt-links .auth-link:first-child { margin-top: 0; }
+
+/* Tahap 2 login: verifikasi biometrik */
+.auth-stage-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 13px;
+  margin-bottom: 18px;
+}
+.auth-stage-icon {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  border: 1px solid rgba(45, 212, 191, .32);
+  background: var(--accent-soft);
+  color: var(--accent-primary);
+}
+.auth-stage-icon svg { width: 22px; height: 22px; }
+.auth-stage-title {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  color: var(--text-primary);
+  margin: 0 0 3px;
+}
+.auth-method-list {
+  list-style: none;
+  margin: 0 0 14px;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.auth-method-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius);
+  background: var(--bg-primary);
+  font-size: .88rem;
+  color: var(--text-primary);
+}
+.auth-method-list li::before {
+  content: "";
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent-primary);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+/* Kotak informasi (biru) dan peringatan (kuning) */
+.auth-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  padding: 13px 15px;
+  margin-bottom: 20px;
+  border-radius: var(--radius);
+  font-size: .84rem;
+  line-height: 1.55;
+}
+.auth-note svg { flex: none; width: 17px; height: 17px; margin-top: 2px; }
+.auth-note p { margin: 0; }
+.auth-note-info {
+  background: rgba(96, 165, 250, .09);
+  border: 1px solid rgba(96, 165, 250, .32);
+  color: #BFDBFE;
+}
+.auth-note-warning {
+  background: rgba(234, 179, 8, .08);
+  border: 1px solid rgba(234, 179, 8, .32);
+  color: #FDE68A;
+}
+
+/* Dropdown dongle + tombol muat ulang */
+.auth-dongle-row {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+}
+.auth-dongle-row select.form-control { flex: 1; min-width: 0; }
+.auth-dongle-row .btn { flex: none; white-space: nowrap; }
+.auth-dongle-row .btn svg { width: 15px; height: 15px; }
+.auth-dongle-row .btn.is-loading svg {
+  animation: auth-spin .8s linear infinite;
+}
+@keyframes auth-spin { to { transform: rotate(360deg); } }
+.auth-dongle-status {
+  margin: 6px 0 0;
+  font-size: .78rem;
+  color: var(--text-secondary);
+  min-height: 1.1em;
+}
+.auth-dongle-status.is-warning { color: var(--status-warning); }
+
+/* Input monospace (kunci pemulihan) */
+.auth-mono-input {
+  font-family: var(--font-mono);
+  font-size: .84rem;
+  letter-spacing: .03em;
+  line-height: 1.7;
+}
+
+/* Responsif auth: tablet dan ponsel */
+@media (max-width: 1024px) {
+  .auth-shell { grid-template-columns: minmax(300px, 41%) 1fr; }
+  .auth-brand-panel { padding: 44px 36px 40px; }
+  .auth-brand-inner { gap: 24px; }
+  .auth-brand-title { font-size: 1.45rem; }
+  .auth-form-panel { padding: 40px 20px; }
+}
+
+@media (max-width: 860px) {
+  .auth-shell { grid-template-columns: 1fr; min-height: 0; }
+  .auth-brand-panel {
+    flex-direction: row;
+    align-items: center;
+    padding: 16px 20px;
+    border-right: none;
+    border-bottom: 1px solid var(--border-primary);
+  }
+  .auth-brand-grid { opacity: .35; }
+  .auth-brand-inner {
+    flex-direction: row;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+    max-width: none;
+  }
+  .auth-brand-panel .auth-logo { font-size: 1.1rem; }
+  .auth-brand-panel .auth-logo .logo-icon { width: 36px; height: 36px; border-radius: 10px; }
+  .auth-brand-panel .auth-logo .logo-icon svg { width: 20px; height: 20px; }
+  .auth-brand-title { font-size: .95rem; margin: 0; max-width: none; }
+  .auth-brand-tagline,
+  .auth-brand-points,
+  .auth-brand-foot { display: none; }
+  .auth-form-panel {
+    padding: 26px 16px 40px;
+    align-items: flex-start;
+  }
+  .auth-shell .auth-card { padding: 24px 20px; }
+}
+
+@media (max-width: 480px) {
+  .auth-dongle-row { flex-direction: column; }
+  .auth-dongle-row .btn { width: 100%; }
+  .auth-shell .auth-title { font-size: 1.25rem; }
+  .auth-input-wrap .form-control { padding-right: 46px; }
+  .recovery-key-box { padding: 14px 16px 14px 48px; }
+}
 
 /* ── Cards & panels ─────────────────────────────────────────────────────────── */
 .card {
@@ -818,20 +1219,32 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent-primary
 
 /* N1: kotak kunci pemulihan dan panduan pendaftaran wajah */
 .recovery-key-box {
-  margin: 12px 0;
-  padding: 14px 16px;
-  border: 1px solid rgba(234, 179, 8, .35);
+  position: relative;
+  margin: 14px 0;
+  padding: 16px 18px 16px 52px;
+  border: 1px dashed rgba(234, 179, 8, .45);
   border-radius: var(--radius);
-  background: rgba(234, 179, 8, .08);
+  background: rgba(234, 179, 8, .07);
   color: var(--text-primary);
 }
+.recovery-key-head {
+  position: absolute;
+  top: 15px;
+  left: 16px;
+  width: 22px;
+  height: 22px;
+  color: var(--status-warning);
+}
+.recovery-key-head svg { width: 22px; height: 22px; }
 .recovery-key-text {
   display: block;
   font-family: var(--font-mono);
-  font-size: .95rem;
+  font-size: .98rem;
+  line-height: 1.75;
+  letter-spacing: .03em;
   word-break: break-all;
   user-select: all;
-  color: var(--text-primary);
+  color: #FDE68A;
 }
 .recovery-key-actions {
   display: flex;
@@ -839,6 +1252,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent-primary
   gap: 8px;
   margin-bottom: 8px;
 }
+.recovery-key-actions .btn svg { width: 15px; height: 15px; }
 .face-progress {
   width: 100%;
   height: 12px;
