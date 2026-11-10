@@ -58,7 +58,8 @@
 
     const avatar = document.createElement('div');
     avatar.className = role === 'agent' ? 'msg-avatar' : 'msg-avatar user-avatar';
-    avatar.textContent = role === 'agent' ? '🤖' : '👤';
+    avatar.setAttribute('aria-hidden', 'true');
+    avatar.innerHTML = role === 'agent' ? AVATAR_AGENT : AVATAR_USER;
 
     const bubble = document.createElement('div');
     bubble.className = `msg-bubble ${role === 'agent' ? 'agent-bubble' : 'user-bubble'}`;
@@ -108,6 +109,9 @@
     return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
+
+  const AVATAR_AGENT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2 4 5v6c0 5 3.5 8.5 8 11 4.5-2.5 8-6 8-11V5z"/><path d="M9.5 11.5h.01M14.5 11.5h.01"/><path d="M9 15c.9.7 1.9 1 3 1s2.1-.3 3-1"/></svg>';
+  const AVATAR_USER = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/></svg>';
 
   const THINKING_STEPS = [
     'Memahami pertanyaan…',
@@ -166,7 +170,7 @@
       appendSuggestions(data.saran);
     } catch (err) {
       hideThinking();
-      appendMessage('agent', '❌ Terjadi kesalahan. Silakan coba lagi.');
+      appendMessage('agent', 'Terjadi kesalahan. Silakan coba lagi.');
     }
 
     inputEl.disabled = false;

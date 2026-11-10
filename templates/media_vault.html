@@ -1,6 +1,47 @@
 {% extends "base.html" %}
-{% block title %}Media Vault — CRYPTIX{% endblock %}
-{% block page_title %}Media Vault{% endblock %}
+{% block title %}Media — CRYPTIX{% endblock %}
+{% block page_title %}Media{% endblock %}
+{% block page_subtitle %}
+<p class="page-subtitle">Kelola foto dan video terenkripsi, atur album, dan buka media dengan verifikasi ulang.</p>
+{% endblock %}
+{% block page_actions %}
+<a href="#media-upload" class="btn btn-primary btn-sm media-header-action">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>
+  Unggah Media
+</a>
+{% endblock %}
+
+{% macro icon_image() %}
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2.5"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+{% endmacro %}
+
+{% macro icon_album(locked=False) %}
+{% if locked %}
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/><circle cx="12" cy="15" r="1.2"/></svg>
+{% else %}
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+{% endif %}
+{% endmacro %}
+
+{% macro icon_video() %}
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="m10 9 5 3-5 3z"/></svg>
+{% endmacro %}
+
+{% macro icon_music() %}
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l10-2v13"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/></svg>
+{% endmacro %}
+
+{% macro icon_document() %}
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+{% endmacro %}
+
+{% macro file_icon(f) %}
+{% if f.file_type == 'image' %}{{ icon_image() }}
+{% elif f.file_type == 'video' %}{{ icon_video() }}
+{% elif f.file_type == 'audio' %}{{ icon_music() }}
+{% else %}{{ icon_document() }}
+{% endif %}
+{% endmacro %}
 
 {% macro media_card(f) %}
 <div class="media-item" data-media-item data-file-id="{{ f.id }}"
@@ -13,165 +54,261 @@
   </label>
   <button type="button" class="media-open" data-open-media>
     {% if f.thumb_url %}
-    <img class="media-thumb" src="{{ f.thumb_url }}" alt="{{ f.original_name }}" />
+    <img class="media-thumb" src="{{ f.thumb_url }}" alt="{{ f.original_name }}" loading="lazy" />
     {% else %}
-    <span class="media-placeholder"
-          style="background: hsl({{ (f.id * 47) % 360 }}, 45%, 42%)">{{ f.icon }}</span>
+    <span class="media-placeholder media-placeholder-{{ f.file_type }}">
+      <span class="media-placeholder-icon" aria-hidden="true">{{ file_icon(f) }}</span>
+      <span class="media-placeholder-label">{{ 'Video' if f.file_type == 'video' else 'Media' }}</span>
+    </span>
     {% endif %}
   </button>
   <div class="media-caption">
-    <span class="media-icon">{{ f.icon }}</span>
+    <span class="media-icon" aria-hidden="true">{{ file_icon(f) }}</span>
     <span class="media-name">{{ f.original_name }}</span>
   </div>
+  <div class="media-meta">
+    <span>{{ "%.1f"|format(f.file_size / 1024) }} KB</span>
+    <span aria-hidden="true">·</span>
+    <span>{{ f.uploaded_at[:16] }}</span>
+  </div>
   {% if f.download_only %}
-  <small class="text-muted">{{ download_only_note }}</small>
+  <small class="media-note">{{ download_only_note }}</small>
   {% endif %}
 </div>
 {% endmacro %}
 
 {% block content %}
-<div id="media-messages"
-     data-msg-move="{{ msg.move }}"
-     data-msg-state="{{ msg.state }}"
-     data-msg-need-collection="{{ msg.need_collection }}"
-     data-msg-error="{{ msg.error }}"
-     data-msg-delete-confirm="{{ msg.delete_confirm }}"></div>
+{% set total_media = (albums|sum(attribute='jumlah')) + (unfiled|length) %}
 
-<div class="card mb-4">
-  <div class="card-header">Upload Media</div>
-  <div class="card-body">
-    <form method="POST" action="{{ url_for('vault.upload') }}" enctype="multipart/form-data">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-      <div class="form-row">
-        <input type="file" name="file" class="form-control"
-               accept=".png,.jpg,.jpeg,.gif,.bmp,.webp,.mp3,.wav,.flac,.ogg,.m4a,.mp4,.webm,.avi,.mkv,.mov" required />
-        <button type="submit" class="btn btn-primary">🔒 Enkripsi & Upload</button>
-      </div>
-    </form>
-  </div>
-</div>
+<div class="media-page">
+  <div id="media-messages"
+       data-msg-move="{{ msg.move }}"
+       data-msg-state="{{ msg.state }}"
+       data-msg-need-collection="{{ msg.need_collection }}"
+       data-msg-error="{{ msg.error }}"
+       data-msg-delete-confirm="{{ msg.delete_confirm }}"></div>
 
-{% if winamp_available %}
-<div class="alert alert-info">
-  🎵 Audio tersedia di halaman Musik dengan pemutar HTML5 dan Winamp.<br />
-  <small>{{ temp_warning }}</small>
-</div>
-{% endif %}
+  <section class="media-summary" aria-label="Ringkasan media">
+    <article class="media-summary-card">
+      <span class="media-summary-icon" aria-hidden="true">{{ icon_image() }}</span>
+      <span class="media-summary-body">
+        <span class="media-summary-value">{{ total_media }}</span>
+        <span class="media-summary-label">Foto dan video tersimpan</span>
+      </span>
+    </article>
+    <article class="media-summary-card">
+      <span class="media-summary-icon" aria-hidden="true">{{ icon_album() }}</span>
+      <span class="media-summary-body">
+        <span class="media-summary-value">{{ albums|length }}</span>
+        <span class="media-summary-label">Album tersedia</span>
+      </span>
+    </article>
+  </section>
 
-<div id="media-alert" class="alert alert-danger" hidden></div>
+  <div class="media-layout">
+    <aside class="media-side" aria-label="Unggah dan album media">
+      <section id="media-upload" class="media-panel media-upload" aria-labelledby="media-upload-title">
+        <header class="media-panel-head">
+          <div class="media-panel-heading">
+            <h2 class="media-panel-title" id="media-upload-title">Unggah Media</h2>
+            <p class="media-panel-sub">Berkas dienkripsi sebelum disimpan.</p>
+          </div>
+          <span class="media-panel-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>
+          </span>
+        </header>
+        <div class="media-panel-body">
+          <form method="POST" action="{{ url_for('vault.upload') }}" enctype="multipart/form-data"
+                class="media-upload-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+            <div class="media-field">
+              <label for="media-file">Pilih foto atau video</label>
+              <input type="file" id="media-file" name="file" class="form-control media-file-input"
+                     accept=".png,.jpg,.jpeg,.gif,.bmp,.webp,.mp3,.wav,.flac,.ogg,.m4a,.mp4,.webm,.avi,.mkv,.mov" required />
+            </div>
+            <p class="media-upload-hint">Gambar, video, dan audio sesuai format yang didukung.</p>
+            <button type="submit" class="btn btn-primary btn-full">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+              Enkripsi &amp; Unggah
+            </button>
+          </form>
+        </div>
+      </section>
 
-<div class="card mb-4">
-  <div class="card-header">Album</div>
-  <div class="card-body">
-    <form id="album-create-form" class="d-flex gap-2 align-items-center mb-3" novalidate>
-      <input type="text" id="album-create-name" class="form-control"
-             placeholder="Nama album" maxlength="120" required />
-      <label class="d-flex gap-2 align-items-center">
-        <input type="checkbox" id="album-create-locked" /> Kunci album
-      </label>
-      <button type="submit" class="btn btn-primary">Buat album</button>
-    </form>
+      <section class="media-panel media-albums" aria-labelledby="media-albums-title">
+        <header class="media-panel-head">
+          <div class="media-panel-heading">
+            <h2 class="media-panel-title" id="media-albums-title">Album</h2>
+            <p class="media-panel-sub">Kelompokkan media ke dalam album.</p>
+          </div>
+          <span class="media-panel-count">{{ albums|length }} album</span>
+        </header>
+        <div class="media-panel-body">
+          <form id="album-create-form" class="media-album-form" novalidate>
+            <div class="media-field">
+              <label for="album-create-name">Album baru</label>
+              <input type="text" id="album-create-name" class="form-control"
+                     placeholder="Nama album" maxlength="120" required />
+            </div>
+            <label class="media-check">
+              <input type="checkbox" id="album-create-locked" />
+              <span>Kunci album</span>
+            </label>
+            <button type="submit" class="btn btn-secondary btn-sm btn-full">Buat album</button>
+          </form>
 
-    {% if albums %}
-    <div class="album-grid">
-      {% for a in albums %}
-      <button type="button" class="album-card" data-album-open
-              data-album-id="{{ a.id }}" data-album-name="{{ a.name }}"
-              data-album-locked="{{ 1 if a.locked else 0 }}"
-              data-album-kind="{{ a.kind }}"
-              {% if a.locked %}data-reauth="album.unlock" data-reauth-resource="{{ a.id }}"{% endif %}>
-        <span class="album-cover{% if a.locked %} album-cover-locked{% endif %}"
-              {% if not a.cover %}style="background: hsl({{ (a.id * 47) % 360 }}, 45%, 42%)"{% endif %}>
-          {% if a.locked %}
-          <span class="album-lock">🔒</span>
-          {% elif a.cover %}
-          <img class="album-cover-img" src="{{ a.cover }}" alt="{{ a.name }}" />
+          {% if albums %}
+          <div class="album-grid">
+            {% for a in albums %}
+            <button type="button" class="album-card" data-album-open
+                    data-album-id="{{ a.id }}" data-album-name="{{ a.name }}"
+                    data-album-locked="{{ 1 if a.locked else 0 }}"
+                    data-album-kind="{{ a.kind }}"
+                    {% if a.locked %}data-reauth="album.unlock" data-reauth-resource="{{ a.id }}"{% endif %}>
+              <span class="album-cover{% if a.locked %} album-cover-locked{% endif %}">
+                {% if a.locked %}
+                <span class="album-cover-icon">{{ icon_album(True) }}</span>
+                {% elif a.cover %}
+                <img class="album-cover-img" src="{{ a.cover }}" alt="{{ a.name }}" loading="lazy" />
+                {% else %}
+                <span class="album-cover-icon">{{ icon_album() }}</span>
+                {% endif %}
+              </span>
+              <span class="album-card-text">
+                <span class="album-name">{{ a.name }}</span>
+                <span class="album-count">{{ a.jumlah }} berkas{% if a.locked %} · terkunci{% endif %}</span>
+              </span>
+            </button>
+            {% endfor %}
+          </div>
           {% else %}
-          <span class="album-lock">🗂</span>
+          <div class="media-empty media-empty-compact">
+            <span class="media-empty-icon" aria-hidden="true">{{ icon_album() }}</span>
+            <p class="media-empty-title">{{ empty_note }}</p>
+            <p class="media-empty-text">Buat album untuk mengelompokkan media.</p>
+          </div>
           {% endif %}
-        </span>
-        <span class="album-name">{{ a.name }}</span>
-        <span class="album-count">{{ a.jumlah }} berkas{% if a.locked %} · terkunci{% endif %}</span>
-      </button>
-      {% endfor %}
+        </div>
+      </section>
+    </aside>
+
+    <div class="media-main">
+      <section id="album-detail" class="media-panel media-detail" hidden aria-live="polite">
+        <header class="media-panel-head media-detail-head">
+          <div class="media-panel-heading media-breadcrumb">
+            <span class="media-breadcrumb-root">Album</span>
+            <span class="media-breadcrumb-sep" aria-hidden="true">/</span>
+            <span id="album-detail-title" class="media-panel-title"></span>
+          </div>
+          <button type="button" id="album-back" class="btn btn-sm btn-secondary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+            Kembali
+          </button>
+        </header>
+        <div class="media-panel-body">
+          <div class="media-detail-actions">
+            <button type="button" id="album-rename" class="btn btn-sm btn-secondary">Ganti nama album</button>
+            <button type="button" id="album-lock-toggle" class="btn btn-sm btn-secondary"
+                    data-reauth="album.unlock" data-reauth-resource="">Kunci album</button>
+            <button type="button" id="album-delete" class="btn btn-sm btn-danger">Hapus album</button>
+            <form id="album-rename-form" class="media-rename-form" hidden novalidate>
+              <input type="text" id="album-rename-input" class="form-control" maxlength="120" required />
+              <button type="submit" class="btn btn-sm btn-primary">Simpan nama</button>
+            </form>
+          </div>
+
+          <div id="album-loading" class="media-loading" hidden>
+            <span class="spinner" aria-hidden="true"></span>
+            Memuat isi album…
+          </div>
+          <div id="album-items" class="media-grid"></div>
+          <div id="album-empty" class="media-empty" hidden>
+            <span class="media-empty-icon" aria-hidden="true">{{ icon_image() }}</span>
+            <p class="media-empty-title">Belum ada media di album ini</p>
+            <p class="media-empty-text">Pindahkan media dari galeri Tanpa album atau tampilkan item tersembunyi.</p>
+          </div>
+
+          <div id="album-hidden" class="hidden-section media-hidden-section" hidden>
+            <button type="button" id="album-hidden-open" class="btn btn-sm btn-secondary"
+                    data-reauth="album.unlock" data-reauth-resource="">Tampilkan Tersembunyi</button>
+            <p class="media-hidden-note">{{ hidden_note }}</p>
+            <div id="album-hidden-items" class="media-grid mt-3"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="media-panel media-gallery" aria-labelledby="media-gallery-title">
+        <header class="media-panel-head">
+          <div class="media-panel-heading">
+            <h2 class="media-panel-title" id="media-gallery-title">Tanpa album</h2>
+            <p class="media-panel-sub">Media yang belum dimasukkan ke album.</p>
+          </div>
+          <span class="media-panel-count">{{ unfiled|length }} aset</span>
+        </header>
+        <div class="media-panel-body">
+          {% if unfiled %}
+          <div class="media-grid">
+            {% for f in unfiled %}{{ media_card(f) }}{% endfor %}
+          </div>
+          {% else %}
+          <div class="media-empty">
+            <span class="media-empty-icon" aria-hidden="true">{{ icon_image() }}</span>
+            <p class="media-empty-title">Tidak ada berkas di luar album</p>
+            <p class="media-empty-text">Unggah foto atau video, lalu atur media ke dalam album.</p>
+          </div>
+          {% endif %}
+        </div>
+      </section>
+
+      <section class="media-panel media-info" aria-labelledby="media-info-title">
+        <header class="media-panel-head">
+          <div class="media-panel-heading">
+            <h2 class="media-panel-title" id="media-info-title">Informasi Media</h2>
+            <p class="media-panel-sub">Pemisahan jenis berkas dan catatan pemutaran.</p>
+          </div>
+          <span class="media-panel-icon" aria-hidden="true">{{ icon_music() }}</span>
+        </header>
+        <div class="media-panel-body media-info-body">
+          <p class="media-info-row">Berkas audio dipindahkan ke halaman Audio.</p>
+          {% if winamp_available %}
+          <p class="media-info-row media-info-warning">{{ temp_warning }}</p>
+          {% endif %}
+        </div>
+      </section>
     </div>
-    {% else %}
-    <p class="text-muted">{{ empty_note }}</p>
-    {% endif %}
+  </div>
+
+  <div id="media-alert" class="alert alert-danger" hidden></div>
+
+  <div id="selection-bar" class="selection-bar media-selection" hidden>
+    <span id="selection-count" class="media-selection-count">0 dipilih</span>
+    <select id="move-target" class="form-control" aria-label="Pindahkan ke album">
+      <option value="">Tanpa album</option>
+      {% for a in albums %}<option value="{{ a.id }}" data-locked="{{ 1 if a.locked else 0 }}">{{ a.name }}</option>{% endfor %}
+    </select>
+    <button type="button" id="move-button" class="btn btn-sm btn-primary">Pindahkan ke album</button>
+    <button type="button" id="lock-items-button" class="btn btn-sm btn-secondary"
+            data-reauth="album.unlock" data-reauth-resource="">Kunci</button>
+    <button type="button" id="hide-items-button" class="btn btn-sm btn-secondary"
+            data-reauth="album.unlock" data-reauth-resource="">Sembunyikan</button>
   </div>
 </div>
 
-<section id="album-detail" class="card mb-4" hidden>
-  <div class="card-header d-flex justify-content-between align-items-center">
-    <span id="album-detail-title"></span>
-    <button type="button" id="album-back" class="btn btn-sm btn-secondary">← Kembali</button>
-  </div>
-  <div class="card-body">
-    <div class="d-flex gap-2 align-items-center mb-3">
-      <button type="button" id="album-rename" class="btn btn-sm btn-secondary">Ganti nama album</button>
-      <button type="button" id="album-lock-toggle" class="btn btn-sm btn-secondary"
-              data-reauth="album.unlock" data-reauth-resource="">Kunci album</button>
-      <button type="button" id="album-delete" class="btn btn-sm btn-danger">Hapus album</button>
-      <form id="album-rename-form" class="d-flex gap-2" hidden novalidate>
-        <input type="text" id="album-rename-input" class="form-control" maxlength="120" required />
-        <button type="submit" class="btn btn-sm btn-primary">Simpan nama</button>
-      </form>
-    </div>
-    <div id="album-items" class="media-grid"></div>
-    <div id="album-hidden" class="hidden-section mt-3" hidden>
-      <button type="button" id="album-hidden-open" class="btn btn-sm btn-secondary"
-              data-reauth="album.unlock" data-reauth-resource="">Tampilkan Tersembunyi</button>
-      <div id="album-hidden-items" class="media-grid mt-3"></div>
-    </div>
-  </div>
-</section>
-
-<div class="card mb-4">
-  <div class="card-header">Tanpa album</div>
-  <div class="card-body">
-    {% if unfiled %}
-    <div class="media-grid">
-      {% for f in unfiled %}{{ media_card(f) }}{% endfor %}
-    </div>
-    {% else %}
-    <p class="text-muted">Tidak ada berkas di luar album.</p>
-    {% endif %}
-  </div>
-</div>
-
-<div id="selection-bar" class="selection-bar" hidden>
-  <span id="selection-count">0 dipilih</span>
-  <select id="move-target" class="form-control">
-    <option value="">Tanpa album</option>
-    {% for a in albums %}<option value="{{ a.id }}" data-locked="{{ 1 if a.locked else 0 }}">{{ a.name }}</option>{% endfor %}
-  </select>
-  <button type="button" id="move-button" class="btn btn-sm btn-primary">Pindahkan ke album</button>
-  <button type="button" id="lock-items-button" class="btn btn-sm btn-secondary"
-          data-reauth="album.unlock" data-reauth-resource="">Kunci</button>
-  <button type="button" id="hide-items-button" class="btn btn-sm btn-secondary"
-          data-reauth="album.unlock" data-reauth-resource="">Sembunyikan</button>
-</div>
-
-<div class="card">
-  <div class="card-header">Foto dan video</div>
-  <div class="card-body">
-    <p class="text-muted">Berkas audio dipindahkan ke halaman Musik.</p>
-  </div>
-</div>
-
-<div id="media-viewer" class="modal-overlay" style="display:none;"
+<div id="media-viewer" class="modal-overlay media-viewer" style="display:none;"
      role="dialog" aria-modal="true" aria-labelledby="viewer-title">
   <div class="viewer-box">
     <button type="button" id="viewer-close" class="viewer-close" aria-label="Tutup">×</button>
-    <button type="button" id="viewer-prev" class="viewer-nav" aria-label="Sebelumnya">‹</button>
-    <div id="viewer-stage" class="viewer-stage">
-      <video controls preload="none" hidden></video>
+    <div class="viewer-body">
+      <button type="button" id="viewer-prev" class="viewer-nav" aria-label="Sebelumnya">‹</button>
+      <div id="viewer-stage" class="viewer-stage">
+        <video controls preload="none" hidden></video>
+      </div>
+      <button type="button" id="viewer-next" class="viewer-nav" aria-label="Berikutnya">›</button>
     </div>
-    <button type="button" id="viewer-next" class="viewer-nav" aria-label="Berikutnya">›</button>
     <div class="viewer-bar">
       <span id="viewer-title"></span>
       <button type="button" id="viewer-rename" class="btn btn-sm btn-secondary">Ganti nama berkas</button>
-      <form id="viewer-rename-form" class="d-flex gap-2" hidden novalidate>
+      <form id="viewer-rename-form" class="viewer-rename-form" hidden novalidate>
         <input type="text" id="viewer-rename-input" class="form-control" maxlength="255" required />
         <button type="submit" class="btn btn-sm btn-primary">Simpan</button>
       </form>

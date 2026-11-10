@@ -1,80 +1,187 @@
 {% extends "base.html" %}
 {% block title %}Secure Notes — CRYPTIX{% endblock %}
 {% block page_title %}Secure Notes{% endblock %}
+{% block page_subtitle %}
+<p class="page-subtitle">Simpan catatan pribadi dalam bentuk terenkripsi. Isi catatan hanya ditampilkan setelah verifikasi ulang.</p>
+{% endblock %}
+{% block page_actions %}
+<a href="#note-add" class="btn btn-primary btn-sm notes-header-action">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+  Tambah Catatan
+</a>
+{% endblock %}
+
+{% macro icon_lock() %}
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/><circle cx="12" cy="15" r="1.2"/></svg>
+{% endmacro %}
+
+{% macro icon_note() %}
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6"/></svg>
+{% endmacro %}
+
+{% macro icon_eye() %}
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z"/><circle cx="12" cy="12" r="2.6"/></svg>
+{% endmacro %}
+
+{% macro icon_edit() %}
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+{% endmacro %}
+
+{% macro icon_trash() %}
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/><path d="M10 11v5M14 11v5"/></svg>
+{% endmacro %}
+
+{% macro icon_clock() %}
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+{% endmacro %}
 
 {% block content %}
-<div class="card mb-4">
-  <div class="card-header">Tambah Catatan</div>
-  <div class="card-body">
-    <form method="POST" action="{{ url_for('notes.add') }}">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-      <div class="form-group">
-        <label>Judul</label>
-        <input type="text" name="title" class="form-control" required />
-      </div>
-      <div class="form-group">
-        <label>Isi Catatan</label>
-        <textarea name="content" class="form-control" rows="4" required></textarea>
-      </div>
-      <button type="submit" class="btn btn-primary">🔒 Simpan Terenkripsi</button>
-    </form>
+<div class="notes-page">
+  <div class="notes-layout">
+    <aside class="notes-side" aria-label="Tambah catatan">
+      <section id="note-add" class="notes-panel notes-add" aria-labelledby="note-add-title">
+        <header class="notes-panel-head">
+          <div class="notes-panel-heading">
+            <h2 id="note-add-title" class="notes-panel-title">Tambah Catatan</h2>
+            <p class="notes-panel-sub">Judul dan isi catatan dienkripsi sebelum disimpan.</p>
+          </div>
+          <span class="notes-panel-icon" aria-hidden="true">{{ icon_lock() }}</span>
+        </header>
+        <div class="notes-panel-body">
+          <form method="POST" action="{{ url_for('notes.add') }}" class="notes-add-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+            <div class="form-group">
+              <label for="note-title">Judul</label>
+              <input type="text" id="note-title" name="title" class="form-control"
+                     placeholder="Judul catatan" autocomplete="off" required />
+            </div>
+            <div class="form-group">
+              <label for="note-content">Isi Catatan</label>
+              <textarea id="note-content" name="content" class="form-control" rows="5"
+                        placeholder="Tulis isi catatan" required></textarea>
+            </div>
+            <div class="notes-form-actions">
+              <button type="submit" class="btn btn-primary notes-submit-btn">
+                {{ icon_lock() }}<span>Simpan Terenkripsi</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      </section>
+    </aside>
+
+    <div class="notes-main">
+      {% if notes %}
+      <section class="notes-overview" aria-label="Ringkasan catatan">
+        <div class="notes-stat">
+          <span class="notes-stat-label">Total catatan</span>
+          <span class="notes-stat-value">{{ notes|length }}</span>
+          <span class="notes-stat-hint">Catatan terenkripsi tersimpan</span>
+        </div>
+        <div class="notes-stat">
+          <span class="notes-stat-label">Catatan terbaru</span>
+          <span class="notes-stat-value notes-stat-text">{{ notes[0].title }}</span>
+          <span class="notes-stat-hint mono">{{ notes[0].updated_at[:16] }}</span>
+        </div>
+        {% set pembaruan = notes|map(attribute='updated_at')|max %}
+        <div class="notes-stat">
+          <span class="notes-stat-label">Pembaruan terakhir</span>
+          <span class="notes-stat-value notes-stat-date mono">{{ pembaruan[:16] }}</span>
+          <span class="notes-stat-hint"><span class="notes-stat-hint-icon" aria-hidden="true">{{ icon_clock() }}</span>Waktu perubahan terakhir</span>
+        </div>
+      </section>
+      {% endif %}
+
+      <section class="notes-panel notes-list" aria-labelledby="notes-list-title">
+        <header class="notes-panel-head">
+          <div class="notes-panel-heading">
+            <h2 id="notes-list-title" class="notes-panel-title">Catatan Tersimpan</h2>
+            <p class="notes-panel-sub">Isi catatan tetap tersembunyi hingga verifikasi ulang berhasil.</p>
+          </div>
+          <span class="notes-panel-count">{{ notes|length }} catatan</span>
+        </header>
+        <div class="notes-panel-body notes-list-body">
+          {% if notes %}
+            {% for note in notes %}
+            <article class="notes-entry note-entry" data-note="{{ note.id }}">
+              <div class="notes-entry-head">
+                <span class="notes-entry-icon" aria-hidden="true">{{ icon_note() }}</span>
+                <div class="notes-entry-main">
+                  <h3 class="notes-entry-title">{{ note.title }}</h3>
+                  <div class="notes-entry-meta">
+                    <span class="notes-meta-label">Diperbarui</span>
+                    <span class="notes-meta-sep" aria-hidden="true">·</span>
+                    <span class="notes-entry-date mono">{{ note.updated_at[:16] }}</span>
+                  </div>
+                </div>
+                <div class="notes-entry-actions">
+                  <button type="button" class="btn btn-sm btn-secondary notes-open-btn"
+                          data-reauth="note.open"
+                          data-reauth-resource="{{ note.id }}"
+                          data-note-open-id="{{ note.id }}"
+                          data-note-open-url="{{ url_for('notes.open_note', resource_id=note.id) }}">
+                    {{ icon_eye() }}<span>Buka</span>
+                  </button>
+                  <span class="notes-status text-muted" data-note-status="{{ note.id }}" role="status"></span>
+                </div>
+              </div>
+
+              <div class="notes-detail" data-note-box="{{ note.id }}" hidden>
+                <div class="notes-detail-head">
+                  <span class="notes-detail-label">Isi Catatan</span>
+                  <button type="button" class="btn btn-sm btn-ghost notes-close-btn"
+                          data-note-close="{{ note.id }}">Tutup</button>
+                </div>
+                <p class="notes-detail-content" data-note-content="{{ note.id }}"></p>
+              </div>
+
+              <form method="POST" action="{{ url_for('notes.edit', resource_id=note.id) }}"
+                    class="notes-edit-form" data-note-edit="{{ note.id }}" hidden>
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                <div class="form-group">
+                  <label for="note-edit-title-{{ note.id }}">Judul</label>
+                  <input type="text" id="note-edit-title-{{ note.id }}" name="title" class="form-control" required />
+                </div>
+                <div class="form-group">
+                  <label for="note-edit-content-{{ note.id }}">Isi Catatan</label>
+                  <textarea id="note-edit-content-{{ note.id }}" name="content" class="form-control" rows="5" required></textarea>
+                </div>
+                <div class="notes-form-actions">
+                  <button type="submit" class="btn btn-primary"
+                          data-reauth="note.edit"
+                          data-reauth-resource="{{ note.id }}">
+                    {{ icon_edit() }}<span>Simpan</span>
+                  </button>
+                  <button type="button" class="btn btn-secondary"
+                          data-note-cancel="{{ note.id }}">Batal</button>
+                </div>
+              </form>
+
+              <div class="notes-entry-foot">
+                <form method="POST" action="{{ url_for('notes.delete', resource_id=note.id) }}"
+                      class="notes-delete-form">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                  <button type="submit" class="btn btn-sm btn-danger notes-delete-btn"
+                          data-reauth="item.delete"
+                          data-reauth-resource="{{ note.id }}">
+                    {{ icon_trash() }}<span>Hapus</span>
+                  </button>
+                </form>
+              </div>
+            </article>
+            {% endfor %}
+          {% else %}
+          <div class="notes-empty">
+            <span class="notes-empty-icon" aria-hidden="true">{{ icon_note() }}</span>
+            <h3 class="notes-empty-title">Belum ada catatan</h3>
+            <p class="notes-empty-text">Gunakan formulir tambah catatan untuk menyimpan catatan pertama Anda.</p>
+          </div>
+          {% endif %}
+        </div>
+      </section>
+    </div>
   </div>
 </div>
-
-{% if notes %}
-  {% for note in notes %}
-  <div class="card mb-3 note-entry" data-note="{{ note.id }}">
-    <div class="card-header d-flex justify-between">
-      <span>{{ note.title }}</span>
-      <small class="text-muted">{{ note.updated_at[:16] }}</small>
-    </div>
-    <div class="card-body">
-      <div class="d-flex gap-2 align-center">
-        <button type="button" class="btn btn-sm btn-secondary"
-                data-reauth="note.open"
-                data-reauth-resource="{{ note.id }}"
-                data-note-open-id="{{ note.id }}"
-                data-note-open-url="{{ url_for('notes.open_note', resource_id=note.id) }}">📖 Buka</button>
-        <span class="text-muted" data-note-status="{{ note.id }}"></span>
-      </div>
-
-      <div class="mt-2" data-note-box="{{ note.id }}" hidden>
-        <p style="white-space:pre-wrap;" data-note-content="{{ note.id }}"></p>
-        <button type="button" class="btn btn-sm btn-secondary"
-                data-note-close="{{ note.id }}">Tutup</button>
-      </div>
-
-      <form method="POST" action="{{ url_for('notes.edit', resource_id=note.id) }}"
-            class="mt-3" data-note-edit="{{ note.id }}" hidden>
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-        <div class="form-group">
-          <label>Judul</label>
-          <input type="text" name="title" class="form-control" required />
-        </div>
-        <div class="form-group">
-          <label>Isi</label>
-          <textarea name="content" class="form-control" rows="5" required></textarea>
-        </div>
-        <button type="submit" class="btn btn-primary"
-                data-reauth="note.edit"
-                data-reauth-resource="{{ note.id }}">Simpan</button>
-        <button type="button" class="btn btn-secondary"
-                data-note-cancel="{{ note.id }}">Batal</button>
-      </form>
-
-      <form method="POST" action="{{ url_for('notes.delete', resource_id=note.id) }}"
-            style="display:inline" class="mt-2">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-        <button type="submit" class="btn btn-sm btn-danger"
-                data-reauth="item.delete"
-                data-reauth-resource="{{ note.id }}">🗑 Hapus</button>
-      </form>
-    </div>
-  </div>
-  {% endfor %}
-{% else %}
-<p class="text-muted">Belum ada catatan.</p>
-{% endif %}
 {% endblock %}
 
 {% block scripts %}

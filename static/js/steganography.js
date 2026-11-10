@@ -154,6 +154,33 @@
     });
   }
 
+  // ── Navigasi mode presentasi (form dan endpoint tetap sama) ───────────────
+  var modeButtons = document.querySelectorAll('[data-stego-mode]');
+  var modePanels = {
+    embed: document.getElementById('stego-embed-panel'),
+    extract: document.getElementById('stego-extract-panel')
+  };
+
+  function aktifkanMode(mode) {
+    if (!modePanels.embed || !modePanels.extract) {
+      return;
+    }
+    var dipilih = mode === 'extract' ? 'extract' : 'embed';
+    modePanels.embed.hidden = dipilih !== 'embed';
+    modePanels.extract.hidden = dipilih !== 'extract';
+    modeButtons.forEach(function (tombol) {
+      var aktif = tombol.getAttribute('data-stego-mode') === dipilih;
+      tombol.classList.toggle('is-active', aktif);
+      tombol.setAttribute('aria-selected', aktif ? 'true' : 'false');
+    });
+  }
+
+  modeButtons.forEach(function (tombol) {
+    tombol.addEventListener('click', function () {
+      aktifkanMode(tombol.getAttribute('data-stego-mode'));
+    });
+  });
+
   // ── Tampilan hasil ekstraksi di dalam halaman ─────────────────────────────
   var resultBox = document.getElementById('stego-result');
 
@@ -161,6 +188,7 @@
     if (!resultBox) {
       return;
     }
+    aktifkanMode('extract');
     resultBox.textContent = '';
     var kotak = document.createElement('div');
     kotak.className = 'alert ' + kelas;
@@ -304,4 +332,5 @@
 
   aturJenisMuatan();
   aturPilihanKunci();
+  aktifkanMode('embed');
 })();

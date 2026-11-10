@@ -92,3 +92,62 @@
     }
   });
 })();
+
+(function () {
+  var tautan = Array.prototype.slice.call(
+    document.querySelectorAll("[data-settings-nav]")
+  );
+  if (!tautan.length) {
+    return;
+  }
+
+  var bagian = [];
+  tautan.forEach(function (item) {
+    var id = item.getAttribute("data-settings-nav");
+    var target = id ? document.getElementById(id) : null;
+    if (target) {
+      bagian.push({ tautan: item, target: target });
+    }
+  });
+  if (!bagian.length) {
+    return;
+  }
+
+  function tandai(id) {
+    bagian.forEach(function (pasangan) {
+      var aktif = pasangan.target.id === id;
+      pasangan.tautan.classList.toggle("is-active", aktif);
+      if (aktif) {
+        pasangan.tautan.setAttribute("aria-current", "true");
+      } else {
+        pasangan.tautan.removeAttribute("aria-current");
+      }
+    });
+  }
+
+  tautan.forEach(function (item) {
+    item.addEventListener("click", function () {
+      var id = item.getAttribute("data-settings-nav");
+      if (id) {
+        tandai(id);
+      }
+    });
+  });
+
+  if (!("IntersectionObserver" in window)) {
+    return;
+  }
+
+  var pengamat = new IntersectionObserver(function (entri) {
+    var terlihat = entri.filter(function (item) {
+      return item.isIntersecting;
+    });
+    if (terlihat.length) {
+      tandai(terlihat[0].target.id);
+    }
+  }, { rootMargin: "-25% 0px -60% 0px", threshold: 0 });
+
+  bagian.forEach(function (pasangan) {
+    pengamat.observe(pasangan.target);
+  });
+})();

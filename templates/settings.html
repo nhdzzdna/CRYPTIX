@@ -1,223 +1,417 @@
 {% extends "base.html" %}
 {% block title %}Settings — CRYPTIX{% endblock %}
 {% block page_title %}Settings{% endblock %}
+{% block page_subtitle %}
+<p class="page-subtitle">Kelola profil, perangkat tepercaya, dan metode autentikasi akun Anda.</p>
+{% endblock %}
+
+{% macro icon_user() %}
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+{% endmacro %}
+
+{% macro icon_devices() %}
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8"/><path d="M12 16v4"/></svg>
+{% endmacro %}
+
+{% macro icon_biometrics() %}
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4a8 8 0 0 1 8 8"/><path d="M4 12a8 8 0 0 1 8-8"/><path d="M6.5 16.5A6.5 6.5 0 0 1 5 12"/><path d="M18.5 16.5A6.5 6.5 0 0 0 20 12"/><path d="M9 12a3 3 0 0 1 6 0v3"/><path d="M12 12v5"/></svg>
+{% endmacro %}
+
+{% macro icon_lock() %}
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/><path d="M12 15v2"/></svg>
+{% endmacro %}
+
+{% macro icon_usb() %}
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="2" width="10" height="6" rx="1.5"/><path d="M10 5h1M13 5h1"/><path d="M9 8v3a3 3 0 0 0 3 3h0a3 3 0 0 1 3 3v5"/><rect x="13.5" y="18" width="3" height="4" rx="1"/></svg>
+{% endmacro %}
+
+{% macro icon_key() %}
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="7.5" cy="15.5" r="4.5"/><path d="M10.7 12.3 21 2"/><path d="M17 6l2 2"/><path d="M14 9l2 2"/></svg>
+{% endmacro %}
+
+{% macro icon_clock() %}
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+{% endmacro %}
+
+{% macro icon_face() %}
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9 10h.01M15 10h.01"/><path d="M9 15a4 4 0 0 0 6 0"/></svg>
+{% endmacro %}
+
+{% macro icon_fingerprint() %}
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2a10 10 0 0 0-7.4 3.3"/><path d="M4 9.5V12a8 8 0 0 0 2.3 5.7"/><path d="M20 12a8 8 0 0 1-2.3 5.7"/><path d="M8 12a4 4 0 0 1 8 0v2"/><path d="M12 12v5"/><path d="M16.5 4.6A10 10 0 0 1 22 12"/></svg>
+{% endmacro %}
+
+{% macro icon_shield() %}
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2 4 5v6c0 5 3.5 8.5 8 11 4.5-2.5 8-6 8-11V5z"/><path d="m9 12 2 2 4-4"/></svg>
+{% endmacro %}
+
+{% macro icon_check() %}
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 4 4 10-10"/></svg>
+{% endmacro %}
+
+{% macro icon_alert() %}
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2.5 20h19z"/><path d="M12 9v5"/><circle cx="12" cy="17" r=".6" fill="currentColor"/></svg>
+{% endmacro %}
+
+{% macro icon_info() %}
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 10v6"/><circle cx="12" cy="7.5" r=".6" fill="currentColor"/></svg>
+{% endmacro %}
+
+{% macro icon_eye() %}
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6z"/><circle cx="12" cy="12" r="2.5"/></svg>
+{% endmacro %}
 
 {% block content %}
+<div class="settings-page">
 
-{% if recovery_key_baru %}
-<!-- Kunci pemulihan baru: hanya ada di respons ini (Cache-Control: no-store). -->
-<div class="card mb-4">
-  <div class="card-header">🔑 Kunci Pemulihan Baru</div>
-  <div class="card-body">
-    <div class="alert alert-warning">
-      Simpan kunci ini sekarang. Kunci hanya ditampilkan satu kali dan tidak
-      dapat dilihat lagi setelah halaman ditutup.
+  {% if recovery_key_baru %}
+  <section class="settings-recovery" aria-labelledby="settings-recovery-key-title">
+    <div class="settings-recovery-head">
+      <span class="settings-recovery-icon" aria-hidden="true">{{ icon_key() }}</span>
+      <div class="settings-recovery-heading">
+        <h2 class="settings-recovery-title" id="settings-recovery-key-title">Kunci Pemulihan Baru</h2>
+        <p class="settings-recovery-sub">Kunci ini hanya ditampilkan satu kali.</p>
+      </div>
     </div>
-    <p class="mono" style="font-size:1rem; word-break:break-all; user-select:all;">
-      {{ recovery_key_baru }}
-    </p>
-    <small class="form-hint">
-      Kunci pemulihan membuka data yang sama dengan kata sandi dan dongle.
-      Jangan bagikan kunci ini kepada siapa pun.
-    </small>
-  </div>
-</div>
-{% endif %}
-
-<!-- Profile / Change Password -->
-<div class="card mb-4">
-  <div class="card-header">👤 Profil & Keamanan</div>
-  <div class="card-body">
-    <p><strong>Username:</strong> {{ user.username }}</p>
-    <p><strong>Email:</strong> {{ user.email }}</p>
-    <p><strong>Bergabung:</strong> {{ user.created_at[:16] }}</p>
-    <p><strong>Login Terakhir:</strong> {{ user.last_login[:16] if user.last_login else '—' }}</p>
-    <hr />
-    <h4>Ganti Password</h4>
-    <form method="POST" action="{{ url_for('settings.change_password') }}">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-      <div class="form-group">
-        <label>Password Saat Ini</label>
-        <input type="password" name="current_password" class="form-control"
-               required autocomplete="current-password" />
+    <div class="settings-recovery-body">
+      <div class="alert alert-warning settings-recovery-alert">
+        Simpan kunci ini sekarang. Kunci hanya ditampilkan satu kali dan tidak
+        dapat dilihat lagi setelah halaman ditutup.
       </div>
-      <div class="form-group">
-        <label>Password Baru</label>
-        <input type="password" name="new_password" class="form-control"
-               required minlength="12" autocomplete="new-password" />
-        <small class="form-hint">Minimal 12 karakter, memuat 3 dari 4 jenis
-          karakter (huruf kecil, huruf besar, angka, simbol), tanpa nama
-          pengguna.</small>
-      </div>
-      <div class="form-group">
-        <label>Konfirmasi Password Baru</label>
-        <input type="password" name="confirm_password" class="form-control"
-               required autocomplete="new-password" />
-      </div>
-      <button type="submit" class="btn btn-primary"
-              data-reauth="settings.change">Ganti Password</button>
-    </form>
-  </div>
-</div>
-
-<div class="card-grid-2">
-
-  <!-- Dongle, recovery key, session lifetime -->
-  <div class="card">
-    <div class="card-header">🔐 Perangkat & Sesi</div>
-    <div class="card-body">
-
-      <!-- USB Token -->
-      <h4>USB Token / Dongle</h4>
-      <p class="text-muted">
-        Status:
-        {% if user.usb_token_id %}
-          <span class="badge badge-success">✅ Terdaftar</span>
-        {% else %}
-          <span class="badge badge-warning">Belum terdaftar</span>
-        {% endif %}
-        {% if dongle_terpasang %}
-          <span class="badge badge-success">● Terpasang</span>
-        {% else %}
-          <span class="badge badge-danger">○ Tidak terpasang</span>
-        {% endif %}
+      <code class="settings-key mono">{{ recovery_key_baru }}</code>
+      <p class="settings-recovery-note">
+        Kunci pemulihan membuka data yang sama dengan kata sandi dan dongle.
+        Jangan bagikan kunci ini kepada siapa pun.
       </p>
-      <form method="POST" action="{{ url_for('settings.register_usb') }}">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-        <div class="form-group">
-          <label for="dongle-password">Password Saat Ini</label>
-          <input type="password" id="dongle-password" name="current_password"
-                 class="form-control" required autocomplete="current-password" />
-          <small class="form-hint">
-            Diperlukan untuk membungkus ulang kunci data dengan dongle baru.
-          </small>
+    </div>
+  </section>
+  {% endif %}
+
+  <div class="settings-layout">
+    <aside class="settings-nav" aria-label="Navigasi pengaturan">
+      <p class="settings-nav-title">Bagian Pengaturan</p>
+      <nav class="settings-nav-list">
+        <a class="settings-nav-item is-active" href="#settings-account" data-settings-nav="settings-account" aria-current="true">
+          <span class="settings-nav-icon" aria-hidden="true">{{ icon_user() }}</span>
+          <span class="settings-nav-label">Akun &amp; Keamanan</span>
+        </a>
+        <a class="settings-nav-item" href="#settings-devices" data-settings-nav="settings-devices">
+          <span class="settings-nav-icon" aria-hidden="true">{{ icon_devices() }}</span>
+          <span class="settings-nav-label">Perangkat &amp; Sesi</span>
+        </a>
+        <a class="settings-nav-item" href="#settings-biometrics" data-settings-nav="settings-biometrics">
+          <span class="settings-nav-icon" aria-hidden="true">{{ icon_biometrics() }}</span>
+          <span class="settings-nav-label">Autentikasi Biometrik</span>
+        </a>
+      </nav>
+    </aside>
+
+    <div class="settings-main">
+
+      <section class="settings-panel" id="settings-account" aria-labelledby="settings-account-title">
+        <header class="settings-panel-head">
+          <span class="settings-panel-icon" aria-hidden="true">{{ icon_user() }}</span>
+          <div class="settings-panel-heading">
+            <h2 class="settings-panel-title" id="settings-account-title">Profil &amp; Keamanan</h2>
+            <p class="settings-panel-sub">Informasi akun dan pembaruan kata sandi.</p>
+          </div>
+        </header>
+        <div class="settings-panel-body">
+
+          <div class="settings-block">
+            <div class="settings-block-head">
+              <div>
+                <h4 class="settings-block-title">Informasi Akun</h4>
+                <p class="settings-block-sub">Data akun yang tercatat pada perangkat ini.</p>
+              </div>
+              <span class="badge badge-success">{{ icon_check() }}Aktif</span>
+            </div>
+            <div class="settings-meta-grid">
+              <div class="settings-meta">
+                <span class="settings-meta-label">Username</span>
+                <span class="settings-meta-value">{{ user.username }}</span>
+              </div>
+              <div class="settings-meta">
+                <span class="settings-meta-label">Email</span>
+                <span class="settings-meta-value settings-meta-email">{{ user.email }}</span>
+              </div>
+              <div class="settings-meta">
+                <span class="settings-meta-label">Bergabung</span>
+                <span class="settings-meta-value mono">{{ user.created_at[:16] }}</span>
+              </div>
+              <div class="settings-meta">
+                <span class="settings-meta-label">Login Terakhir</span>
+                <span class="settings-meta-value mono">{{ user.last_login[:16] if user.last_login else '—' }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="settings-block">
+            <div class="settings-block-head">
+              <div>
+                <h4 class="settings-block-title">Ganti Password</h4>
+                <p class="settings-block-sub">Perbarui kata sandi akun dan bungkus ulang kunci data Anda.</p>
+              </div>
+              <span class="settings-block-icon" aria-hidden="true">{{ icon_lock() }}</span>
+            </div>
+            <form method="POST" action="{{ url_for('settings.change_password') }}" class="settings-form">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+              <div class="form-group">
+                <label for="settings-current-password">Password Saat Ini</label>
+                <input type="password" id="settings-current-password" name="current_password"
+                       class="form-control" required autocomplete="current-password" />
+              </div>
+              <div class="form-grid-2">
+                <div class="form-group">
+                  <label for="settings-new-password">Password Baru</label>
+                  <input type="password" id="settings-new-password" name="new_password"
+                         class="form-control" required minlength="12" autocomplete="new-password" />
+                </div>
+                <div class="form-group">
+                  <label for="settings-confirm-password">Konfirmasi Password Baru</label>
+                  <input type="password" id="settings-confirm-password" name="confirm_password"
+                         class="form-control" required autocomplete="new-password" />
+                </div>
+              </div>
+              <p class="form-hint">
+                Minimal 12 karakter, memuat 3 dari 4 jenis karakter (huruf kecil,
+                huruf besar, angka, simbol), tanpa nama pengguna.
+              </p>
+              <div class="settings-actions">
+                <button type="submit" class="btn btn-primary" data-reauth="settings.change">
+                  <span class="settings-btn-icon" aria-hidden="true">{{ icon_lock() }}</span>
+                  Ganti Password
+                </button>
+              </div>
+            </form>
+          </div>
+
         </div>
-        <button type="submit" class="btn btn-secondary btn-sm"
-                data-reauth="settings.change">🔌 Daftar Ulang Dongle</button>
-      </form>
-      <small class="form-hint mt-1">
-        Colok dongle pengganti sebelum mendaftar. Kunci data, berkas, dan
-        template biometrik tidak berubah.
-      </small>
+      </section>
 
-      <hr />
+      <section class="settings-panel" id="settings-devices" aria-labelledby="settings-devices-title">
+        <header class="settings-panel-head">
+          <span class="settings-panel-icon" aria-hidden="true">{{ icon_devices() }}</span>
+          <div class="settings-panel-heading">
+            <h2 class="settings-panel-title" id="settings-devices-title">Perangkat &amp; Sesi</h2>
+            <p class="settings-panel-sub">Dongle, kunci pemulihan, dan batas diam sesi.</p>
+          </div>
+        </header>
+        <div class="settings-panel-body">
 
-      <!-- Recovery key -->
-      <h4>Kunci Pemulihan</h4>
-      <p class="form-hint">
-        Terbitkan kunci pemulihan baru untuk kunci data yang sama. Kunci lama
-        langsung tidak berlaku; kunci baru hanya tampil satu kali.
-      </p>
-      <form method="POST" action="{{ url_for('settings.regenerate_recovery_key') }}">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-        <button type="submit" class="btn btn-secondary btn-sm"
-                data-reauth="settings.change">🔑 Terbitkan Kunci Pemulihan Baru</button>
-      </form>
+          <div class="settings-block">
+            <div class="settings-block-head">
+              <div>
+                <h4 class="settings-block-title">USB Token / Dongle</h4>
+                <p class="settings-block-sub">Dongle fisik yang membuka kunci data akun ini.</p>
+              </div>
+              <span class="settings-block-icon" aria-hidden="true">{{ icon_usb() }}</span>
+            </div>
+            <div class="settings-status-row" aria-label="Status dongle">
+              <span class="settings-status-label">Status</span>
+              {% if user.usb_token_id %}
+                <span class="badge badge-success">{{ icon_check() }}Terdaftar</span>
+              {% else %}
+                <span class="badge badge-warning">{{ icon_alert() }}Belum terdaftar</span>
+              {% endif %}
+              {% if dongle_terpasang %}
+                <span class="badge badge-success">{{ icon_check() }}Terpasang</span>
+              {% else %}
+                <span class="badge badge-danger">{{ icon_alert() }}Tidak terpasang</span>
+              {% endif %}
+            </div>
+            <form method="POST" action="{{ url_for('settings.register_usb') }}" class="settings-form">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+              <div class="form-group">
+                <label for="dongle-password">Password Saat Ini</label>
+                <input type="password" id="dongle-password" name="current_password"
+                       class="form-control" required autocomplete="current-password" />
+                <small class="form-hint">
+                  Diperlukan untuk membungkus ulang kunci data dengan dongle baru.
+                </small>
+              </div>
+              <div class="settings-actions">
+                <button type="submit" class="btn btn-secondary btn-sm" data-reauth="settings.change">
+                  <span class="settings-btn-icon" aria-hidden="true">{{ icon_usb() }}</span>
+                  Daftar Ulang Dongle
+                </button>
+              </div>
+            </form>
+            <p class="settings-note">
+              Colok dongle pengganti sebelum mendaftar. Kunci data, berkas, dan
+              template biometrik tidak berubah.
+            </p>
+          </div>
 
-      <hr />
+          <div class="settings-block">
+            <div class="settings-block-head">
+              <div>
+                <h4 class="settings-block-title">Kunci Pemulihan</h4>
+                <p class="settings-block-sub">Terbitkan kunci pemulihan baru untuk kunci data yang sama.</p>
+              </div>
+              <span class="settings-block-icon" aria-hidden="true">{{ icon_key() }}</span>
+            </div>
+            <p class="settings-note settings-note-spaced">
+              Kunci lama langsung tidak berlaku; kunci baru hanya tampil satu kali.
+            </p>
+            <form method="POST" action="{{ url_for('settings.regenerate_recovery_key') }}" class="settings-form">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+              <div class="settings-actions">
+                <button type="submit" class="btn btn-secondary btn-sm" data-reauth="settings.change">
+                  <span class="settings-btn-icon" aria-hidden="true">{{ icon_key() }}</span>
+                  Terbitkan Kunci Pemulihan Baru
+                </button>
+              </div>
+            </form>
+          </div>
 
-      <!-- Session timeout -->
-      <h4>Batas Diam Sesi</h4>
-      <form method="POST" action="{{ url_for('settings.session_timeout') }}">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-        <div class="form-group">
-          <label for="session-timeout">Keluar otomatis setelah tidak aktif</label>
-          <select id="session-timeout" name="session_timeout_minutes"
-                  class="form-control">
-            {% for menit in session_timeout_pilihan %}
-            <option value="{{ menit }}" {% if menit == session_timeout %}selected{% endif %}>
-              {{ menit }} menit
-            </option>
-            {% endfor %}
-          </select>
+          <div class="settings-block">
+            <div class="settings-block-head">
+              <div>
+                <h4 class="settings-block-title">Batas Diam Sesi</h4>
+                <p class="settings-block-sub">Keluar otomatis setelah tidak ada aktivitas.</p>
+              </div>
+              <span class="settings-block-icon" aria-hidden="true">{{ icon_clock() }}</span>
+            </div>
+            <form method="POST" action="{{ url_for('settings.session_timeout') }}" class="settings-form">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+              <div class="form-group">
+                <label for="session-timeout">Keluar otomatis setelah tidak aktif</label>
+                <select id="session-timeout" name="session_timeout_minutes" class="form-control">
+                  {% for menit in session_timeout_pilihan %}
+                  <option value="{{ menit }}" {% if menit == session_timeout %}selected{% endif %}>
+                    {{ menit }} menit
+                  </option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="settings-actions">
+                <button type="submit" class="btn btn-secondary btn-sm" data-reauth="settings.change">
+                  <span class="settings-btn-icon" aria-hidden="true">{{ icon_clock() }}</span>
+                  Simpan Batas Sesi
+                </button>
+              </div>
+            </form>
+            <p class="settings-note">Berlaku pada sesi ini dan sesi berikutnya.</p>
+          </div>
+
         </div>
-        <button type="submit" class="btn btn-secondary btn-sm"
-                data-reauth="settings.change">Simpan Batas Sesi</button>
-      </form>
-      <small class="form-hint">Berlaku pada sesi ini dan sesi berikutnya.</small>
+      </section>
+
+      <section class="settings-panel" id="settings-biometrics" aria-labelledby="settings-biometrics-title">
+        <header class="settings-panel-head">
+          <span class="settings-panel-icon" aria-hidden="true">{{ icon_biometrics() }}</span>
+          <div class="settings-panel-heading">
+            <h2 class="settings-panel-title" id="settings-biometrics-title">Autentikasi Biometrik</h2>
+            <p class="settings-panel-sub">Metode biometrik yang dapat dipakai saat masuk.</p>
+          </div>
+        </header>
+        <div class="settings-panel-body">
+
+          <div class="settings-block">
+            <div class="settings-block-head">
+              <div>
+                <h4 class="settings-block-title">Face Recognition</h4>
+                <p class="settings-block-sub">Template wajah terenkripsi untuk verifikasi saat masuk.</p>
+              </div>
+              <span class="settings-block-icon" aria-hidden="true">{{ icon_face() }}</span>
+            </div>
+            <div class="settings-status-row" aria-label="Status Face Recognition">
+              <span class="settings-status-label">Status</span>
+              {% if wajah_terdaftar %}
+                <span class="badge badge-success">{{ icon_check() }}Template tersimpan</span>
+              {% else %}
+                <span class="badge badge-warning">{{ icon_alert() }}Belum didaftarkan</span>
+              {% endif %}
+            </div>
+            <div class="settings-camera">
+              <video id="settings-video" class="settings-video" autoplay playsinline></video>
+              <canvas id="settings-canvas" class="settings-canvas"></canvas>
+              <button type="button" class="btn btn-secondary btn-sm"
+                      data-settings-action="face-enroll"
+                      data-reauth="biometric.manage">
+                <span class="settings-btn-icon" aria-hidden="true">{{ icon_face() }}</span>
+                Daftar Ulang Wajah
+              </button>
+            </div>
+            <p id="settings-face-status" class="settings-status-text" role="status" aria-live="polite"></p>
+          </div>
+
+          <div class="settings-block">
+            <div class="settings-block-head">
+              <div>
+                <h4>WebAuthn</h4>
+                <p class="settings-block-sub">Kredensial platform seperti sidik jari atau Windows Hello.</p>
+              </div>
+              <span class="settings-block-icon" aria-hidden="true">{{ icon_fingerprint() }}</span>
+            </div>
+            <div class="settings-status-row" aria-label="Status WebAuthn">
+              <span class="settings-status-label">Status</span>
+              {% if webauthn_terdaftar %}
+                <span class="badge badge-success">{{ icon_check() }}Terdaftar</span>
+              {% else %}
+                <span class="badge badge-warning">{{ icon_alert() }}Belum didaftarkan</span>
+              {% endif %}
+            </div>
+
+            {% if kredensial %}
+            <div class="settings-credential-list">
+              {% for kredensial_item in kredensial %}
+              <article class="settings-credential">
+                <div class="settings-credential-main">
+                  <p class="settings-credential-name">{{ kredensial_item.nama or '(tanpa nama)' }}</p>
+                  <p class="settings-credential-meta">
+                    Ditambahkan
+                    <span class="mono">{{ kredensial_item.dibuat[:16] if kredensial_item.dibuat else '—' }}</span>
+                  </p>
+                </div>
+                <form method="POST" action="{{ url_for('settings.delete_webauthn') }}" class="settings-credential-delete">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                  <input type="hidden" name="credential_id" value="{{ kredensial_item.credential_id }}" />
+                  <button type="submit" class="btn btn-outline-danger btn-sm"
+                          data-reauth="biometric.manage"
+                          aria-label="Hapus kredensial {{ kredensial_item.nama or 'tanpa nama' }}">
+                    Hapus
+                  </button>
+                </form>
+              </article>
+              {% endfor %}
+            </div>
+            {% else %}
+            <div class="settings-empty">
+              <span class="settings-empty-icon" aria-hidden="true">{{ icon_fingerprint() }}</span>
+              <p class="settings-empty-title">Belum ada kredensial WebAuthn</p>
+              <p class="settings-empty-text">Tambahkan kredensial untuk memakai autentikator platform perangkat ini.</p>
+            </div>
+            {% endif %}
+
+            <div class="settings-form settings-webauthn-form">
+              <div class="form-group">
+                <label for="webauthn-nama">Nama Kredensial</label>
+                <input type="text" id="webauthn-nama" class="form-control"
+                       maxlength="64" placeholder="mis. Laptop kantor" autocomplete="off" />
+              </div>
+              <div class="settings-actions">
+                <button type="button" class="btn btn-secondary btn-sm"
+                        data-settings-action="webauthn-add"
+                        data-reauth="biometric.manage">
+                  <span class="settings-btn-icon" aria-hidden="true">{{ icon_lock() }}</span>
+                  Tambah WebAuthn
+                </button>
+              </div>
+            </div>
+            <p id="settings-webauthn-status" class="settings-status-text" role="status" aria-live="polite"></p>
+            <p class="settings-note">
+              Memakai autentikator platform perangkat ini (sidik jari atau Windows
+              Hello). Minimal satu biometrik harus tetap terdaftar.
+            </p>
+          </div>
+
+        </div>
+      </section>
+
     </div>
   </div>
-
-  <!-- Biometrics -->
-  <div class="card">
-    <div class="card-header">🧬 Autentikasi Biometrik</div>
-    <div class="card-body">
-
-      <!-- Face Registration -->
-      <h4>Face Recognition</h4>
-      <p class="text-muted">
-        Status: {% if wajah_terdaftar %}
-          <span class="badge badge-success">✅ Template tersimpan</span>
-        {% else %}
-          <span class="badge badge-warning">Belum didaftarkan</span>
-        {% endif %}
-      </p>
-      <div class="webcam-buttons">
-        <video id="settings-video" autoplay playsinline style="display:none;width:100%;border-radius:8px;"></video>
-        <canvas id="settings-canvas" style="display:none;"></canvas>
-        <button type="button" class="btn btn-secondary btn-sm"
-                data-settings-action="face-enroll"
-                data-reauth="biometric.manage">
-          📷 Daftar Ulang Wajah
-        </button>
-      </div>
-      <p id="settings-face-status" class="form-hint"></p>
-
-      <hr />
-
-      <!-- WebAuthn -->
-      <h4>WebAuthn</h4>
-      <p class="text-muted">
-        Status: {% if webauthn_terdaftar %}
-          <span class="badge badge-success">● Terdaftar</span>
-        {% else %}
-          <span class="badge badge-warning">Belum didaftarkan</span>
-        {% endif %}
-      </p>
-
-      {% if kredensial %}
-      <table class="table table-sm">
-        <thead>
-          <tr><th>Nama</th><th>Ditambahkan</th><th>Aksi</th></tr>
-        </thead>
-        <tbody>
-          {% for kredensial_item in kredensial %}
-          <tr>
-            <td>{{ kredensial_item.nama or '(tanpa nama)' }}</td>
-            <td class="text-muted small">
-              {{ kredensial_item.dibuat[:16] if kredensial_item.dibuat else '—' }}
-            </td>
-            <td>
-              <form method="POST" action="{{ url_for('settings.delete_webauthn') }}">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-                <input type="hidden" name="credential_id"
-                       value="{{ kredensial_item.credential_id }}" />
-                <button type="submit" class="btn btn-outline-danger btn-sm"
-                        data-reauth="biometric.manage">Hapus</button>
-              </form>
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-      {% endif %}
-
-      <div class="form-group">
-        <label for="webauthn-nama">Nama Kredensial</label>
-        <input type="text" id="webauthn-nama" class="form-control"
-               maxlength="64" placeholder="mis. Laptop kantor" autocomplete="off" />
-      </div>
-      <button type="button" class="btn btn-secondary btn-sm"
-              data-settings-action="webauthn-add"
-              data-reauth="biometric.manage">🔐 Tambah WebAuthn</button>
-      <p id="settings-webauthn-status" class="form-hint"></p>
-      <small class="form-hint">
-        Memakai autentikator platform perangkat ini (sidik jari atau Windows
-        Hello). Minimal satu biometrik harus tetap terdaftar.
-      </small>
-    </div>
-  </div>
-
 </div>
 {% endblock %}
 

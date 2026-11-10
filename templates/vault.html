@@ -1,9 +1,38 @@
 {% extends "base.html" %}
 {% block title %}{{ msg.title }} — CRYPTIX{% endblock %}
 {% block page_title %}{{ msg.title }}{% endblock %}
+{% block page_subtitle %}
+<p class="page-subtitle">Kelola dokumen terenkripsi, atur folder, dan unduh berkas dengan verifikasi ulang.</p>
+{% endblock %}
+{% block page_actions %}
+<a href="#upload-dokumen" class="btn btn-primary btn-sm doc-header-action">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>
+  Unggah Dokumen
+</a>
+{% endblock %}
+
+{% macro icon_document() %}
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h5"/></svg>
+{% endmacro %}
+
+{% macro icon_folder(locked=False) %}
+{% if locked %}
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/><circle cx="12" cy="15" r="1.2"/></svg>
+{% else %}
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+{% endif %}
+{% endmacro %}
+
+{% macro icon_download() %}
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12"/><path d="m7 11 5 5 5-5"/><path d="M4 20h16"/></svg>
+{% endmacro %}
+
+{% macro icon_trash() %}
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/><path d="M10 11v5M14 11v5"/></svg>
+{% endmacro %}
 
 {% macro doc_item(f) %}
-<div class="collection-item" data-doc-item data-file-id="{{ f.id }}"
+<div class="collection-item doc-file-row" data-doc-item data-file-id="{{ f.id }}"
      data-kind="document" data-name="{{ f.original_name }}"
      data-size="{{ f.file_size }}" data-date="{{ f.uploaded_at }}"
      data-collection-id="{{ f.collection_id or '' }}">
@@ -11,28 +40,34 @@
     <input type="checkbox" data-select-file value="{{ f.id }}" />
   </label>
   <div class="collection-item-main">
-    <span class="media-icon">📄</span>
-    <div>
+    <span class="media-icon doc-file-icon" aria-hidden="true">{{ icon_document() }}</span>
+    <div class="doc-file-text">
       <span class="collection-item-name">{{ f.original_name }}</span>
-      <small class="text-muted d-block">
-        {{ "%.1f"|format(f.file_size / 1024) }} KB · {{ f.uploaded_at[:16] }}
-      </small>
+      <span class="doc-file-meta">
+        <span class="mono">{{ "%.1f"|format(f.file_size / 1024) }} KB</span>
+        <span aria-hidden="true">·</span>
+        <span class="mono">{{ f.uploaded_at[:16] }}</span>
+      </span>
     </div>
   </div>
-  <div class="collection-item-actions">
+  <div class="collection-item-actions doc-file-actions">
     <form method="POST" action="{{ url_for('vault.decrypt', resource_id=f.id) }}"
           class="d-inline">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-      <button type="submit" class="btn btn-sm btn-success"
+      <button type="submit" class="btn btn-sm btn-success doc-action"
               data-reauth="file.download"
-              data-reauth-resource="{{ f.id }}">⬇</button>
+              data-reauth-resource="{{ f.id }}">
+        {{ icon_download() }}<span>{{ msg.download }}</span>
+      </button>
     </form>
     <form method="POST" action="{{ url_for('vault.delete', resource_id=f.id) }}"
           class="d-inline">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-      <button type="submit" class="btn btn-sm btn-danger"
+      <button type="submit" class="btn btn-sm btn-danger doc-action"
               data-reauth="item.delete"
-              data-reauth-resource="{{ f.id }}">🗑</button>
+              data-reauth-resource="{{ f.id }}">
+        {{ icon_trash() }}<span>{{ msg.delete_file }}</span>
+      </button>
     </form>
   </div>
 </div>
@@ -49,120 +84,203 @@
      data-msg-error="{{ msg.error }}"
      data-msg-delete-confirm="{{ msg.delete_confirm }}"></div>
 
-<div class="card mb-4">
-  <div class="card-header">{{ msg.upload_title }}</div>
-  <div class="card-body">
-    <form method="POST" action="{{ url_for('vault.upload') }}" enctype="multipart/form-data">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-      <input type="hidden" name="kategori" value="dokumen" />
-      <div class="form-row">
-        <input type="file" name="file" class="form-control"
-               accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt" required />
-        <button type="submit" class="btn btn-primary">🔒 Enkripsi & Unggah</button>
-      </div>
-    </form>
-  </div>
-</div>
+<div class="doc-page">
+  <div class="doc-layout">
+    <aside class="doc-side" aria-label="Unggah dan folder dokumen">
+      <section id="upload-dokumen" class="doc-panel doc-upload" aria-labelledby="doc-upload-title">
+        <header class="doc-panel-head">
+          <div class="doc-panel-heading">
+            <h2 class="doc-panel-title" id="doc-upload-title">{{ msg.upload_title }}</h2>
+            <p class="doc-panel-sub">Berkas dienkripsi sebelum disimpan.</p>
+          </div>
+          <span class="doc-panel-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>
+          </span>
+        </header>
+        <div class="doc-panel-body">
+          <form method="POST" action="{{ url_for('vault.upload') }}" enctype="multipart/form-data"
+                class="doc-upload-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+            <input type="hidden" name="kategori" value="dokumen" />
+            <div class="doc-field">
+              <label for="document-file">Pilih dokumen</label>
+              <input type="file" id="document-file" name="file" class="form-control doc-file-input"
+                     accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt" required />
+            </div>
+            <p class="doc-upload-hint">PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, TXT · Maks. 64 MB</p>
+            <button type="submit" class="btn btn-primary btn-full">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+              Enkripsi &amp; Unggah
+            </button>
+          </form>
+        </div>
+      </section>
 
-<div id="collection-alert" class="alert alert-danger" hidden></div>
+      <section class="doc-panel doc-folders" aria-labelledby="doc-folders-title">
+        <header class="doc-panel-head">
+          <div class="doc-panel-heading">
+            <h2 class="doc-panel-title" id="doc-folders-title">{{ msg.folder_section }}</h2>
+            <p class="doc-panel-sub">{{ folders|length }} folder tersedia</p>
+          </div>
+          <span class="doc-panel-icon" aria-hidden="true">{{ icon_folder() }}</span>
+        </header>
+        <div class="doc-panel-body">
+          <form id="folder-create-form" class="doc-folder-form" novalidate>
+            <div class="doc-field">
+              <label for="folder-create-name">Folder baru</label>
+              <input type="text" id="folder-create-name" class="form-control"
+                     placeholder="{{ msg.folder_placeholder }}" maxlength="120" required />
+            </div>
+            <label class="form-check doc-folder-lock">
+              <input type="checkbox" id="folder-create-locked" />
+              <span>{{ msg.folder_lock_label }}</span>
+            </label>
+            <button type="submit" class="btn btn-secondary btn-sm btn-full">{{ msg.folder_create_button }}</button>
+          </form>
 
-<div class="card mb-4">
-  <div class="card-header">{{ msg.folder_section }}</div>
-  <div class="card-body">
-    <form id="folder-create-form" class="d-flex gap-2 align-items-center mb-3" novalidate>
-      <input type="text" id="folder-create-name" class="form-control"
-             placeholder="{{ msg.folder_placeholder }}" maxlength="120" required />
-      <label class="d-flex gap-2 align-items-center">
-        <input type="checkbox" id="folder-create-locked" /> {{ msg.folder_lock_label }}
-      </label>
-      <button type="submit" class="btn btn-primary">{{ msg.folder_create_button }}</button>
-    </form>
+          {% if folders %}
+          <div class="doc-folder-grid">
+            {% for a in folders %}
+            <button type="button" class="album-card doc-folder-card" data-folder-open
+                    data-folder-id="{{ a.id }}" data-folder-name="{{ a.name }}"
+                    data-folder-locked="{{ 1 if a.locked else 0 }}"
+                    {% if a.locked %}data-reauth="album.unlock" data-reauth-resource="{{ a.id }}"{% endif %}>
+              <span class="doc-folder-icon{{ ' is-locked' if a.locked else '' }}" aria-hidden="true">
+                {{ icon_folder(a.locked) }}
+              </span>
+              <span class="doc-folder-body">
+                <span class="album-name">{{ a.name }}</span>
+                <span class="album-count">{{ a.jumlah }} {{ msg.count }}{% if a.locked %} · {{ msg.locked_suffix }}{% endif %}</span>
+              </span>
+              <span class="doc-folder-chevron" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
+              </span>
+            </button>
+            {% endfor %}
+          </div>
+          {% else %}
+          <div class="doc-empty doc-empty-compact">
+            <span class="doc-empty-icon" aria-hidden="true">{{ icon_folder() }}</span>
+            <p class="doc-empty-title">{{ msg.empty }}</p>
+            <p class="doc-empty-text">Buat folder untuk mengelompokkan dokumen.</p>
+          </div>
+          {% endif %}
+        </div>
+      </section>
+    </aside>
 
-    {% if folders %}
-    <div class="album-grid">
-      {% for a in folders %}
-      <button type="button" class="album-card" data-folder-open
-              data-folder-id="{{ a.id }}" data-folder-name="{{ a.name }}"
-              data-folder-locked="{{ 1 if a.locked else 0 }}"
-              {% if a.locked %}data-reauth="album.unlock" data-reauth-resource="{{ a.id }}"{% endif %}>
-        <span class="album-cover{% if a.locked %} album-cover-locked{% endif %}"
-              style="background: hsl({{ (a.id * 47) % 360 }}, 45%, 42%)">
-          <span class="album-lock">{% if a.locked %}🔒{% else %}📁{% endif %}</span>
-        </span>
-        <span class="album-name">{{ a.name }}</span>
-        <span class="album-count">{{ a.jumlah }} {{ msg.count }}{% if a.locked %} · {{ msg.locked_suffix }}{% endif %}</span>
-      </button>
-      {% endfor %}
+    <div class="doc-main">
+      <section id="folder-detail" class="doc-panel doc-folder-detail" hidden>
+        <header class="doc-panel-head doc-folder-head">
+          <div class="doc-breadcrumb">
+            <span class="doc-breadcrumb-root">{{ msg.title }}</span>
+            <span class="doc-breadcrumb-sep" aria-hidden="true">/</span>
+            <span id="folder-detail-title"></span>
+          </div>
+          <button type="button" id="folder-back" class="btn btn-sm btn-secondary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+            Kembali
+          </button>
+        </header>
+        <div class="doc-panel-body">
+          <div class="doc-folder-actions">
+            <button type="button" id="folder-rename" class="btn btn-sm btn-secondary">{{ msg.folder_rename }}</button>
+            <button type="button" id="folder-lock-toggle" class="btn btn-sm btn-secondary"
+                    data-reauth="album.unlock" data-reauth-resource=""
+                    data-label-lock="{{ msg.folder_lock_toggle }}"
+                    data-label-unlock="{{ msg.folder_unlock_toggle }}">{{ msg.folder_lock_toggle }}</button>
+            <button type="button" id="folder-delete" class="btn btn-sm btn-danger">{{ msg.folder_delete }}</button>
+            <form id="folder-rename-form" class="doc-folder-rename" hidden novalidate>
+              <input type="text" id="folder-rename-input" class="form-control" maxlength="120" required />
+              <button type="submit" class="btn btn-sm btn-primary">Simpan</button>
+            </form>
+          </div>
+
+          <div id="folder-loading" class="doc-loading" hidden>Memuat isi folder…</div>
+          <div id="folder-items" class="doc-list" data-doc-list></div>
+          <div id="folder-empty" class="doc-empty doc-empty-inline" hidden>
+            <span class="doc-empty-icon" aria-hidden="true">{{ icon_document() }}</span>
+            <p class="doc-empty-title">Folder ini belum berisi dokumen</p>
+            <p class="doc-empty-text">Pindahkan dokumen ke folder ini dari daftar dokumen.</p>
+          </div>
+
+          <div id="folder-hidden" class="hidden-section mt-3" hidden>
+            <button type="button" id="folder-hidden-open" class="btn btn-sm btn-secondary"
+                    data-reauth="album.unlock" data-reauth-resource="">{{ msg.hidden_button }}</button>
+            <div id="folder-hidden-items" class="doc-list mt-3" data-doc-list></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="doc-panel doc-files" aria-labelledby="doc-files-title">
+        <header class="doc-panel-head">
+          <div class="doc-panel-heading">
+            <h2 class="doc-panel-title" id="doc-files-title">{{ msg.unfiled_section }}</h2>
+            <p class="doc-panel-sub">Dokumen yang belum dimasukkan ke folder.</p>
+          </div>
+          <span class="doc-panel-count">{{ unfiled|length }} dokumen</span>
+        </header>
+        <div class="doc-panel-body">
+          <div class="doc-toolbar" id="document-tools">
+            <div class="doc-field doc-search-field">
+              <label for="document-search">{{ msg.search_label }}</label>
+              <div class="doc-input-wrap">
+                <span class="doc-input-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+                </span>
+                <input type="search" id="document-search" class="form-control"
+                       placeholder="{{ msg.search_placeholder }}" />
+              </div>
+            </div>
+            <div class="doc-field doc-sort-field">
+              <label for="document-sort">{{ msg.sort_label }}</label>
+              <select id="document-sort" class="form-control">
+                <option value="name">{{ msg.sort_name }}</option>
+                <option value="date">{{ msg.sort_date }}</option>
+                <option value="size">{{ msg.sort_size }}</option>
+              </select>
+            </div>
+          </div>
+
+          <div id="unfiled-items" class="doc-list" data-doc-list>
+            {% if unfiled %}
+            {% for f in unfiled %}{{ doc_item(f) }}{% endfor %}
+            {% endif %}
+          </div>
+          {% if not unfiled %}
+          <div id="documents-empty" class="doc-empty">
+            <span class="doc-empty-icon" aria-hidden="true">{{ icon_document() }}</span>
+            <p class="doc-empty-title">{{ msg.unfiled_empty }}</p>
+            <p class="doc-empty-text">Unggah dokumen atau pindahkan berkas dari folder.</p>
+          </div>
+          {% endif %}
+
+          <div id="document-no-results" class="doc-empty" hidden>
+            <span class="doc-empty-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/><path d="M8.5 11h5"/></svg>
+            </span>
+            <p class="doc-empty-title">Dokumen tidak ditemukan</p>
+            <p class="doc-empty-text">Coba kata kunci lain atau ubah urutan pencarian.</p>
+          </div>
+        </div>
+      </section>
     </div>
-    {% else %}
-    <p class="text-muted">{{ msg.empty }}</p>
-    {% endif %}
   </div>
-</div>
 
-<section id="folder-detail" class="card mb-4" hidden>
-  <div class="card-header d-flex justify-content-between align-items-center">
-    <span id="folder-detail-title"></span>
-    <button type="button" id="folder-back" class="btn btn-sm btn-secondary">← Kembali</button>
-  </div>
-  <div class="card-body">
-    <div class="d-flex gap-2 align-items-center mb-3 flex-wrap">
-      <button type="button" id="folder-rename" class="btn btn-sm btn-secondary">{{ msg.folder_rename }}</button>
-      <button type="button" id="folder-lock-toggle" class="btn btn-sm btn-secondary"
-              data-reauth="album.unlock" data-reauth-resource=""
-              data-label-lock="{{ msg.folder_lock_toggle }}"
-              data-label-unlock="{{ msg.folder_unlock_toggle }}">{{ msg.folder_lock_toggle }}</button>
-      <button type="button" id="folder-delete" class="btn btn-sm btn-danger">{{ msg.folder_delete }}</button>
-      <form id="folder-rename-form" class="d-flex gap-2" hidden novalidate>
-        <input type="text" id="folder-rename-input" class="form-control" maxlength="120" required />
-        <button type="submit" class="btn btn-sm btn-primary">Simpan</button>
-      </form>
-    </div>
-    <div id="folder-items" class="music-track-list" data-doc-list></div>
-    <div id="folder-hidden" class="hidden-section mt-3" hidden>
-      <button type="button" id="folder-hidden-open" class="btn btn-sm btn-secondary"
-              data-reauth="album.unlock" data-reauth-resource="">{{ msg.hidden_button }}</button>
-      <div id="folder-hidden-items" class="music-track-list mt-3" data-doc-list></div>
-    </div>
-  </div>
-</section>
+  <div id="collection-alert" class="alert alert-danger" hidden></div>
 
-<div class="card mb-4">
-  <div class="card-header">{{ msg.unfiled_section }}</div>
-  <div class="card-body">
-    <div class="d-flex gap-2 align-items-center mb-3 flex-wrap" id="document-tools">
-      <label for="document-search" class="mb-0">{{ msg.search_label }}</label>
-      <input type="search" id="document-search" class="form-control"
-             placeholder="{{ msg.search_placeholder }}" />
-      <label for="document-sort" class="mb-0">{{ msg.sort_label }}</label>
-      <select id="document-sort" class="form-control">
-        <option value="name">{{ msg.sort_name }}</option>
-        <option value="date">{{ msg.sort_date }}</option>
-        <option value="size">{{ msg.sort_size }}</option>
-      </select>
-    </div>
-    <div id="unfiled-items" class="music-track-list" data-doc-list>
-      {% if unfiled %}
-      {% for f in unfiled %}{{ doc_item(f) }}{% endfor %}
-      {% endif %}
-    </div>
-    {% if not unfiled %}
-    <p class="text-muted">{{ msg.unfiled_empty }}</p>
-    {% endif %}
+  <div id="selection-bar" class="selection-bar doc-selection" hidden>
+    <span id="selection-count">0 dipilih</span>
+    <select id="move-target" class="form-control">
+      <option value="">{{ msg.move_none }}</option>
+      {% for a in folders %}<option value="{{ a.id }}" data-locked="{{ 1 if a.locked else 0 }}">{{ a.name }}</option>{% endfor %}
+    </select>
+    <button type="button" id="move-button" class="btn btn-sm btn-primary">{{ msg.move_button }}</button>
+    <button type="button" id="lock-items-button" class="btn btn-sm btn-secondary"
+            data-reauth="album.unlock" data-reauth-resource="">{{ msg.lock_items }}</button>
+    <button type="button" id="hide-items-button" class="btn btn-sm btn-secondary"
+            data-reauth="album.unlock" data-reauth-resource="">{{ msg.hide_items }}</button>
   </div>
-</div>
-
-<div id="selection-bar" class="selection-bar" hidden>
-  <span id="selection-count">0 dipilih</span>
-  <select id="move-target" class="form-control">
-    <option value="">{{ msg.move_none }}</option>
-    {% for a in folders %}<option value="{{ a.id }}" data-locked="{{ 1 if a.locked else 0 }}">{{ a.name }}</option>{% endfor %}
-  </select>
-  <button type="button" id="move-button" class="btn btn-sm btn-primary">{{ msg.move_button }}</button>
-  <button type="button" id="lock-items-button" class="btn btn-sm btn-secondary"
-          data-reauth="album.unlock" data-reauth-resource="">{{ msg.lock_items }}</button>
-  <button type="button" id="hide-items-button" class="btn btn-sm btn-secondary"
-          data-reauth="album.unlock" data-reauth-resource="">{{ msg.hide_items }}</button>
 </div>
 {% endblock %}
 

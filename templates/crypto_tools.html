@@ -1,122 +1,239 @@
 {% extends "base.html" %}
 {% block title %}Crypto Tools — CRYPTIX{% endblock %}
 {% block page_title %}Crypto Tools{% endblock %}
+{% block page_subtitle %}
+<p class="page-subtitle">Uji algoritma kriptografi CRYPTIX secara langsung. Enkripsi dan dekripsi diproses dengan implementasi asli tanpa penyimpanan data masukan.</p>
+{% endblock %}
+
+{% macro icon_cipher() %}
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6" rx="1"/><path d="M9 2v2M15 2v2M9 20v2M15 20v2M2 9h2M2 15h2M20 9h2M20 15h2"/></svg>
+{% endmacro %}
+
+{% macro icon_lock() %}
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/><circle cx="12" cy="15" r="1.2"/></svg>
+{% endmacro %}
+
+{% macro icon_key() %}
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="7.5" cy="15.5" r="4.5"/><path d="M10.7 12.3 21 2"/><path d="M17 6l2 2"/><path d="M14 9l2 2"/></svg>
+{% endmacro %}
+
+{% macro icon_input() %}
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H5a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h9"/><path d="M14 3v6h6"/><path d="M20 15H9"/><path d="m12 12-3 3 3 3"/></svg>
+{% endmacro %}
+
+{% macro icon_output() %}
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 21h9a1 1 0 0 0 1-1V4a1 1 0 0 0-1-1h-9"/><path d="M10 3v6H4"/><path d="M4 15h11"/><path d="m12 12 3 3-3 3"/></svg>
+{% endmacro %}
+
+{% macro icon_copy() %}
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></svg>
+{% endmacro %}
+
+{% macro icon_layers() %}
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 2 9 5-9 5-9-5z"/><path d="m3 12 9 5 9-5"/><path d="m3 17 9 5 9-5"/></svg>
+{% endmacro %}
+
+{% macro icon_letters() %}
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20 10 4l6 16"/><path d="M6.4 14h7.2"/><path d="M18 20V9"/></svg>
+{% endmacro %}
+
+{% macro icon_grid() %}
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg>
+{% endmacro %}
+
+{% macro icon_stream() %}
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h3l2-7 4 14 3-9 2 4h4"/></svg>
+{% endmacro %}
+
+{% macro icon_blocks() %}
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/><path d="M11 7h4a2 2 0 0 1 2 2v4"/></svg>
+{% endmacro %}
 
 {% block content %}
-<div class="card mb-4">
-  <div class="card-header">Uji Algoritma Kriptografi</div>
-  <div class="card-body">
-    <form method="POST">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+<div class="crypto-page">
+  <form method="POST" class="crypto-form" id="crypto-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
 
-      <div class="form-grid-2">
-        <div class="form-group">
-          <label>Algoritma</label>
-          <select name="cipher" id="cipher-select" class="form-control">
-            <option value="super">Super Encryption (Semua Layer)</option>
-            <option value="vigenere">Vigenere Cipher</option>
-            <option value="playfair">Playfair Cipher</option>
-            <option value="chacha20">ChaCha20</option>
-            <option value="blowfish">Blowfish-CBC</option>
-          </select>
+    <div class="crypto-toolbar">
+      <div class="crypto-field crypto-field-cipher">
+        <label for="cipher-select">Algoritma</label>
+        <div class="crypto-tabs" role="tablist" aria-label="Pilih algoritma">
+          <button type="button" class="crypto-tab" role="tab" data-cipher="super">
+            <span class="crypto-tab-icon" aria-hidden="true">{{ icon_layers() }}</span>Super Encryption
+          </button>
+          <button type="button" class="crypto-tab" role="tab" data-cipher="vigenere">
+            <span class="crypto-tab-icon" aria-hidden="true">{{ icon_letters() }}</span>Vigenere
+          </button>
+          <button type="button" class="crypto-tab" role="tab" data-cipher="playfair">
+            <span class="crypto-tab-icon" aria-hidden="true">{{ icon_grid() }}</span>Playfair
+          </button>
+          <button type="button" class="crypto-tab" role="tab" data-cipher="chacha20">
+            <span class="crypto-tab-icon" aria-hidden="true">{{ icon_stream() }}</span>ChaCha20
+          </button>
+          <button type="button" class="crypto-tab" role="tab" data-cipher="blowfish">
+            <span class="crypto-tab-icon" aria-hidden="true">{{ icon_blocks() }}</span>Blowfish-CBC
+          </button>
         </div>
-        <div class="form-group">
-          <label>Aksi</label>
-          <select name="action" id="action-select" class="form-control">
-            <option value="encrypt">Enkripsi</option>
-            <option value="decrypt">Dekripsi</option>
-          </select>
-        </div>
+        <select name="cipher" id="cipher-select" class="form-control crypto-cipher-select">
+          <option value="super">Super Encryption (Semua Layer)</option>
+          <option value="vigenere">Vigenere Cipher</option>
+          <option value="playfair">Playfair Cipher</option>
+          <option value="chacha20">ChaCha20</option>
+          <option value="blowfish">Blowfish-CBC</option>
+        </select>
       </div>
 
-      <div class="form-group">
-        <label>Teks Input</label>
-        <textarea name="text" class="form-control mono" rows="4" required
-                  placeholder="Masukkan teks di sini…"></textarea>
+      <div class="crypto-field crypto-field-action">
+        <label for="action-select">Aksi</label>
+        <select name="action" id="action-select" class="form-control">
+          <option value="encrypt">Enkripsi</option>
+          <option value="decrypt">Dekripsi</option>
+        </select>
       </div>
-
-      <!-- Key field (for non-super) -->
-      <div class="form-group" id="key-field">
-        <label>Kunci</label>
-        <input type="text" name="key" class="form-control mono"
-               placeholder="Masukkan kunci (teks atau hex untuk modern)" />
-      </div>
-
-      <!-- Passphrase field (for super) -->
-      <div class="form-group" id="passphrase-field" style="display:none;">
-        <label>Passphrase (Super Encryption)</label>
-        <input type="text" name="passphrase" class="form-control"
-               placeholder="Masukkan passphrase rahasia" />
-        <small class="form-hint">Kunci turunan untuk keempat layer diturunkan dengan PBKDF2-HMAC-SHA256 bersalt dari passphrase ini.</small>
-      </div>
-
-      <!-- Show-steps option (super encryption, encrypt only) -->
-      <div class="form-group" id="steps-field" style="display:none;">
-        <label>
-          <input type="checkbox" name="show_steps" value="1" id="show-steps" />
-          Tampilkan tahapan
-        </label>
-        <small class="form-hint">Menampilkan keluaran tiap layer Super Encryption untuk keperluan pembelajaran.</small>
-      </div>
-
-      <button type="submit" class="btn btn-primary">⚙ Proses</button>
-    </form>
-  </div>
-</div>
-
-{% if error %}
-<div class="alert alert-danger">{{ error }}</div>
-{% endif %}
-
-{% if result is not none %}
-<div class="card">
-  <div class="card-header">Hasil</div>
-  <div class="card-body">
-    <pre class="output-box mono">{{ result }}</pre>
-    <button class="btn btn-sm btn-secondary mt-2" id="copy-result-btn">📋 Salin</button>
-  </div>
-</div>
-{% endif %}
-
-{% if steps %}
-<div class="card mt-4">
-  <div class="card-header">Tahapan Super Encryption</div>
-  <div class="card-body">
-    {% set step_labels = {
-      "vigenere": "Layer 1 — Vigenere",
-      "playfair": "Layer 2 — Playfair",
-      "chacha20": "Layer 3 — ChaCha20",
-      "blowfish": "Layer 4 — Blowfish-CBC",
-      "final": "Keluaran Akhir (CXSE2 + HMAC-SHA256)"
-    } %}
-    {% for name, value in steps.items() %}
-    <div class="form-group">
-      <label>{{ step_labels.get(name, name) }}</label>
-      <pre class="output-box mono">{{ value }}</pre>
     </div>
-    {% endfor %}
-  </div>
-</div>
-{% endif %}
 
-<!-- Algorithm info cards -->
-<div class="algo-info-grid mt-4">
-  <div class="algo-card">
-    <h4>🔤 Vigenere</h4>
-    <p>Cipher substitusi polyalphabetik klasik. Beroperasi pada ASCII printable (32–126). Kunci di-cycling per karakter.</p>
-  </div>
-  <div class="algo-card">
-    <h4>🔲 Playfair</h4>
-    <p>Cipher digram 5×5. Hanya huruf A–Z (I=J). Karakter non-huruf dilewati.</p>
-  </div>
-  <div class="algo-card">
-    <h4>⚡ ChaCha20</h4>
-    <p>Stream cipher modern. Nonce 16-byte acak. Output: <code>nonce_hex:ciphertext_b64</code>.</p>
-  </div>
-  <div class="algo-card">
-    <h4>🐡 Blowfish-CBC</h4>
-    <p>Block cipher CBC mode, PKCS#7 padding. IV 8-byte acak. Output: <code>iv_hex:ct_b64</code>.</p>
-  </div>
+    <div class="crypto-grid">
+      <section class="crypto-panel crypto-panel-input" aria-labelledby="crypto-input-title">
+        <header class="crypto-panel-head">
+          <div class="crypto-panel-heading">
+            <h2 id="crypto-input-title" class="crypto-panel-title">Input</h2>
+            <p class="crypto-panel-sub">Masukkan teks dan parameter kunci yang diperlukan.</p>
+          </div>
+          <span class="crypto-panel-icon" aria-hidden="true">{{ icon_input() }}</span>
+        </header>
+        <div class="crypto-panel-body">
+          <div class="form-group">
+            <label for="text-input">Teks Input</label>
+            <textarea name="text" id="text-input" class="form-control mono crypto-textarea" rows="6" required
+                      placeholder="Masukkan teks di sini…"></textarea>
+          </div>
+
+          <!-- Key field (for non-super) -->
+          <div class="form-group crypto-key-field" id="key-field">
+            <label for="key-input">Kunci</label>
+            <input type="text" id="key-input" name="key" class="form-control mono"
+                   placeholder="Masukkan kunci (teks atau hex untuk modern)" />
+            <small class="form-hint">Teks diturunkan menjadi kunci 32 byte; 64 digit heksadesimal dipakai langsung.</small>
+          </div>
+
+          <!-- Passphrase field (for super) -->
+          <div class="form-group crypto-passphrase-field" id="passphrase-field" style="display:none;">
+            <label for="passphrase-input">Passphrase (Super Encryption)</label>
+            <input type="text" id="passphrase-input" name="passphrase" class="form-control"
+                   placeholder="Masukkan passphrase rahasia" />
+            <small class="form-hint">Kunci turunan untuk keempat layer diturunkan dengan PBKDF2-HMAC-SHA256 bersalt dari passphrase ini.</small>
+          </div>
+
+          <!-- Show-steps option (super encryption, encrypt only) -->
+          <div class="form-group crypto-steps-field" id="steps-field" style="display:none;">
+            <label class="form-check crypto-check">
+              <input type="checkbox" name="show_steps" value="1" id="show-steps" />
+              <span>Tampilkan tahapan</span>
+            </label>
+            <small class="form-hint">Menampilkan keluaran tiap layer Super Encryption untuk keperluan pembelajaran.</small>
+          </div>
+
+          <div class="crypto-form-actions">
+            <button type="submit" class="btn btn-primary crypto-submit-btn" id="crypto-submit-btn">
+              <span class="crypto-submit-icon" aria-hidden="true">{{ icon_lock() }}</span>
+              <span class="crypto-submit-label">Proses</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section class="crypto-panel crypto-panel-output" aria-labelledby="crypto-output-title">
+        <header class="crypto-panel-head">
+          <div class="crypto-panel-heading">
+            <h2 id="crypto-output-title" class="crypto-panel-title">Output</h2>
+            <p class="crypto-panel-sub">Hasil pemrosesan ditampilkan apa adanya.</p>
+          </div>
+          <span class="crypto-panel-icon" aria-hidden="true">{{ icon_output() }}</span>
+        </header>
+        <div class="crypto-panel-body crypto-output-body">
+          {% if error %}
+          <div class="alert alert-danger" role="alert">{{ error }}</div>
+          {% endif %}
+
+          {% if result is not none %}
+          <div class="crypto-result" data-crypto-result>
+            <div class="crypto-result-head">
+              <span class="crypto-result-label">Hasil</span>
+              <button type="button" class="btn btn-sm btn-secondary crypto-copy-btn" id="copy-result-btn">
+                {{ icon_copy() }}<span>Salin</span>
+              </button>
+            </div>
+            <pre class="output-box mono">{{ result }}</pre>
+          </div>
+          {% else %}
+            {% if not error %}
+            <div class="crypto-empty">
+              <span class="crypto-empty-icon" aria-hidden="true">{{ icon_output() }}</span>
+              <h3 class="crypto-empty-title">Belum ada hasil</h3>
+              <p class="crypto-empty-text">Isi teks dan parameter, lalu jalankan proses untuk melihat keluaran di sini.</p>
+            </div>
+            {% endif %}
+          {% endif %}
+        </div>
+      </section>
+    </div>
+  </form>
+
+  {% if steps %}
+  <section class="crypto-panel crypto-steps-panel" aria-labelledby="crypto-steps-title">
+    <header class="crypto-panel-head">
+      <div class="crypto-panel-heading">
+        <h2 id="crypto-steps-title" class="crypto-panel-title">Tahapan Super Encryption</h2>
+        <p class="crypto-panel-sub">Keluaran tiap layer untuk keperluan pembelajaran.</p>
+      </div>
+      <span class="crypto-panel-icon" aria-hidden="true">{{ icon_layers() }}</span>
+    </header>
+    <div class="crypto-panel-body crypto-steps-body">
+      {% set step_labels = {
+        "vigenere": "Layer 1 — Vigenere",
+        "playfair": "Layer 2 — Playfair",
+        "chacha20": "Layer 3 — ChaCha20",
+        "blowfish": "Layer 4 — Blowfish-CBC",
+        "final": "Keluaran Akhir (CXSE2 + HMAC-SHA256)"
+      } %}
+      {% for name, value in steps.items() %}
+      <div class="crypto-step">
+        <label class="crypto-step-label">{{ step_labels.get(name, name) }}</label>
+        <pre class="output-box mono">{{ value }}</pre>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  <section class="crypto-algo-section" aria-labelledby="crypto-algo-title">
+    <header class="crypto-algo-head">
+      <h2 id="crypto-algo-title" class="crypto-algo-title">Algoritma Tersedia</h2>
+      <p class="crypto-algo-sub">Ringkasan singkat setiap algoritma yang dapat diuji pada halaman ini.</p>
+    </header>
+    <div class="crypto-algo-grid">
+      <article class="crypto-algo-card">
+        <span class="crypto-algo-icon" aria-hidden="true">{{ icon_letters() }}</span>
+        <h3 class="crypto-algo-name">Vigenere</h3>
+        <p class="crypto-algo-desc">Cipher substitusi polyalphabetik klasik. Beroperasi pada ASCII printable (32–126). Kunci di-cycling per karakter.</p>
+      </article>
+      <article class="crypto-algo-card">
+        <span class="crypto-algo-icon" aria-hidden="true">{{ icon_grid() }}</span>
+        <h3 class="crypto-algo-name">Playfair</h3>
+        <p class="crypto-algo-desc">Cipher digram 5×5. Hanya huruf A–Z (I=J). Karakter non-huruf dilewati.</p>
+      </article>
+      <article class="crypto-algo-card">
+        <span class="crypto-algo-icon" aria-hidden="true">{{ icon_stream() }}</span>
+        <h3 class="crypto-algo-name">ChaCha20</h3>
+        <p class="crypto-algo-desc">Stream cipher modern. Nonce 16-byte acak. Output: <code>nonce_hex:ciphertext_b64</code>.</p>
+      </article>
+      <article class="crypto-algo-card">
+        <span class="crypto-algo-icon" aria-hidden="true">{{ icon_blocks() }}</span>
+        <h3 class="crypto-algo-name">Blowfish-CBC</h3>
+        <p class="crypto-algo-desc">Block cipher CBC mode, PKCS#7 padding. IV 8-byte acak. Output: <code>iv_hex:ct_b64</code>.</p>
+      </article>
+    </div>
+  </section>
 </div>
 {% endblock %}
 

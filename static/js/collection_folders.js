@@ -41,6 +41,27 @@
   var formBuat = document.getElementById('folder-create-form');
   var inputBuat = document.getElementById('folder-create-name');
   var cekBuatTerkunci = document.getElementById('folder-create-locked');
+  var folderLoading = document.getElementById('folder-loading');
+  var folderEmpty = document.getElementById('folder-empty');
+
+  var IKON_DOKUMEN =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" ' +
+    'stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>' +
+    '<path d="M14 2v6h6"/><path d="M8 13h8M8 17h5"/></svg>';
+  var IKON_KUNCI =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" ' +
+    'stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2"/>' +
+    '<path d="M8 10V7a4 4 0 0 1 8 0v3"/><circle cx="12" cy="15" r="1.2"/></svg>';
+  var IKON_PUTAR =
+    '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>';
+  var IKON_UNDUH =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" ' +
+    'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12"/>' +
+    '<path d="m7 11 5 5 5-5"/><path d="M4 20h16"/></svg>';
+  var IKON_HAPUS =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" ' +
+    'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/>' +
+    '<path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/><path d="M10 11v5M14 11v5"/></svg>';
 
   var folderAktif = null;
   var folderTerkunci = false;
@@ -132,10 +153,19 @@
 
     var tombol = document.createElement('button');
     tombol.type = 'submit';
-    tombol.className = 'btn btn-sm ' + kelas;
+    tombol.className = 'btn btn-sm doc-action ' + kelas;
     tombol.setAttribute('data-reauth', scope);
     tombol.setAttribute('data-reauth-resource', String(id));
-    tombol.textContent = label;
+
+    var ikon = document.createElement('span');
+    ikon.className = 'doc-action-icon';
+    ikon.innerHTML = scope === 'file.download' ? IKON_UNDUH : IKON_HAPUS;
+    tombol.appendChild(ikon);
+
+    var teks = document.createElement('span');
+    teks.textContent = label;
+    tombol.appendChild(teks);
+
     form.appendChild(tombol);
     return form;
   }
@@ -164,13 +194,20 @@
     tombol.type = 'button';
     tombol.className = 'music-track-play';
     tombol.setAttribute('data-track-play', '');
-    tombol.textContent = item.state === 'locked' ? '🔒' : '▶';
+    tombol.innerHTML = item.state === 'locked' ? IKON_KUNCI : IKON_PUTAR;
     kartu.appendChild(tombol);
 
+    var isi = document.createElement('div');
+    isi.className = 'music-track-main';
     var nama = document.createElement('span');
     nama.className = 'music-track-name';
     nama.textContent = item.name;
-    kartu.appendChild(nama);
+    var meta = document.createElement('span');
+    meta.className = 'audio-track-meta';
+    meta.textContent = 'Audio' + (item.state === 'locked' ? ' · Terkunci' : '');
+    isi.appendChild(nama);
+    isi.appendChild(meta);
+    kartu.appendChild(isi);
 
     if (item.state === 'locked') {
       kartu.setAttribute('data-reauth', 'media.stream');
@@ -202,14 +239,16 @@
     var isi = document.createElement('div');
     isi.className = 'collection-item-main';
     var ikon = document.createElement('span');
-    ikon.className = 'media-icon';
-    ikon.textContent = item.state === 'locked' ? '🔒' : (item.icon || '📄');
+    ikon.className = 'media-icon doc-file-icon';
+    ikon.setAttribute('aria-hidden', 'true');
+    ikon.innerHTML = item.state === 'locked' ? IKON_KUNCI : IKON_DOKUMEN;
     var teks = document.createElement('div');
+    teks.className = 'doc-file-text';
     var nama = document.createElement('span');
     nama.className = 'collection-item-name';
     nama.textContent = item.name;
-    var meta = document.createElement('small');
-    meta.className = 'text-muted d-block';
+    var meta = document.createElement('span');
+    meta.className = 'doc-file-meta';
     meta.textContent = ukuranTeks(item.file_size) + ' · ' +
       String(item.uploaded_at || '').slice(0, 16);
     teks.appendChild(nama);
@@ -219,9 +258,9 @@
     kartu.appendChild(isi);
 
     var aksi = document.createElement('div');
-    aksi.className = 'collection-item-actions';
-    aksi.appendChild(buatFormAksi(item.id, 'file.download', '⬇', 'btn-success'));
-    aksi.appendChild(buatFormAksi(item.id, 'item.delete', '🗑', 'btn-danger'));
+    aksi.className = 'collection-item-actions doc-file-actions';
+    aksi.appendChild(buatFormAksi(item.id, 'file.download', 'Unduh', 'btn-success'));
+    aksi.appendChild(buatFormAksi(item.id, 'item.delete', 'Hapus', 'btn-danger'));
     kartu.appendChild(aksi);
     return kartu;
   }
@@ -261,18 +300,37 @@
     daftarItem.innerHTML = '';
     daftarTersembunyi.innerHTML = '';
     bagianTersembunyi.hidden = true;
+    if (folderLoading) {
+      folderLoading.hidden = false;
+    }
+    if (folderEmpty) {
+      folderEmpty.hidden = true;
+    }
     bersihkanGalat();
 
     var grant = folderTerkunci ? grantUntuk('album.unlock', String(id)) : null;
     if (folderTerkunci && !grant) {
+      if (folderLoading) {
+        folderLoading.hidden = true;
+      }
       tampilkanGalat(pesan('error'));
       return;
     }
     ambil('/api/collections/' + id + '/items', grant).then(function (data) {
-      isiDaftar(daftarItem, data.items || [], id);
+      var daftar = data.items || [];
+      isiDaftar(daftarItem, daftar, id);
+      if (folderLoading) {
+        folderLoading.hidden = true;
+      }
+      if (folderEmpty) {
+        folderEmpty.hidden = daftar.length > 0;
+      }
       bagianTersembunyi.hidden = !(data.hidden_count > 0);
       detail.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }).catch(function (err) {
+      if (folderLoading) {
+        folderLoading.hidden = true;
+      }
       tampilkanGalat(err.message);
     });
   }
