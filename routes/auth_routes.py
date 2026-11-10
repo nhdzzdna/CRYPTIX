@@ -441,9 +441,12 @@ def _isian_masuk() -> dict:
     return request.form.to_dict()
 
 
-def _galat_masuk(pesan: str, status: int = 401):
+def _galat_masuk(pesan: str, status: int = 401, kode: str | None = None):
     """Balasan galat tahap login sebagai JSON."""
-    return jsonify({"success": False, "error": pesan}), status
+    data = {"success": False, "error": pesan}
+    if kode:
+        data["code"] = kode
+    return jsonify(data), status
 
 
 def _hentikan_tahap_masuk() -> None:
@@ -567,8 +570,8 @@ def login():
 @limiter.limit(FACE_VERIFY_LIMIT)
 def login_biometric():
     """
-    Tahap 2: verifikasi seluruh metode biometrik terdaftar sesuai
-    BIOMETRIC_POLICY, lalu pindahkan DEK ke penyimpanan kunci aktif.
+    Tahap 2: verifikasi satu metode biometrik yang dipilih pengguna, lalu
+    pindahkan DEK ke penyimpanan kunci aktif.
     """
     if "user_id" in session:
         return _galat_masuk(MSG.LOGIN_STAGE_ORDER, 400)
@@ -585,14 +588,25 @@ def login_biometric():
         return _galat_masuk(MSG.LOGIN_PENDING_EXPIRED)
 
     user_id, _dek = entri
-    if not biometrics.metode_biometrik_terdaftar(user_id):
-        return _galat_masuk(MSG.LOGIN_BIOMETRIC_NONE)
+    bukti = isian.get("bukti")
+    if not isinstance(bukti, dict):
+        bukti = {}
+    nama = isian.get("metode")
+    if not isinstance(nama, str) or not nama:
+        # Kompatibilitas klien lama: satu kunci bukti dianggap sebagai
+        # metode pilihan. Lebih dari satu kunci wajib menyebut metode.
+        if len(bukti) > 1:
+            return _galat_masuk(MSG.LOGIN_BIOMETRIC_CHOOSE, 400)
+        nama = next(iter(bukti), "")
 
-    hasil = biometrics.verifikasi_tahap_biometrik(
-        user_id, isian.get("bukti"), konteks={"dek": _dek}
+    hasil = biometrics.verifikasi_metode_biometrik(
+        user_id, nama, bukti, konteks={"dek": _dek}
     )
-    if not biometrics.kebijakan_dipenuhi(hasil):
-        return _galat_masuk(MSG.LOGIN_BIOMETRIC_FAILED)
+    if not hasil.get("success"):
+        return _galat_masuk(
+            hasil.get("error") or MSG.LOGIN_BIOMETRIC_FAILED,
+            kode=hasil.get("code"),
+        )
 
     entri = pending_keys.ambil(token)
     if entri is None:
