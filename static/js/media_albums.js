@@ -10,6 +10,43 @@
 (function () {
   'use strict';
 
+  var IKON_GAMBAR =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" ' +
+    'stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2.5"/>' +
+    '<circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>';
+  var IKON_VIDEO =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" ' +
+    'stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5"/>' +
+    '<path d="m10 9 5 3-5 3z"/></svg>';
+  var IKON_AUDIO =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" ' +
+    'stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l10-2v13"/>' +
+    '<circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/></svg>';
+  var IKON_DOKUMEN =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" ' +
+    'stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>' +
+    '<path d="M14 2v6h6"/></svg>';
+  var IKON_KUNCI =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" ' +
+    'stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2"/>' +
+    '<path d="M8 10V7a4 4 0 0 1 8 0v3"/><circle cx="12" cy="15" r="1.2"/></svg>';
+
+  function ikonBerkas(item) {
+    if (item.state === 'locked') {
+      return IKON_KUNCI;
+    }
+    if (item.file_type === 'image') {
+      return IKON_GAMBAR;
+    }
+    if (item.file_type === 'video') {
+      return IKON_VIDEO;
+    }
+    if (item.file_type === 'audio') {
+      return IKON_AUDIO;
+    }
+    return IKON_DOKUMEN;
+  }
+
   var detail = document.getElementById('album-detail');
   if (!detail) {
     return;
@@ -37,6 +74,8 @@
   var formBuatAlbum = document.getElementById('album-create-form');
   var inputBuatAlbum = document.getElementById('album-create-name');
   var cekBuatTerkunci = document.getElementById('album-create-locked');
+  var pemuatAlbum = document.getElementById('album-loading');
+  var kosongAlbum = document.getElementById('album-empty');
 
   var penampil = document.getElementById('media-viewer');
   var panggung = document.getElementById('viewer-stage');
@@ -118,6 +157,26 @@
     }).then(urai);
   }
 
+  function tandaiAlbumAktif(id) {
+    var kartuAlbum = document.querySelectorAll('[data-album-open]');
+    Array.prototype.forEach.call(kartuAlbum, function (kartu) {
+      var aktif = id !== null
+        && kartu.getAttribute('data-album-id') === String(id);
+      kartu.classList.toggle('is-active', aktif);
+      if (aktif) {
+        kartu.setAttribute('aria-current', 'true');
+      } else {
+        kartu.removeAttribute('aria-current');
+      }
+    });
+  }
+
+  function tampilkanPemuatAlbum(tampil) {
+    if (pemuatAlbum) {
+      pemuatAlbum.hidden = !tampil;
+    }
+  }
+
   function buatKartu(item, albumId) {
     var kartu = document.createElement('div');
     kartu.className = 'media-item';
@@ -152,9 +211,8 @@
       tombol.appendChild(gambar);
     } else {
       var kotak = document.createElement('span');
-      kotak.className = 'media-placeholder';
-      kotak.style.background = 'hsl(' + ((item.id * 47) % 360) + ', 45%, 42%)';
-      kotak.textContent = item.state === 'locked' ? '🔒' : item.icon;
+      kotak.className = 'media-placeholder media-placeholder-' + item.file_type;
+      kotak.innerHTML = ikonBerkas(item);
       tombol.appendChild(kotak);
     }
     kartu.appendChild(tombol);
@@ -163,7 +221,7 @@
     ket.className = 'media-caption';
     var ikon = document.createElement('span');
     ikon.className = 'media-icon';
-    ikon.textContent = item.icon || '';
+    ikon.innerHTML = ikonBerkas(item);
     var nama = document.createElement('span');
     nama.className = 'media-name';
     nama.textContent = item.name;
@@ -190,6 +248,7 @@
     albumAktif = String(id);
     albumTerkunci = Boolean(terkunci);
     detail.hidden = false;
+    tandaiAlbumAktif(id);
     judulAlbum.textContent = nama || '';
     tombolKunciAlbum.textContent = albumTerkunci ? 'Buka kunci album' : 'Kunci album';
     tombolKunciAlbum.setAttribute('data-reauth-resource', String(id));
@@ -198,6 +257,9 @@
     daftarItem.innerHTML = '';
     daftarTersembunyi.innerHTML = '';
     bagianTersembunyi.hidden = true;
+    if (kosongAlbum) {
+      kosongAlbum.hidden = true;
+    }
     bersihkanGalat();
 
     var grant = albumTerkunci ? grantUntuk('album.unlock', String(id)) : null;
@@ -205,11 +267,18 @@
       tampilkanGalat(pesan('error'));
       return;
     }
+    tampilkanPemuatAlbum(true);
     ambil('/api/collections/' + id + '/items', grant).then(function (data) {
-      isiGaleri(daftarItem, data.items || [], id);
+      var item = data.items || [];
+      isiGaleri(daftarItem, item, id);
       bagianTersembunyi.hidden = !(data.hidden_count > 0);
+      if (kosongAlbum) {
+        kosongAlbum.hidden = item.length > 0;
+      }
+      tampilkanPemuatAlbum(false);
       detail.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }).catch(function (err) {
+      tampilkanPemuatAlbum(false);
       tampilkanGalat(err.message);
     });
   }
@@ -322,6 +391,12 @@
     if (jumlahPilih) {
       jumlahPilih.textContent = jumlah + ' dipilih';
     }
+
+    var semuaKartu = document.querySelectorAll('[data-media-item]');
+    Array.prototype.forEach.call(semuaKartu, function (kartu) {
+      var cek = kartu.querySelector('[data-select-file]');
+      kartu.classList.toggle('is-selected', Boolean(cek && cek.checked));
+    });
 
     var koleksi = null;
     var sah = jumlah > 0;
@@ -530,6 +605,7 @@
     if (event.target === tombolKembali) {
       detail.hidden = true;
       albumAktif = null;
+      tandaiAlbumAktif(null);
       return;
     }
     if (event.target === tombolPindah) {

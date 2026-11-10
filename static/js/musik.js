@@ -33,7 +33,13 @@
       return;
     }
     var label = aktif ? pesan('pause') : pesan('play');
-    tombolPutar.textContent = (aktif ? '⏸ ' : '▶ ') + label;
+    var teks = tombolPutar.querySelector('[data-play-label]');
+    if (teks) {
+      teks.textContent = label;
+    } else {
+      tombolPutar.textContent = label;
+    }
+    tombolPutar.setAttribute('data-playing', aktif ? 'true' : 'false');
   }
 
   function labelTrek(kartu) {
@@ -64,7 +70,11 @@
       ? Array.prototype.slice.call(wadah.querySelectorAll('[data-track]'))
       : [kartu];
     indeks = daftar.indexOf(kartu);
+    if (trekAktif && trekAktif !== kartu) {
+      trekAktif.classList.remove('is-playing');
+    }
     trekAktif = kartu;
+    kartu.classList.add('is-playing');
     var url = kartu.getAttribute('data-view-url');
     judul.textContent = labelTrek(kartu);
     siapkanWinamp(kartu);

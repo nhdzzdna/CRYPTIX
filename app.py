@@ -131,8 +131,10 @@ def create_app() -> Flask:
     # ── Header keamanan untuk seluruh respons aplikasi ────────────────────────
     _CSP = (
         "default-src 'self'; script-src 'self'; "
-        "style-src 'self' 'unsafe-inline'; img-src 'self' data:; "
-        "media-src 'self'; connect-src 'self'; frame-ancestors 'none'"
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+        "font-src 'self' https://fonts.gstatic.com; "
+        "img-src 'self' data:; media-src 'self'; connect-src 'self'; "
+        "frame-ancestors 'none'"
     )
 
     @app.after_request

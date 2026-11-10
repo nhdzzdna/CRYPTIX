@@ -5,12 +5,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="csrf-token" content="{{ csrf_token() }}" />
   <title>{% block title %}CRYPTIX{% endblock %}</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" />
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
 </head>
 <body class="auth-page">
   <div class="auth-container">
-    <div class="auth-card {% block card_class %}{% endblock %}">
-      <div class="auth-logo">🔐 <span>CRYPTIX</span></div>
+    <div class="auth-card" {% block card_class %}{% endblock %}>
+      <div class="auth-logo">
+        <span class="logo-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2 4 5v6c0 5 3.5 8.5 8 11 4.5-2.5 8-6 8-11V5z" />
+            <circle cx="12" cy="11" r="2.4" />
+            <path d="M12 13.4V16" />
+          </svg>
+        </span>
+        <span>CRYPTIX</span>
+      </div>
       <h2 class="auth-title">{% block auth_title %}{% endblock %}</h2>
 
       {% with messages = get_flashed_messages(with_categories=true) %}
