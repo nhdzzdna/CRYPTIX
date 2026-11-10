@@ -33,7 +33,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const navLinks = document.querySelectorAll(".sidebar-nav .nav-item");
   navLinks.forEach(function (link) {
     link.addEventListener("click", function () {
-      if (window.matchMedia("(max-width: 860px)").matches) setSidebarState(false);
+      if (window.matchMedia("(max-width: 767px)").matches) setSidebarState(false);
     });
   });
 

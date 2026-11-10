@@ -203,6 +203,10 @@ def create_app() -> Flask:
     from routes.reauth_routes import reauth_bp
     app.register_blueprint(reauth_bp)
 
+    # ── Navigasi bersama dan badge sesi ───────────────────────────────────────
+    from modules.navigation import nav_context
+    app.context_processor(nav_context)
+
     # ── Jinja2 custom filters ─────────────────────────────────────────────
     import markupsafe
 

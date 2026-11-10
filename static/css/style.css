@@ -1171,7 +1171,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent-primary
   .flash-container { padding: 18px 24px 0; }
 }
 
-@media (max-width: 860px) {
+@media (max-width: 767px) {
   .sidebar { transform: translateX(-100%); }
   .sidebar.open { transform: translateX(0); box-shadow: var(--shadow-lg); }
   .main-content { margin-left: 0; }
@@ -1185,7 +1185,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent-primary
   .form-grid-2 { grid-template-columns: 1fr; }
 }
 
-@media (min-width: 861px) {
+@media (min-width: 768px) {
   .sidebar-backdrop { display: none; }
 }
 
