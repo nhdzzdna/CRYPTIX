@@ -1,0 +1,126 @@
+/* static/css/base.css - Reset, tipografi, dan dasar elemen KOSYAK */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--kx-bg);
+  color: var(--kx-text);
+  font-family: var(--kx-font-ui);
+  font-size: var(--kx-fs-body);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  margin: 0;
+  font-family: var(--kx-font-display);
+  font-weight: 600;
+  line-height: 1.28;
+  color: var(--kx-text);
+}
+
+p { margin: 0; }
+
+a {
+  color: var(--kx-accent);
+  text-decoration: none;
+}
+
+a:hover { text-decoration: underline; }
+
+img, svg, video, canvas {
+  max-width: 100%;
+}
+
+button, input, select, textarea {
+  font: inherit;
+  color: inherit;
+}
+
+button { cursor: pointer; }
+
+ul, ol {
+  margin: 0;
+  padding: 0;
+}
+
+code, kbd, pre, samp {
+  font-family: var(--kx-font-mono);
+}
+
+hr {
+  border: 0;
+  border-top: 1px solid var(--kx-border);
+  margin: var(--kx-space-3) 0;
+}
+
+:focus-visible {
+  outline: 2px solid var(--kx-accent);
+  outline-offset: 2px;
+  box-shadow: var(--kx-focus-ring);
+}
+
+::selection {
+  background: rgba(45, 212, 191, .28);
+  color: var(--kx-text);
+}
+
+/* Scrollbar tipis gelap */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--kx-border) transparent;
+}
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-thumb {
+  background: var(--kx-border);
+  border: 2px solid var(--kx-bg);
+  border-radius: var(--kx-radius-pill);
+}
+*::-webkit-scrollbar-track { background: transparent; }
+
+/* Autofill gelap */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+select:-webkit-autofill {
+  -webkit-text-fill-color: var(--kx-text);
+  -webkit-box-shadow: 0 0 0 1000px var(--kx-surface) inset;
+  box-shadow: 0 0 0 1000px var(--kx-surface) inset;
+  caret-color: var(--kx-text);
+  transition: background-color 9999s ease-out 0s;
+}
+
+/* Utilitas kecil */
+.kx-mono { font-family: var(--kx-font-mono); }
+.kx-display { font-family: var(--kx-font-display); }
+.kx-muted { color: var(--kx-text-2); }
+.kx-caption { font-size: var(--kx-fs-caption); }
+.kx-help { font-size: var(--kx-fs-help); color: var(--kx-text-2); }
+.kx-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.kx-stack { display: flex; flex-direction: column; gap: var(--kx-space-3); }
+.kx-row { display: flex; align-items: center; gap: var(--kx-space-2); }
+.kx-row-between { display: flex; align-items: center; justify-content: space-between; gap: var(--kx-space-2); }
+.kx-grow { flex: 1 1 auto; min-width: 0; }
+.kx-hidden { display: none !important; }

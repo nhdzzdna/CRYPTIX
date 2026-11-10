@@ -1,0 +1,3 @@
+{% macro ikon(nama, ukuran=18, kelas='') -%}
+<svg class="kx-icon{% if kelas %} {{ kelas }}{% endif %}" width="{{ ukuran }}" height="{{ ukuran }}" aria-hidden="true" focusable="false"><use href="{{ url_for('static', filename='icons/sprite.svg') }}#{{ nama }}"></use></svg>
+{%- endmacro %}
