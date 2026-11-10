@@ -1,13 +1,13 @@
-/* ─── CRYPTIX Global Stylesheet ───────────────────────────────────────────────
+﻿/* â”€â”€â”€ CRYPTIX Global Stylesheet â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
    Dark security dashboard. Teal accent, flat surfaces, restrained motion.
    Webfonts are declared as preferred families with system fallbacks so the
    interface remains usable offline or when external font delivery is blocked.
-   ─────────────────────────────────────────────────────────────────────────── */
+   â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
-/* ── Reset ─────────────────────────────────────────────────────────────────── */
+/* â”€â”€ Reset â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-/* ── Design tokens ─────────────────────────────────────────────────────────── */
+/* â”€â”€ Design tokens â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 :root {
   /* Palette */
   --bg-primary:      #0B0F14;
@@ -66,7 +66,7 @@
   --font:        var(--font-ui);
 }
 
-/* ── Base ──────────────────────────────────────────────────────────────────── */
+/* â”€â”€ Base â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 html, body {
   font-family: var(--font-ui);
   font-size: 14px;
@@ -104,13 +104,13 @@ a { color: var(--accent-primary); }
 }
 *::-webkit-scrollbar-track { background: transparent; }
 
-/* ── Layout ─────────────────────────────────────────────────────────────────── */
+/* â”€â”€ Layout â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .layout-with-sidebar {
   display: flex;
   min-height: 100vh;
 }
 
-/* ── Sidebar ─────────────────────────────────────────────────────────────────── */
+/* â”€â”€ Sidebar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .sidebar {
   width: var(--sidebar-w);
   background: var(--bg-surface);
@@ -266,7 +266,7 @@ a { color: var(--accent-primary); }
 }
 .sidebar-backdrop.visible { opacity: 1; pointer-events: auto; }
 
-/* ── Main Content ───────────────────────────────────────────────────────────── */
+/* â”€â”€ Main Content â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .main-content {
   margin-left: var(--sidebar-w);
   flex: 1;
@@ -331,12 +331,12 @@ a { color: var(--accent-primary); }
   padding: 28px;
 }
 
-/* ── Auth pages ───────────────────────────────────────────────────────────────
+/* â”€â”€ Auth pages â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
    Halaman autentikasi memakai split layout: panel kiri branding CRYPTIX dengan
    pola grid kunci, panel kanan form. Kelas dasar (.auth-page, .auth-container,
    .auth-card, .auth-logo, .auth-title, .auth-link) tetap dipakai oleh
    templates/error.html sehingga tampilan halaman error tidak berubah.
-   ─────────────────────────────────────────────────────────────────────────── */
+   â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .auth-page {
   display: flex;
   align-items: center;
@@ -384,7 +384,7 @@ a { color: var(--accent-primary); }
 .auth-link a { color: var(--accent-primary); text-decoration: none; }
 .auth-link a:hover { text-decoration: underline; }
 
-/* ── Auth: split layout (login, daftar, pemulihan) ─────────────────────────── */
+/* â”€â”€ Auth: split layout (login, daftar, pemulihan) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .auth-page:has(> .auth-shell) { padding: 0; }
 .auth-shell {
   width: 100%;
@@ -780,7 +780,7 @@ a { color: var(--accent-primary); }
   .recovery-key-box { padding: 14px 16px 14px 48px; }
 }
 
-/* ── Cards & panels ─────────────────────────────────────────────────────────── */
+/* â”€â”€ Cards & panels â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .card {
   background: var(--bg-surface);
   border: 1px solid var(--border-primary);
@@ -806,7 +806,7 @@ a { color: var(--accent-primary); }
   gap: 20px;
 }
 
-/* ── Stats ──────────────────────────────────────────────────────────────────── */
+/* â”€â”€ Stats â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
@@ -840,7 +840,7 @@ a { color: var(--accent-primary); }
 }
 .stat-lbl { font-size: .8rem; color: var(--text-secondary); }
 
-/* ── Tables ─────────────────────────────────────────────────────────────────── */
+/* â”€â”€ Tables â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .table {
   width: 100%;
   min-width: 520px;
@@ -867,7 +867,7 @@ a { color: var(--accent-primary); }
 .table-sm th, .table-sm td { padding: 9px 12px; font-size: .82rem; }
 .row-danger { background: rgba(239, 68, 68, .08) !important; }
 
-/* ── Forms ──────────────────────────────────────────────────────────────────── */
+/* â”€â”€ Forms â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .form-group { margin-bottom: 16px; }
 .form-group label {
   display: block;
@@ -929,7 +929,7 @@ select.form-control { cursor: pointer; }
 }
 input[type="checkbox"], input[type="radio"] { accent-color: var(--accent-primary); }
 
-/* ── Buttons ─────────────────────────────────────────────────────────────────── */
+/* â”€â”€ Buttons â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -972,7 +972,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent-primary
 .btn-full { width: 100%; justify-content: center; }
 .btn-sm { min-height: 30px; padding: 5px 10px; font-size: .8rem; }
 
-/* ── Badges ──────────────────────────────────────────────────────────────────── */
+/* â”€â”€ Badges â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .badge {
   display: inline-flex;
   align-items: center;
@@ -991,7 +991,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent-primary
 .badge-info      { background: rgba(96, 165, 250, .12); border-color: rgba(96, 165, 250, .28); color: #93C5FD; }
 .badge-secondary { background: var(--bg-hover); border-color: var(--border-primary); color: var(--text-secondary); }
 
-/* ── Alerts & flash ─────────────────────────────────────────────────────────── */
+/* â”€â”€ Alerts & flash â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .alert {
   padding: 12px 16px;
   border-radius: var(--radius);
@@ -1011,7 +1011,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent-primary
   padding: 20px 28px 0;
 }
 
-/* ── Modal ───────────────────────────────────────────────────────────────────── */
+/* â”€â”€ Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -1036,7 +1036,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent-primary
 }
 .modal-box h2 { font-size: 1.15rem; }
 
-/* ── Toast ───────────────────────────────────────────────────────────────────── */
+/* â”€â”€ Toast â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .toast-container {
   position: fixed;
   top: 16px;
@@ -1062,7 +1062,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent-primary
 .toast-warning { border-left-color: var(--status-warning); }
 .toast-info    { border-left-color: var(--status-info); }
 
-/* ── Empty & loading states ─────────────────────────────────────────────────── */
+/* â”€â”€ Empty & loading states â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .empty-state {
   display: flex;
   flex-direction: column;
@@ -1101,11 +1101,11 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent-primary
 }
 @keyframes cryptix-spin { to { transform: rotate(360deg); } }
 
-/* ── Webcam ──────────────────────────────────────────────────────────────────── */
+/* â”€â”€ Webcam â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .webcam-box { background: var(--bg-hover); border-radius: var(--radius); padding: 12px; }
 .webcam-buttons { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
 
-/* ── Code / mono ─────────────────────────────────────────────────────────────── */
+/* â”€â”€ Code / mono â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .mono {
   font-family: var(--font-mono);
   font-size: .82rem;
@@ -1126,7 +1126,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent-primary
   overflow-y: auto;
 }
 
-/* ── Algo info ────────────────────────────────────────────────────────────────── */
+/* â”€â”€ Algo info â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .algo-info-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -1145,7 +1145,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent-primary
 }
 .algo-card p { font-size: .82rem; color: var(--text-secondary); }
 
-/* ── Utilities ────────────────────────────────────────────────────────────────── */
+/* â”€â”€ Utilities â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .mt-1 { margin-top: 4px; }
 .mt-2 { margin-top: 8px; }
 .mt-3 { margin-top: 12px; }
@@ -1163,7 +1163,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent-primary
 .align-items-center { align-items: center; }
 .d-inline { display: inline; }
 
-/* ── Responsive ─────────────────────────────────────────────────────────────── */
+/* â”€â”€ Responsive â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 @media (max-width: 1024px) {
   :root { --sidebar-w: 220px; }
   .content-area { padding: 24px; }
@@ -1364,19 +1364,6 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent-primary
 .viewer-next { right: 10px; }
 .viewer-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 
-/* --- N2B: saran topik Security Assistant --- */
-.msg-suggestions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  align-self: flex-start;
-  max-width: 92%;
-  margin: -6px 0 0 40px;
-}
-.msg-suggestions .suggestion-btn {
-  white-space: normal;
-  text-align: left;
-}
 /* -- N3b: halaman Musik dan Dokumen --------------------------------------- */
 .music-track-list { display: flex; flex-direction: column; gap: 6px; }
 .music-track,
@@ -1413,7 +1400,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent-primary
 .collection-item-actions { display: flex; gap: 6px; }
 .d-inline { display: inline; }
 
-/* ── Dashboard ─────────────────────────────────────────────────────────────── */
+/* â”€â”€ Dashboard â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .dash-page { display: flex; flex-direction: column; gap: 20px; }
 
 .dash-stats {
@@ -1713,7 +1700,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent-primary
   .dash-stats { grid-template-columns: 1fr; }
 }
 
-/* ── Documents ─────────────────────────────────────────────────────────────── */
+/* â”€â”€ Documents â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .doc-page { display: flex; flex-direction: column; gap: 20px; }
 .doc-header-action svg { width: 16px; height: 16px; }
 .doc-layout {
@@ -2001,7 +1988,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent-primary
   .doc-selection .form-control { max-width: none; }
 }
 
-/* ── Media ─────────────────────────────────────────────────────────────────── */
+/* â”€â”€ Media â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .media-page { display: flex; flex-direction: column; gap: 20px; }
 .media-header-action { display: inline-flex; align-items: center; gap: 6px; }
 .media-header-action svg { width: 16px; height: 16px; }
@@ -2478,7 +2465,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent-primary
   .media-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
-/* ── Audio ──────────────────────────────────────────────────────────────── */
+/* â”€â”€ Audio â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .audio-page { display: flex; flex-direction: column; gap: 20px; }
 .audio-header-action svg { width: 16px; height: 16px; }
 .audio-layout {
@@ -2864,7 +2851,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent-primary
 .audio-folder-rename[hidden],
 .audio-control-btn[hidden] { display: none; }
 
-/* ── Account Vault ────────────────────────────────────────────────────────── */
+/* â”€â”€ Account Vault â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .account-page { display: flex; flex-direction: column; gap: 20px; }
 .account-header-action svg { width: 16px; height: 16px; }
 .account-layout {
@@ -3151,7 +3138,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent-primary
   .account-panel-count { display: none; }
 }
 
-/* ── Secure Notes ──────────────────────────────────────────────────────────── */
+/* â”€â”€ Secure Notes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .notes-page { display: flex; flex-direction: column; gap: 20px; }
 .notes-header-action { display: inline-flex; align-items: center; gap: 6px; }
 .notes-header-action svg { width: 16px; height: 16px; }
@@ -3431,7 +3418,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent-primary
   .notes-form-actions .btn { width: 100%; justify-content: center; }
 }
 
-/* ── Crypto Tools ──────────────────────────────────────────────────────────── */
+/* â”€â”€ Crypto Tools â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .crypto-page { display: flex; flex-direction: column; gap: 20px; }
 .crypto-form { display: flex; flex-direction: column; gap: 20px; }
 
@@ -3695,7 +3682,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent-primary
   .crypto-form-actions .btn { width: 100%; justify-content: center; }
 }
 
-/* ── Steganography ──────────────────────────────────────────────────────────── */
+/* â”€â”€ Steganography â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .stego-page { display: flex; flex-direction: column; gap: 20px; }
 
 .stego-modebar {
@@ -4336,486 +4323,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent-primary
   .security-header-action { justify-content: center; }
 }
 
-/* -- Security Assistant ------------------------------------------------------ */
-.assistant-page {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-.assistant-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 300px;
-  gap: 20px;
-  height: calc(100vh - 156px);
-  min-height: 520px;
-  min-width: 0;
-}
-
-/* Panel percakapan */
-.chat-panel {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  min-height: 0;
-  background: var(--bg-surface);
-  border: 1px solid var(--border-primary);
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-}
-
-/* Header percakapan */
-.chat-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  padding: 14px 18px;
-  background: var(--bg-surface);
-  border-bottom: 1px solid var(--border-primary);
-}
-.chat-header-info {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-width: 0;
-}
-.agent-avatar {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  flex-shrink: 0;
-  border-radius: var(--radius);
-  background: var(--accent-soft);
-  border: 1px solid rgba(45, 212, 191, .28);
-  color: var(--accent-primary);
-}
-.agent-avatar svg { width: 21px; height: 21px; }
-.agent-meta { min-width: 0; }
-.agent-name {
-  font-family: var(--font-display);
-  font-weight: 600;
-  font-size: .95rem;
-  color: var(--text-primary);
-}
-.agent-desc {
-  font-size: .74rem;
-  color: var(--text-secondary);
-  line-height: 1.4;
-}
-.assistant-clear-btn { flex-shrink: 0; }
-.assistant-clear-btn svg { width: 15px; height: 15px; }
-
-/* Area pesan */
-.chat-messages {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  scroll-behavior: smooth;
-}
-.msg-row {
-  display: flex;
-  align-items: flex-end;
-  gap: 10px;
-  max-width: 92%;
-  min-width: 0;
-}
-.msg-user { align-self: flex-end; }
-.msg-agent { align-self: flex-start; }
-.msg-agent .msg-bubble { max-width: 760px; }
-
-.msg-avatar {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  flex-shrink: 0;
-  border-radius: var(--radius);
-  background: var(--bg-hover);
-  border: 1px solid var(--border-primary);
-  color: var(--text-secondary);
-}
-.msg-avatar svg { width: 18px; height: 18px; }
-.user-avatar {
-  background: var(--accent-soft);
-  border-color: rgba(45, 212, 191, .28);
-  color: var(--accent-primary);
-}
-
-.msg-bubble {
-  max-width: 100%;
-  min-width: 0;
-  padding: 11px 14px;
-  border-radius: var(--radius-lg);
-  font-size: .89rem;
-  line-height: 1.65;
-  word-break: break-word;
-  overflow-wrap: anywhere;
-}
-.agent-bubble {
-  background: var(--bg-hover);
-  border: 1px solid var(--border-primary);
-  border-bottom-left-radius: var(--radius-sm);
-  color: var(--text-primary);
-}
-.user-bubble {
-  background: var(--accent-primary);
-  border: 1px solid var(--accent-primary);
-  border-bottom-right-radius: var(--radius-sm);
-  color: #04231F;
-}
-.user-bubble .msg-content { color: #04231F; }
-.user-bubble .msg-content strong { color: #04231F; }
-.user-bubble .msg-content code,
-.user-bubble .msg-content .inline-code {
-  background: rgba(4, 35, 31, .14);
-  border-color: rgba(4, 35, 31, .22);
-  color: #04231F;
-}
-
-/* Isi pesan */
-.agent-bubble > p,
-.msg-content > p { margin: 0 0 8px; }
-.agent-bubble > p:last-child,
-.msg-content > p:last-child { margin-bottom: 0; }
-.msg-content .msg-p { margin: 0 0 8px; }
-.msg-content .msg-p:last-child { margin-bottom: 0; }
-.msg-content h2.msg-h2 {
-  font-family: var(--font-display);
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin: 10px 0 6px;
-}
-.msg-content h3.msg-h3 {
-  font-family: var(--font-display);
-  font-size: .95rem;
-  font-weight: 600;
-  color: var(--accent-primary);
-  margin: 10px 0 6px;
-}
-.msg-content h2.msg-h2:first-child,
-.msg-content h3.msg-h3:first-child { margin-top: 0; }
-.msg-content .msg-ul {
-  margin: 6px 0;
-  padding-left: 18px;
-}
-.msg-content .msg-ul li { margin: 3px 0; }
-.msg-content .msg-hr {
-  border: none;
-  border-top: 1px solid var(--border-primary);
-  margin: 10px 0;
-}
-.msg-content .bq {
-  margin: 6px 0;
-  padding: 6px 12px;
-  border-left: 3px solid var(--accent-primary);
-  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-  background: var(--accent-soft);
-  color: var(--text-secondary);
-  font-style: italic;
-}
-.msg-content .inline-code {
-  padding: 1px 5px;
-  border: 1px solid var(--border-primary);
-  border-radius: 4px;
-  background: var(--bg-primary);
-  color: var(--accent-primary);
-  font-family: var(--font-mono);
-  font-size: .82em;
-  word-break: break-word;
-}
-
-/* Daftar kemampuan pada pesan sambutan */
-.msg-ul.assistant-capabilities {
-  list-style: none;
-  margin: 6px 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.assistant-capabilities li {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0;
-}
-.assistant-capabilities svg {
-  width: 15px;
-  height: 15px;
-  flex-shrink: 0;
-  color: var(--accent-primary);
-}
-
-/* Indikator proses */
-.thinking-bubble {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  opacity: .9;
-}
-.thinking-text {
-  font-size: .83rem;
-  font-style: italic;
-  color: var(--text-secondary);
-}
-.thinking-dots { display: inline-flex; gap: 3px; }
-.thinking-dots span {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--text-secondary);
-  animation: assistant-dot 900ms ease-in-out infinite;
-}
-.thinking-dots span:nth-child(2) { animation-delay: 150ms; }
-.thinking-dots span:nth-child(3) { animation-delay: 300ms; }
-@keyframes assistant-dot {
-  0%, 80%, 100% { transform: translateY(0); opacity: .55; }
-  40% { transform: translateY(-4px); opacity: 1; }
-}
-
-/* Saran pertanyaan */
-.quick-suggestions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 10px 16px;
-  border-top: 1px solid var(--border-primary);
-  background: var(--bg-surface);
-}
-.suggestion-btn {
-  padding: 6px 11px;
-  border: 1px solid var(--border-primary);
-  border-radius: 999px;
-  background: var(--bg-hover);
-  color: var(--text-secondary);
-  font-family: var(--font-ui);
-  font-size: .76rem;
-  line-height: 1.4;
-  cursor: pointer;
-  transition: background-color var(--transition), color var(--transition),
-              border-color var(--transition);
-}
-.suggestion-btn:hover {
-  background: var(--accent-soft);
-  border-color: var(--accent-primary);
-  color: var(--accent-primary);
-}
-.suggestion-btn:focus-visible {
-  outline: none;
-  border-color: var(--accent-primary);
-  box-shadow: var(--focus-ring);
-}
-.msg-suggestions { gap: 8px; }
-.msg-suggestions .suggestion-btn { white-space: normal; text-align: left; }
-
-/* Penyusun pesan */
-.chat-composer {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 12px 16px 14px;
-  border-top: 1px solid var(--border-primary);
-  background: var(--bg-surface);
-}
-.chat-input-area {
-  display: flex;
-  align-items: flex-end;
-  gap: 10px;
-  min-width: 0;
-}
-.chat-input {
-  flex: 1;
-  min-width: 0;
-  padding: 10px 12px;
-  min-height: 42px;
-  max-height: 140px;
-  border: 1px solid var(--border-primary);
-  border-radius: var(--radius);
-  background: var(--bg-primary);
-  color: var(--text-primary);
-  font-family: var(--font-ui);
-  font-size: .88rem;
-  line-height: 1.5;
-  resize: none;
-  overflow-y: auto;
-  transition: border-color var(--transition), box-shadow var(--transition);
-}
-.chat-input::placeholder { color: var(--text-secondary); opacity: .85; }
-.chat-input:focus {
-  outline: none;
-  border-color: var(--accent-primary);
-  box-shadow: var(--focus-ring);
-}
-.send-btn {
-  height: 42px;
-  padding: 10px 16px;
-  border-radius: var(--radius);
-  flex-shrink: 0;
-  gap: 7px;
-}
-.send-btn svg { width: 16px; height: 16px; }
-.input-hint {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  padding: 0 2px;
-  font-size: .72rem;
-  line-height: 1.5;
-  color: var(--text-secondary);
-}
-.input-hint-icon {
-  display: inline-flex;
-  flex-shrink: 0;
-  color: var(--status-warning);
-  padding-top: 1px;
-}
-.input-hint-icon svg { width: 14px; height: 14px; }
-.input-hint code {
-  padding: 1px 4px;
-  border: 1px solid var(--border-primary);
-  border-radius: 4px;
-  background: var(--bg-primary);
-  color: var(--text-primary);
-  font-family: var(--font-mono);
-  font-size: .95em;
-}
-
-/* Panel informasi */
-.assistant-info-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  min-width: 0;
-}
-.assistant-card-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.assistant-card-icon {
-  display: inline-flex;
-  flex-shrink: 0;
-  color: var(--accent-primary);
-}
-.assistant-card-icon svg { width: 16px; height: 16px; }
-.assistant-card-body { padding: 16px 18px; }
-.assistant-facts {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin: 0;
-}
-.assistant-fact dt {
-  font-size: .68rem;
-  font-weight: 600;
-  letter-spacing: .04em;
-  text-transform: uppercase;
-  color: var(--text-secondary);
-}
-.assistant-fact dd {
-  margin: 0;
-  font-size: .85rem;
-  line-height: 1.45;
-  color: var(--text-primary);
-}
-.assistant-note {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  margin-top: 14px;
-  padding-top: 14px;
-  border-top: 1px dashed var(--border-primary);
-}
-.assistant-note-icon {
-  display: inline-flex;
-  flex-shrink: 0;
-  padding-top: 1px;
-  color: var(--status-warning);
-}
-.assistant-note-icon svg { width: 16px; height: 16px; }
-.assistant-note p { margin: 0; }
-
-.capability-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-.capability-list li {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 8px 0;
-  border-bottom: 1px solid var(--border-primary);
-  font-size: .85rem;
-  color: var(--text-primary);
-}
-.capability-list li:first-child { padding-top: 0; }
-.capability-list li:last-child { padding-bottom: 0; border-bottom: none; }
-.cap-icon {
-  display: inline-flex;
-  flex-shrink: 0;
-  color: var(--accent-primary);
-}
-.cap-icon svg { width: 16px; height: 16px; }
-
-@media (max-width: 1120px) {
-  .assistant-layout {
-    grid-template-columns: minmax(0, 1fr) 260px;
-    gap: 16px;
-  }
-}
-
-@media (max-width: 900px) {
-  .assistant-layout {
-    grid-template-columns: 1fr;
-    height: auto;
-    min-height: 0;
-  }
-  .chat-panel {
-    height: calc(100vh - 172px);
-    min-height: 460px;
-  }
-  .assistant-info-panel {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 640px) {
-  .assistant-layout { gap: 14px; }
-  .chat-panel {
-    height: calc(100vh - 162px);
-    min-height: 440px;
-  }
-  .chat-header { padding: 12px 14px; }
-  .chat-messages { padding: 14px; gap: 14px; }
-  .msg-row { max-width: 100%; }
-  .msg-agent .msg-bubble { max-width: 100%; }
-  .msg-bubble { font-size: .86rem; padding: 10px 12px; }
-  .chat-composer { padding: 10px 12px 12px; }
-  .send-btn { padding: 10px 12px; font-size: .82rem; }
-  .quick-suggestions { padding: 9px 12px; }
-  .assistant-info-panel { display: none; }
-}
-
-@media (max-width: 420px) {
-  .msg-avatar { width: 30px; height: 30px; }
-  .msg-avatar svg { width: 16px; height: 16px; }
-  .agent-avatar { width: 36px; height: 36px; }
-  .send-btn svg { width: 15px; height: 15px; }
-  .send-btn { padding: 10px; }
-  .send-btn span { display: none; }
-}
-
-/* ── Settings ────────────────────────────────────────────────────────────────── */
+/* â”€â”€ Settings â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .settings-page {
   display: flex;
   flex-direction: column;
