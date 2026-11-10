@@ -531,6 +531,8 @@ class MSG:
     SETUP_FACE_FAILED         = "Pendaftaran wajah gagal."
     FACE_MULTIPLE_FACES       = "Pendaftaran ditolak: terdeteksi lebih dari satu wajah. Pastikan hanya satu wajah di kamera."
     FACE_LOW_DETECTION_RATE   = "Pendaftaran ditolak: wajah terdeteksi di kurang dari 80% frame. Hadapkan wajah ke kamera dan coba lagi."
+    FACE_EYES_CLOSED          = "Buka mata dan lihat ke kamera."
+    FACE_ENROLL_EYES_CLOSED   = "Pendaftaran ditolak: mata tertutup terdeteksi pada frame sampel. Buka mata dan lihat ke kamera."
     SETUP_FACE_MULTIPLE       = "Lebih dari satu wajah terdeteksi. Sisakan satu wajah di kamera."
     # --- N3a: koleksi dan album media ------------------------------------------------------
     COLLECTION_NAME_REQUIRED   = "Nama album wajib diisi."
