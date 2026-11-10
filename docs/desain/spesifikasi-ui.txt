@@ -1,0 +1,152 @@
+# Rancangan UI/UX CRYPTIX
+
+## 1. Warna
+
+- Latar halaman `#0B0F14` (hampir hitam, bukan navy)
+- Kartu, sidebar, panel `#12181F`
+- Hover, dropdown, bubble chat asisten `#18212B`
+- Border dan pemisah `#1F2A36`
+- Teks utama `#E6EDF3`, teks sekunder `#8B98A5`
+- Aksen tunggal teal `#2DD4BF`. Versi lembutnya (teal 12%) untuk latar item aktif dan baris terpilih.
+- Status: hijau `#22C55E` (aktif, terenkripsi, terhubung), kuning `#EAB308` (belum didaftarkan, belum diverifikasi), merah `#EF4444` (hapus, logout, blok rusak), biru `#60A5FA` (info, segmen Media di bar storage)
+
+Aturan pemakaian:
+- Teal hanya untuk tombol utama, item sidebar aktif, tab dan chip aktif, tautan, ring fokus input, tombol play, progress bar, dan blok blockchain terbaru. Oranye dihapus total.
+- Angka statistik putih, bukan aksen.
+- Merah selalu outline. Merah solid hanya di tombol konfirmasi akhir dialog hapus.
+- Status selalu disertai teks.
+- Kartu dibedakan lewat selisih warna dan border tipis, tanpa bayangan tebal. Garis pemisah selalu 1px warna border, tidak ada garis putih.
+
+## 2. Tipografi
+
+- **Plus Jakarta Sans:** semua teks UI.
+- **Space Grotesk:** logo, judul halaman, angka statistik.
+- **JetBrains Mono:** hash, timestamp, durasi, nomor blok, username/email di Settings, format file, output cipher, kunci pemulihan.
+- **Ukuran:** caption/label/badge 12px, bantuan form 13px, body 14px, subjudul 16px, judul halaman 24-28px, angka statistik 28-32px. Tidak ada teks di bawah 12px.
+
+## 3. Bentuk, ikon, bahasa
+
+- Radius kartu 12px, input dan tombol 8px, badge/chip/tab pill penuh.
+- Spasi kelipatan 4/8/16/24/32px. Padding kartu 20px, padding konten 24-32px, lebar maksimal konten 1200px.
+- Ikon: satu set outline (Lucide), 18px di sidebar, 16px inline. Semua emoji dibuang.
+- Bahasa Indonesia penuh: "Unggah", bukan "Upload". "Enkripsi & Unggah" di semua halaman. "Usb" jadi "USB". Istilah teknis tetap (Dongle, WebAuthn, Blockchain, Stego).
+- Input gelap dengan border tipis dan ring teal saat fokus. Autofill dipaksa gelap. Scrollbar tipis dan gelap di semua tempat, termasuk chat.
+- Transisi 120-160ms, hormati pengaturan reduced motion. Kontras teks minimal 4.5:1, fokus keyboard selalu terlihat, tombol ikon punya label aksesibilitas.
+
+## 4. Komponen
+
+- **Tombol:** utama (teal solid, teks gelap), sekunder (outline), bahaya (outline merah), ikon (32px dengan tooltip).
+- **Badge:** pill kecil warna lembut dengan teks.
+- **Dropzone:** kotak putus-putus dengan ikon, judul, format, tombol "Pilih berkas". Teal saat drag. Setelah file dipilih tampil nama, ukuran, tombol hapus. Menggantikan "Choose File" bawaan browser.
+- **Chip filter dan tab:** pill, aktif teal lembut.
+- **Tabel/daftar:** header kapital kecil abu, baris 52px, hover terangkat, terpilih teal tipis, menu ⋯ di ujung kanan (Buka/Unduh, Pindahkan, Kunci, Sembunyikan, Hapus).
+- **Bar aksi mengambang:** pill di tengah bawah, hanya muncul jika ada item terpilih.
+- **Modal, drawer, toast:** modal 480px (Esc menutup), drawer kanan 420px untuk form panjang, toast kanan atas 4 detik. Aksi sukses/gagal lewat toast, tanpa reload halaman.
+- **Dialog konfirmasi hapus:** menyebut nama item, tombol hapus merah solid.
+- **Empty state:** ikon, judul, deskripsi, tombol aksi.
+- **Loading:** skeleton saat memuat, progress bar teal saat enkripsi file besar.
+- **Blok kode:** mono, tombol Copy di pojok.
+- **Sel hash:** mono, 16 karakter lalu "…", tombol copy saat hover, tooltip hash penuh.
+- **Stepper vertikal** untuk tahapan Layer 1-4, **accordion** untuk detail teknis.
+- **Meter kekuatan password:** 4 segmen, label Lemah/Sedang/Kuat/Sangat kuat.
+- **Pencarian global:** Ctrl K membuka palet pencarian file, kredensial, catatan, halaman.
+- **Badge sesi:** "Sesi mm:ss" mono teal, kuning di bawah 60 detik, klik untuk memperpanjang.
+- **Rantai blockchain:** blok horizontal `#n`. Hijau valid, merah rusak, teal terbaru, abu belum diverifikasi.
+- **Bar storage bertumpuk** dengan legenda, **baris label-nilai** (label kiri abu, nilai kanan mono), **kartu grid media** (thumbnail 4:3, checkbox pojok, nama, ikon tipe, badge status).
+- **Bubble chat:** pengguna di kanan (teal lembut), asisten di kiri (surface terangkat).
+
+## 5. Kerangka halaman utama
+
+- **Sidebar** (238px, tetap di kiri): logo kotak teal membulat berisi gembok + "CRYPTIX". Menu dikelompokkan:
+  - VAULT: Dashboard, Dokumen, Account Vault, Media, Audio, Secure Notes
+  - TOOLS: Crypto Tools, Steganography
+  - KEAMANAN: Security Center, Security Assistant
+  - AKUN: Settings
+  - Footer dipisah garis: username di kiri, tombol Logout outline merah di kanan. Item aktif berlatar teal lembut. Menu "Musik" diganti "Audio" (route `/audio`).
+- **Topbar:** kiri judul besar dengan subjudul informatif ("4 trek · semua terenkripsi"). Kanan pencarian "Cari file, kredensial, catatan… Ctrl K". Dashboard menambah badge sesi. Audio menambah tombol "Unggah audio".
+- **Responsif:** lebar penuh di ≥1200px. Di 768-1199px sidebar tetap dan grid jadi satu kolom. Di bawah 768px sidebar jadi drawer dengan tombol hamburger dan tabel jadi daftar kartu.
+
+## 6. Halaman
+
+### Dashboard
+Layout bento dua kolom.
+- Kiri: kartu ringkasan 4 angka (Total file, Kredensial, Catatan, Stego image). Di bawahnya dua kartu sejajar: Storage terpakai (9.9 MB, bar bertumpuk Dokumen teal / Media biru / Audio ungu muda / Stego amber) dan Blockchain (29 blok, deretan kotak blok dengan yang terakhir teal, teks mono "Jangkar #28 · 00099e8b91b36f4d…"). Lalu kartu Aktivitas terbaru: tautan "Lihat semua", 4 baris berisi nomor, timestamp mono, badge aksi, hash terpotong.
+- Kanan: panel Status keamanan dengan badge "2 dari 4 aktif". Empat baris: Dongle keamanan (Terhubung), WebAuthn (1 kredensial), Face recognition (Belum didaftarkan), Integritas blockchain (Belum diverifikasi). Tombol "Verifikasi integritas sekarang" (teal penuh) dan "Daftarkan wajah" (outline).
+
+### Dokumen
+- Subjudul jumlah file, tombol "Unggah dokumen" di topbar.
+- Dropzone di atas ("Tarik dokumen ke sini", "dienkripsi sebelum disimpan").
+- Baris chip folder: Semua, Tanpa folder, folder yang ada (ikon gembok jika terkunci), dan "+ Folder baru" yang membuka modal kecil (nama folder + opsi "Kunci folder"). Kolom cari dan dropdown urutkan (Nama, Tanggal, Ukuran) di kanan.
+- Tabel: checkbox, ikon tipe, nama, ukuran, tanggal, badge status (Terenkripsi/Terkunci/Tersembunyi), menu ⋯. Nama file panjang dipotong dengan tooltip.
+- Bar aksi mengambang: Pindahkan ke folder, Kunci, Sembunyikan, Hapus.
+- Folder kosong memakai empty state "Belum ada dokumen" dengan tombol unggah.
+
+### Audio
+- Dropzone "Tarik file audio ke sini" (MP3, WAV, FLAC), tombol "Pilih berkas".
+- Chip folder (Semua, Tanpa folder, Favorit, + Folder baru) dan kolom "Cari trek…".
+- Tabel: checkbox pilih semua di header, lalu kolom Judul, Folder, Durasi, Status. Tiap baris punya checkbox, tombol play bulat, judul dengan format kecil di bawahnya, folder, durasi mono, badge Terenkripsi, menu ⋯. Baris tercentang berlatar teal tipis.
+- Bar aksi mengambang saat ada yang dipilih.
+- Player kustom tetap di bawah: cover, judul, folder, prev, play (lingkaran teal), next, waktu berjalan, progress teal, total durasi. Tombol "Buka di Winamp" pindah ke menu ⋯ atau samping player. Konten diberi padding bawah supaya tidak tertimpa player.
+
+### Media
+- Dropzone "Tarik foto atau video ke sini".
+- Chip album, cari, dan toggle tampilan grid/list.
+- Grid kartu: thumbnail 4:3, checkbox di pojok, nama asli file (UUID disimpan di belakang layar), ikon tipe, badge status. Video punya ikon play di thumbnail.
+- Klik membuka pratinjau dalam modal. Bar aksi mengambang seperti halaman lain.
+- Catatan "audio dipindahkan ke halaman Audio" jadi tautan kecil di bawah filter.
+
+### Account Vault
+- Kiri: kartu "Kredensial tersimpan (2)" dengan badge Terenkripsi. Tiap baris: ubin inisial situs teal, nama situs, username tersamar + tanggal mono, password titik-titik, tombol Tampilkan, Salin, Hapus (outline merah) sejajar. Salin otomatis menghapus clipboard setelah 30 detik, dengan toast.
+- Kanan: panel "Tambah kredensial": Nama situs, Username/Email, Password (meter kekuatan 4 segmen + "Buat otomatis"), URL opsional, Catatan opsional, tombol "Simpan terenkripsi" teal penuh.
+- Daftar kosong memakai empty state.
+
+### Secure Notes
+- Dua panel. Kiri: daftar catatan (judul, tanggal mono, ikon gembok), kolom cari, tombol "+ Catatan baru". Kanan: editor dengan judul, isi, dan tombol "Simpan terenkripsi". Catatan yang dipilih tampil terdekripsi di editor setelah klik "Buka", dengan tombol Hapus (outline merah) di header editor.
+- Saat belum ada yang dipilih, panel kanan menampilkan empty state.
+
+### Crypto Tools
+- Baris atas: empat kartu pilihan algoritma (Super Encryption, Vigenere, Playfair, ChaCha20, Blowfish-CBC). Klik kartu memilih algoritma dan menampilkan deskripsinya (nonce, padding, format output) di bawahnya.
+- Kartu form: Aksi (toggle Enkripsi/Dekripsi), Teks input, Passphrase (keterangan PBKDF2-HMAC-SHA256 13px), checkbox "Tampilkan tahapan", tombol "Proses".
+- Hasil dalam blok kode dengan tombol Copy. Bila "Tampilkan tahapan" aktif, hasil tampil sebagai stepper vertikal Layer 1 → 4, tiap langkah dengan outputnya.
+
+### Steganography
+- Dua kartu sejajar. Kiri **Sisipkan**: dropzone gambar carrier (PNG/JPG/BMP maks 4000×4000) dengan pratinjau, pilihan jenis muatan (Teks/Berkas) berupa segmented control, kolom pesan atau dropzone berkas, pilihan kunci (Kunci akun/Passphrase), checkbox enkripsi muatan, indikator kapasitas live ("1.2 KB dari 340 KB"), tombol "Sisipkan". Peringatan "hasil selalu PNG, simpan ulang sebagai JPEG merusak muatan" tampil sebagai kotak info biru.
+- Kanan **Ekstrak**: dropzone gambar stego, passphrase opsional, tombol "Ekstrak", hasil dalam blok kode. Poin teknis (header CRXS, CRC32, PRNG, rumus kapasitas) dipindah ke accordion "Detail teknis".
+- Bawah: tabel "Stego image tersimpan" (nama asli, badge enkripsi, tanggal, aksi Ekstrak/Unduh/Hapus). Passphrase per baris muncul di modal ekstrak, bukan input kecil di baris.
+
+### Security Center
+- Kartu Blockchain Integrity: 4 stat (Total blok, Indeks terakhir, Jangkar head, Verifikasi terakhir) dan tombol "Verifikasi integritas" di kanan atas. Di bawahnya visual rantai horizontal (#26 → #27 → #28) dengan warna per blok, dan hash jangkar lengkap di blok kode dengan Copy.
+- Hasil verifikasi tampil sebagai toast dan banner di kartu (hijau valid, merah menunjuk blok yang rusak).
+- Kartu Log aktivitas: chip filter (Semua, Login, Reauth, Upload, Download, Stream), tabel Nomor, Waktu, Aksi (badge), Asset hash, Block hash (sel hash dengan copy), tombol "Ekspor CSV".
+
+### Security Assistant
+- Chat di kiri, panel info di kanan ("Tentang Assistant" dan "Kemampuan" dengan ikon outline).
+- Chat: header dengan tombol "Bersihkan". Pesan awal berupa sapaan singkat, bukan jawaban panjang. Bubble pengguna di kanan, asisten di kiri. Daftar fitur di jawaban jadi chip yang bisa diklik. Scrollbar gelap tipis.
+- Chip pertanyaan cepat (Daftar Akun, Login Dua Tahap, Dongle USB, Penyiapan Awal, Pendaftaran Wajah, Verifikasi Wajah) tepat di atas input. Input pesan dengan tombol Kirim.
+- Kolom "Cek Password" terpisah di bawah dengan meter kekuatan. Peringatan privasi tampil sebagai kotak info kuning kecil. Typo "Usb" dibetulkan.
+
+### Settings
+Dipecah jadi empat tab pill.
+- **Profil:** kolom kiri berisi kartu Profil (avatar inisial "N", Username, Email, Bergabung, Login terakhir dalam mono rata kanan) dan kartu Ganti password (password saat ini, baru dengan petunjuk 12 karakter, konfirmasi, tombol teal). Kolom kanan: ringkasan Perangkat & biometrik (USB token Terdaftar · Terpasang, WebAuthn 1 kredensial, Face recognition Belum didaftarkan) dengan tautan "Kelola" dan tombol "Daftarkan wajah".
+- **Keamanan:** kartu USB token/dongle (status, password saat ini, "Daftar ulang dongle" dengan petunjuk colok dongle pengganti) dan kartu Kunci pemulihan (peringatan kuning jelas bahwa kunci lama langsung tidak berlaku dan kunci baru hanya tampil sekali, tombol "Terbitkan kunci pemulihan baru" membuka modal konfirmasi, lalu kunci ditampilkan di blok kode mono dengan Copy dan checkbox "Sudah saya simpan").
+- **Biometrik:** kartu Face recognition (badge status, tombol "Daftar ulang wajah") dan kartu WebAuthn (tabel Nama, Ditambahkan, Aksi Hapus outline merah, input nama kredensial, tombol "Tambah WebAuthn", catatan minimal satu biometrik harus tetap terdaftar).
+- **Sesi:** dropdown batas diam sesi (mis. 10 menit), tombol "Simpan batas sesi", keterangan berlaku di sesi ini dan berikutnya.
+
+### Login
+Layout split. Kiri: branding dengan logo, tagline singkat, dan pola grid kunci halus. Kanan: kartu form "Masuk ke akun Anda" dengan Username, Password (tombol tampilkan/sembunyikan), badge "Dongle terdeteksi" berikon USB (hijau, atau kuning "Dongle tidak terdeteksi"), tombol "Masuk" teal penuh. Tautan teal: "Belum punya akun? Daftar" dan "Dongle hilang atau lupa kata sandi? Pulihkan akun". Error tampil merah di bawah field.
+
+### Daftar
+Layout split yang sama. Form "Buat akun baru": Username, Email, Password (meter kekuatan + petunjuk 12 karakter), Konfirmasi password, dropdown Dongle USB dengan tombol "Muat ulang daftar dongle" (sekunder, kecil) dan keterangan 13px. Tombol "Daftar" teal penuh, tautan "Sudah punya akun? Masuk". Pendaftaran ditolak dengan pesan jelas jika tidak ada dongle.
+
+### Pemulihan Akun
+Layout split. Teks pengantar singkat dalam kotak info biru. Field: Username, Kunci pemulihan (textarea mono, placeholder format XXXXX-XXXXX…), Kata sandi baru (+ meter), Konfirmasi, dropdown Dongle baru. Tombol "Pulihkan akun" teal penuh dan tautan "Kembali ke halaman masuk". Setelah berhasil, tampil kunci pemulihan baru di blok kode dengan peringatan simpan.
+
+## 7. Perilaku global
+
+- Semua hapus lewat dialog konfirmasi yang menyebut nama item.
+- Semua notifikasi lewat toast.
+- Semua daftar kosong punya empty state dengan tombol aksi.
+- Semua halaman dengan pilihan banyak memakai bar aksi mengambang.
+- Semua hash dipendekkan dengan tombol copy.
+- Ctrl K membuka pencarian global di semua halaman.
+- Badge sesi menghitung mundur batas diam di topbar.
