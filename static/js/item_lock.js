@@ -1,27 +1,19 @@
 /**
  * static/js/item_lock.js
  * ────────────────────────
- * Interaksi item terkunci (UB Bagian 2) untuk halaman Media, Musik, dan
- * Dokumen.
+ * Pengunci item generik (U2b P5) untuk Audio, Media, dan Dokumen.
  *
- * • Klik item terkunci membuka dialog pilihan: "Lihat sekali" (grant
- *   ``item.view``/``doc.preview`` lalu tampilkan), "Lepas kunci" (grant
- *   sekali pakai ``item.unlock`` untuk koleksi lalu state 'normal'), atau
- *   batal. Dialog tampil lebih dulu supaya hanya satu verifikasi ulang
- *   yang sesuai aksi berlangsung.
- * • Thumbnail item terkunci ditolak server dengan 403; galat pemuatan
- *   gambar ditangkap di fase capture dan diganti placeholder gembok.
- * • Grant diminta lewat tombol sintetis ber-atribut data-reauth sehingga
- *   modal reauth.js dipakai tanpa menyalin logikanya; hasilnya diterima
- *   lewat event ``cryptix:reauth-grant``.
+ * Menggunakan dialog modal berbasis KX.modal yang menerima scope
+ * (item.view, item.unlock, doc.preview, album.unlock) dan resource id,
+ * lalu memicu alur reauth yang sudah ada tanpa JavaScript inline.
+ *
+ * Kontrak:
+ * - window.CryptixLock.mintaGrant(scope, resource) -> Promise<token>
+ * - window.CryptixLock.lepasKunci(koleksiId, fileIds) -> Promise
+ * - window.CryptixLock.pilih(kartu, saatLihat, scopeLihat) -> void
  */
 (function () {
   'use strict';
-
-  var IKON_KUNCI =
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" ' +
-    'stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2"/>' +
-    '<path d="M8 10V7a4 4 0 0 1 8 0v3"/><circle cx="12" cy="15" r="1.2"/></svg>';
 
   var dialog = null;
   var teksKonteks = null;
@@ -36,6 +28,9 @@
   function tampilkanGalat(teks) {
     var kotak = kotakGalat();
     if (!kotak) {
+      if (window.KX && window.KX.toast) {
+        window.KX.toast(teks || 'Tindakan ditolak.', 'danger');
+      }
       return;
     }
     kotak.textContent = teks || 'Tindakan ditolak.';
@@ -44,16 +39,12 @@
 
   /**
    * Minta grant lewat modal reauth (tombol sintetis ber-atribut data-reauth).
-   * Tombol diklik secara programatik sehingga reauth.js menangani kedua
-   * kasus — grant masih tersimpan klien (event langsung terkirim) atau perlu
-   * verifikasi ulang lewat modal. Promise hanya selesai bila grant untuk
-   * scope+resource itu diterbitkan; permintaan lama hangus ketika permintaan
-   * baru dimulai.
+   * Menjaga event 'cryptix:reauth-grant' dan mengembalikan Promise token.
    */
   function mintaGrant(scope, resource) {
     generasi += 1;
     var idKini = generasi;
-    return new Promise(function (selesai) {
+    return new Promise(function (selesai, tolak) {
       var penangan = function (event) {
         var detail = event.detail || {};
         if (detail.scope !== scope ||
@@ -69,7 +60,7 @@
 
       var pemicu = document.createElement('button');
       pemicu.type = 'button';
-      pemicu.style.display = 'none';
+      pemicu.hidden = true;
       pemicu.setAttribute('data-reauth', scope);
       pemicu.setAttribute('data-reauth-resource', String(resource || ''));
       document.body.appendChild(pemicu);
@@ -78,7 +69,7 @@
     });
   }
 
-  /** Lepas kunci item: grant item.unlock (kol. id koleksi) → state normal. */
+  /** Lepas kunci item: grant item.unlock (resource = id koleksi) -> state 'normal'. */
   function lepasKunci(koleksiId, fileIds) {
     return mintaGrant('item.unlock', koleksiId).then(function (token) {
       return apiFetch('/api/collections/' + koleksiId + '/items/state', {
@@ -104,7 +95,13 @@
 
   function tutupDialog() {
     if (dialog) {
-      dialog.style.display = 'none';
+      if (window.KX && window.KX.modal) {
+        window.KX.modal.tutup(dialog);
+      } else {
+        dialog.classList.remove('is-open');
+        dialog.setAttribute('aria-hidden', 'true');
+        dialog.style.display = 'none';
+      }
     }
     saatKlik = null;
   }
@@ -115,60 +112,80 @@
     }
     dialog = document.createElement('div');
     dialog.id = 'item-lock-modal';
-    dialog.className = 'modal-overlay';
-    dialog.style.display = 'none';
+    dialog.className = 'kx-modal-overlay modal-overlay';
     dialog.setAttribute('role', 'dialog');
     dialog.setAttribute('aria-modal', 'true');
     dialog.setAttribute('aria-labelledby', 'item-lock-title');
+    dialog.setAttribute('aria-hidden', 'true');
 
-    var kotak = document.createElement('div');
-    kotak.className = 'modal-box item-lock-box';
+    var modal = document.createElement('div');
+    modal.className = 'kx-modal item-lock-box';
+
+    var kepala = document.createElement('div');
+    kepala.className = 'kx-modal-head';
 
     var judul = document.createElement('h2');
     judul.id = 'item-lock-title';
-    judul.className = 'mb-3';
-    judul.textContent = 'Item terkunci';
-    kotak.appendChild(judul);
+    judul.className = 'kx-modal-title';
+    judul.textContent = 'Item Terkunci';
+    kepala.appendChild(judul);
+
+    var tombolTutup = document.createElement('button');
+    tombolTutup.type = 'button';
+    tombolTutup.className = 'kx-btn kx-btn-icon';
+    tombolTutup.setAttribute('data-kx-tutup', '');
+    tombolTutup.setAttribute('aria-label', 'Tutup dialog');
+    tombolTutup.textContent = '×';
+    kepala.appendChild(tombolTutup);
+    modal.appendChild(kepala);
+
+    var badan = document.createElement('div');
+    badan.className = 'kx-modal-body';
 
     teksKonteks = document.createElement('p');
-    teksKonteks.className = 'text-muted mb-3';
-    kotak.appendChild(teksKonteks);
+    teksKonteks.className = 'kx-lock-text';
+    badan.appendChild(teksKonteks);
+    modal.appendChild(badan);
 
-    var baris = document.createElement('div');
-    baris.className = 'd-flex gap-2 mt-3 item-lock-actions';
-
-    var tombolLihat = document.createElement('button');
-    tombolLihat.type = 'button';
-    tombolLihat.className = 'btn btn-primary';
-    tombolLihat.textContent = 'Lihat sekali';
-
-    var tombolLepas = document.createElement('button');
-    tombolLepas.type = 'button';
-    tombolLepas.className = 'btn btn-secondary';
-    tombolLepas.textContent = 'Lepas kunci';
+    var kaki = document.createElement('div');
+    kaki.className = 'kx-modal-foot item-lock-actions';
 
     var tombolBatal = document.createElement('button');
     tombolBatal.type = 'button';
-    tombolBatal.className = 'btn btn-secondary';
+    tombolBatal.className = 'kx-btn kx-btn-secondary';
     tombolBatal.textContent = 'Batal';
+
+    var tombolLepas = document.createElement('button');
+    tombolLepas.type = 'button';
+    tombolLepas.className = 'kx-btn kx-btn-secondary';
+    tombolLepas.textContent = 'Lepas Kunci';
+
+    var tombolLihat = document.createElement('button');
+    tombolLihat.type = 'button';
+    tombolLihat.className = 'kx-btn kx-btn-primary';
+    tombolLihat.textContent = 'Buka & Putar Sekali';
+
+    tombolBatal.addEventListener('click', tutupDialog);
+    tombolTutup.addEventListener('click', tutupDialog);
+
+    tombolLepas.addEventListener('click', function () {
+      if (saatKlik) {
+        saatKlik('lepas');
+      }
+    });
 
     tombolLihat.addEventListener('click', function () {
       if (saatKlik) {
         saatKlik('lihat');
       }
     });
-    tombolLepas.addEventListener('click', function () {
-      if (saatKlik) {
-        saatKlik('lepas');
-      }
-    });
-    tombolBatal.addEventListener('click', tutupDialog);
 
-    baris.appendChild(tombolLihat);
-    baris.appendChild(tombolLepas);
-    baris.appendChild(tombolBatal);
-    kotak.appendChild(baris);
-    dialog.appendChild(kotak);
+    kaki.appendChild(tombolBatal);
+    kaki.appendChild(tombolLepas);
+    kaki.appendChild(tombolLihat);
+    modal.appendChild(kaki);
+
+    dialog.appendChild(modal);
     document.body.appendChild(dialog);
 
     dialog.addEventListener('click', function (event) {
@@ -176,20 +193,14 @@
         tutupDialog();
       }
     });
-    document.addEventListener('keydown', function (event) {
-      if (event.key === 'Escape' && dialog.style.display === 'flex') {
-        tutupDialog();
-      }
-    });
   }
 
   /**
-   * Buka dialog pilihan untuk satu item terkunci.
+   * Buka dialog pilihan untuk item terkunci (generik).
    *
-   * @param {Element} kartu       elemen dengan data-file-id/-collection-id
-   * @param {Function} [saatLihat] dipanggil dengan kartu setelah grant lihat aktif
-   * @param {string} [scopeLihat] scope verifikasi lihat (default item.view;
-   *                              halaman Dokumen memakai doc.preview)
+   * @param {Element} kartu - elemen pembawa data-file-id, data-collection-id, dan data-name
+   * @param {Function} [saatLihat] - fungsi callback setelah grant aktif
+   * @param {string} [scopeLihat] - scope reauth lihat (default item.view; halaman Dokumen memakai doc.preview)
    */
   function pilih(kartu, saatLihat, scopeLihat) {
     if (!kartu) {
@@ -197,8 +208,7 @@
     }
     buatDialog();
     var nama = kartu.getAttribute('data-name') || 'berkas ini';
-    teksKonteks.textContent = '"' + nama + '" terkunci. Pilih tindakan:';
-    dialog.style.display = 'flex';
+    teksKonteks.textContent = '"' + nama + '" berstatus terkunci. Pilih tindakan:';
 
     var fid = kartu.getAttribute('data-file-id');
     var koleksi = kartu.getAttribute('data-collection-id') || '';
@@ -213,15 +223,24 @@
         lepasKunci(koleksi, [Number(fid)]);
         return;
       }
-      mintaGrant(scopeLihat || 'item.view', fid).then(function () {
+      var targetScope = scopeLihat || 'item.view';
+      mintaGrant(targetScope, fid).then(function () {
         if (typeof saatLihat === 'function') {
           saatLihat(kartu);
         }
       });
     };
+
+    if (window.KX && window.KX.modal) {
+      window.KX.modal.buka(dialog);
+    } else {
+      dialog.classList.add('is-open');
+      dialog.setAttribute('aria-hidden', 'false');
+      dialog.style.display = 'flex';
+    }
   }
 
-  // Thumbnail item terkunci dijawab 403 oleh server; ganti placeholder.
+  // Thumbnail gambar media yang 403 terkunci digantikan placeholder gembok
   document.addEventListener('error', function (event) {
     var gambar = event.target;
     if (!gambar || !gambar.matches || !gambar.matches('img.media-thumb')) {
@@ -233,14 +252,9 @@
     }
     var kotak = document.createElement('span');
     kotak.className = 'media-placeholder media-placeholder-locked';
-    var ikon = document.createElement('span');
-    ikon.className = 'media-placeholder-icon';
-    ikon.setAttribute('aria-hidden', 'true');
-    ikon.innerHTML = IKON_KUNCI;
     var label = document.createElement('span');
     label.className = 'media-placeholder-label';
     label.textContent = 'Terkunci';
-    kotak.appendChild(ikon);
     kotak.appendChild(label);
     gambar.replaceWith(kotak);
   }, true);

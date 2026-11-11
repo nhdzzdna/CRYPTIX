@@ -1,0 +1,415 @@
+/* static/css/halaman/media.css
+   Halaman Media (kx-media-*)
+   Tiga lebar: desktop ≥901px | tablet 641–900px | mobile ≤640px
+   Semua token memakai --kx-* dari tokens.css; jangan mengubah style.css. */
+
+/* ── Layout halaman ─────────────────────────────────────────────────────── */
+.kx-media-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kx-space-4);
+}
+
+.kx-media-layout {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: var(--kx-space-4);
+  align-items: start;
+}
+
+.kx-media-side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kx-space-3);
+}
+
+.kx-media-main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kx-space-4);
+}
+
+/* ── Upload & Dropzone ──────────────────────────────────────────────────── */
+.kx-media-dropzone-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kx-space-2);
+}
+
+.kx-media-hint {
+  margin: 0;
+  color: var(--kx-text-2);
+  font-size: var(--kx-fs-caption);
+  line-height: 1.4;
+}
+
+/* ── Album di Sidebar ───────────────────────────────────────────────────── */
+.kx-media-album-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kx-space-2);
+  padding-bottom: var(--kx-space-3);
+  border-bottom: 1px solid var(--kx-border-soft);
+  margin-bottom: var(--kx-space-3);
+}
+
+.kx-media-album-lock {
+  display: flex;
+  align-items: center;
+  gap: var(--kx-space-2);
+  font-size: var(--kx-fs-body);
+  cursor: pointer;
+}
+
+.kx-media-album-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: var(--kx-space-2);
+}
+
+.kx-media-album-card {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--kx-border-soft);
+  border-radius: var(--kx-radius-card);
+  background: var(--kx-surface-2);
+  padding: 8px;
+  cursor: pointer;
+  text-align: left;
+  transition: transform 0.15s, border-color 0.15s, background 0.15s;
+}
+
+.kx-media-album-card:hover,
+.kx-media-album-card:focus-visible {
+  border-color: var(--kx-accent);
+  transform: translateY(-2px);
+  outline: none;
+}
+
+.kx-media-album-cover {
+  width: 100%;
+  aspect-ratio: 16/9;
+  border-radius: var(--kx-radius-input);
+  background: var(--kx-surface-card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--kx-accent);
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+
+.kx-media-album-cover-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.kx-media-album-card.is-locked .kx-media-album-cover {
+  color: var(--kx-warn);
+}
+
+.kx-media-album-name {
+  font-size: var(--kx-fs-caption);
+  font-weight: 600;
+  color: var(--kx-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.kx-media-album-count {
+  font-size: 11px;
+  color: var(--kx-text-2);
+}
+
+/* ── Detail Album Sliding ──────────────────────────────────────────────── */
+.kx-media-album-detail-head {
+  display: flex;
+  align-items: center;
+  gap: var(--kx-space-3);
+  flex-wrap: wrap;
+}
+
+.kx-media-breadcrumb {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--kx-fs-subtitle);
+  font-weight: 600;
+}
+
+.kx-media-breadcrumb-root {
+  color: var(--kx-text-2);
+}
+
+.kx-media-breadcrumb-sep {
+  color: var(--kx-text-3);
+}
+
+.kx-media-breadcrumb-name {
+  color: var(--kx-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.kx-media-album-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--kx-space-2);
+  flex-wrap: wrap;
+}
+
+/* ── Toolbar & Pencarian ────────────────────────────────────────────────── */
+.kx-media-toolbar {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--kx-space-3);
+  margin-bottom: var(--kx-space-3);
+}
+
+.kx-media-search-wrap {
+  flex: 1;
+}
+
+/* ── Galeri Grid Kartu Media (4:3) ──────────────────────────────────────── */
+.kx-media-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: var(--kx-space-3);
+}
+
+.kx-media-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: var(--kx-surface-2);
+  border: 1px solid var(--kx-border-soft);
+  border-radius: var(--kx-radius-card);
+  overflow: hidden;
+  transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+}
+
+.kx-media-card:hover {
+  border-color: var(--kx-accent);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.kx-media-card.is-selected {
+  border-color: var(--kx-accent);
+  background: var(--kx-accent-soft, rgba(20, 184, 166, 0.08));
+}
+
+.kx-media-card.item-terkunci {
+  border-color: var(--kx-warn-soft, rgba(234, 179, 8, 0.2));
+}
+
+.kx-media-card-select {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 5;
+  background: rgba(15, 23, 42, 0.7);
+  padding: 3px 5px;
+  border-radius: 4px;
+}
+
+.kx-media-card-thumb-btn {
+  width: 100%;
+  aspect-ratio: 4/3;
+  background: var(--kx-surface-card);
+  border: 0;
+  padding: 0;
+  position: relative;
+  cursor: pointer;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--kx-text-3);
+}
+
+.kx-media-card-thumb-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.2s;
+}
+
+.kx-media-card:hover .kx-media-card-thumb-img {
+  transform: scale(1.03);
+}
+
+.kx-media-video-overlay {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.7);
+  color: #fff;
+}
+
+.kx-media-lock-overlay {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--kx-warn);
+  color: #000;
+}
+
+.kx-media-card-info {
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.kx-media-card-name {
+  font-size: var(--kx-fs-caption);
+  font-weight: 600;
+  color: var(--kx-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.kx-media-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--kx-text-2);
+  font-family: var(--kx-font-mono);
+}
+
+.kx-media-card-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 4px;
+  padding-top: 6px;
+  border-top: 1px solid var(--kx-border-soft);
+}
+
+/* ── Menu Titik Tiga (⋯) ────────────────────────────────────────────────── */
+.kx-media-menu-wrap {
+  position: relative;
+  display: inline-block;
+}
+
+.kx-media-menu-dropdown {
+  position: absolute;
+  right: 0;
+  bottom: 100%;
+  z-index: 50;
+  background: var(--kx-surface-card, #1e293b);
+  border: 1px solid var(--kx-border);
+  border-radius: var(--kx-radius-card);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  padding: 4px;
+  min-width: 150px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.kx-media-menu-item {
+  display: flex;
+  align-items: center;
+  gap: var(--kx-space-2);
+  width: 100%;
+  padding: 7px 10px;
+  background: transparent;
+  border: 0;
+  border-radius: var(--kx-radius-input);
+  color: var(--kx-text);
+  font-size: var(--kx-fs-caption);
+  text-align: left;
+  cursor: pointer;
+}
+
+.kx-media-menu-item:hover,
+.kx-media-menu-item:focus-visible {
+  background: var(--kx-surface-2);
+  outline: none;
+}
+
+.kx-media-menu-item.is-danger {
+  color: var(--kx-danger);
+}
+
+/* ── Modal Penampil Media (KX.modal) ────────────────────────────────────── */
+#media-viewer .kx-modal {
+  width: min(92vw, 960px);
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.kx-media-viewer-stage {
+  flex: 1;
+  min-height: 260px;
+  max-height: 65vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #000;
+  border-radius: var(--kx-radius-input);
+  overflow: hidden;
+}
+
+.kx-media-viewer-stage img {
+  max-width: 100%;
+  max-height: 65vh;
+  object-fit: contain;
+}
+
+.kx-media-viewer-stage video {
+  max-width: 100%;
+  max-height: 65vh;
+  outline: none;
+}
+
+.kx-media-viewer-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--kx-space-3);
+  flex-wrap: wrap;
+  padding-top: var(--kx-space-3);
+}
+
+/* ── Responsif ───────────────────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .kx-media-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .kx-media-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kx-media-card,
+  .kx-media-card-thumb-img,
+  .kx-media-album-card {
+    transition: none;
+  }
+}
+
