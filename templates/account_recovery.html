@@ -65,49 +65,84 @@
   </p>
 </form>
 
-<div class="auth-note auth-note-warning" role="note">
-  <details id="recovery-reset">
+{# ── Bagian Reset Akun Tanpa Masuk (UC2) ── #}
+<div class="kx-infobox kx-infobox-warn authx-recovery-box" role="note">
+  <details id="recovery-reset" class="authx-recovery-reset">
     <summary>{{ MSG.RECOVERY_RESET_LINK }}</summary>
-    <p>{{ MSG.RECOVERY_RESET_LIMITATION }}</p>
-    <form method="POST" action="{{ url_for('auth.recovery_reset_account') }}">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-
-      <div class="form-group">
-        <label for="reset-username">Username</label>
-        <input type="text" id="reset-username" name="username" class="form-control"
-               placeholder="Username akun Anda" required autocomplete="username" />
+    <div class="authx-recovery-reset-body">
+      <p>{{ MSG.RECOVERY_RESET_LIMITATION }}</p>
+      <div>
+        <button type="button" class="kx-btn kx-btn-danger kx-btn-sm" data-buka-modal="#modal-reset-account">
+          {{ MSG.RECOVERY_RESET_TITLE }}
+        </button>
       </div>
-
-      <div class="form-group">
-        <label for="reset-confirm-username">Ketik Ulang Username</label>
-        <input type="text" id="reset-confirm-username" name="confirm_username"
-               class="form-control" placeholder="Ulangi username persis" required
-               autocomplete="off" />
-      </div>
-
-      <div class="form-group">
-        <label for="reset-password">Kata Sandi Saat Ini</label>
-        <input type="password" id="reset-password" name="password" class="form-control"
-               required autocomplete="current-password" />
-      </div>
-
-      <div class="form-group">
-        <label for="reset-dongle">Dongle Akun</label>
-        <select id="reset-dongle" name="dongle" class="form-control" disabled>
-          {% for d in drives %}
-            <option value="{{ d.mountpoint }}">{{ d.mountpoint }}</option>
-          {% else %}
-            <option value="" disabled selected>Tidak ada dongle terdeteksi</option>
-          {% endfor %}
-        </select>
-        <small class="form-hint">Dongle akun harus terpasang; pilihan ini hanya
-          penanda, verifikasi dilakukan dari berkas token pada dongle.</small>
-      </div>
-
-      <button type="submit" class="btn btn-outline-danger btn-full">
-        {{ MSG.RECOVERY_RESET_TITLE }}
-      </button>
-    </form>
+    </div>
   </details>
 </div>
+
+{# ── Modal Konfirmasi Hapus Akun Tanpa Masuk ── #}
+<div class="kx-modal-overlay" id="modal-reset-account" aria-hidden="true">
+  <div class="kx-modal" role="dialog" aria-modal="true" aria-labelledby="judul-modal-reset-account">
+    <div class="kx-modal-head">
+      <h2 class="kx-modal-title" id="judul-modal-reset-account">{{ MSG.RECOVERY_RESET_TITLE }}</h2>
+      <button type="button" class="kx-btn kx-btn-icon" data-kx-tutup aria-label="Tutup">&times;</button>
+    </div>
+    <form method="POST" action="{{ url_for('auth.recovery_reset_account') }}" id="form-recovery-reset">
+      <div class="kx-modal-body">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+
+        <div class="kx-infobox kx-infobox-warn">
+          {{ ikon('alert-triangle', 18) }}
+          <div>
+            <strong>Peringatan Keterbatasan:</strong> {{ MSG.RECOVERY_RESET_LIMITATION }} Jika kata sandi dan dongle hilang, tidak ada jalur dari aplikasi.
+          </div>
+        </div>
+
+        <div class="kx-field">
+          <label class="kx-label" for="reset-username">Username</label>
+          <input type="text" id="reset-username" name="username" class="kx-input"
+                 placeholder="Username akun Anda" required autocomplete="username" />
+        </div>
+
+        <div class="kx-field">
+          <label class="kx-label" for="reset-confirm-username">Ketik Ulang Username</label>
+          <input type="text" id="reset-confirm-username" name="confirm_username"
+                 class="kx-input" placeholder="Ulangi username persis" required
+                 autocomplete="off" />
+        </div>
+
+        <div class="kx-field">
+          <label class="kx-label" for="reset-password">Kata Sandi Saat Ini</label>
+          <div class="kx-sandi" data-kx-sandi>
+            <input type="password" id="reset-password" name="password" class="kx-input"
+                   required autocomplete="current-password" />
+          </div>
+        </div>
+
+        <div class="kx-field">
+          <label class="kx-label" for="reset-dongle">Dongle Akun</label>
+          <select id="reset-dongle" name="dongle" class="kx-select" disabled>
+            {% for d in drives %}
+              <option value="{{ d.mountpoint }}">{{ d.mountpoint }}</option>
+            {% else %}
+              <option value="" disabled selected>Tidak ada dongle terdeteksi</option>
+            {% endfor %}
+          </select>
+          <small class="kx-help">Dongle akun harus terpasang; verifikasi dilakukan dari berkas token pada dongle.</small>
+        </div>
+      </div>
+      <div class="kx-modal-foot">
+        <button type="button" class="kx-btn kx-btn-secondary" data-kx-tutup>Batal</button>
+        <button type="submit" class="kx-btn kx-btn-danger-solid">
+          {{ MSG.RECOVERY_RESET_TITLE }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/ui/modal.js') }}"></script>
+<script src="{{ url_for('static', filename='js/account_recovery.js') }}"></script>
 {% endblock %}

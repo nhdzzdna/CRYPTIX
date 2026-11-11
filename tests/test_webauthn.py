@@ -537,8 +537,10 @@ class TestRegistryDanSettings:
         _sesi_masuk(client, baris["id"], baris["username"])
 
         body = client.get("/settings").get_data(as_text=True)
-        assert "<h4>WebAuthn</h4>" in body
-        bagian = body.split("<h4>WebAuthn</h4>", 1)[1]
+        assert "WebAuthn" in body
+        cocok = re.search(r"<h[34][^>]*>WebAuthn</h[34]>", body)
+        assert cocok is not None
+        bagian = body[cocok.end():]
         assert "Belum didaftarkan" in bagian
 
         aut = _Autentikator()
@@ -558,6 +560,8 @@ class TestRegistryDanSettings:
         assert data["setup_done"] is False
 
         body = client.get("/settings").get_data(as_text=True)
-        bagian = body.split("<h4>WebAuthn</h4>", 1)[1]
-        assert "badge-success" in bagian
+        cocok = re.search(r"<h[34][^>]*>WebAuthn</h[34]>", body)
+        assert cocok is not None
+        bagian = body[cocok.end():]
+        assert ("kx-badge-ok" in bagian) or ("badge-success" in bagian)
         assert "Belum didaftarkan" not in bagian

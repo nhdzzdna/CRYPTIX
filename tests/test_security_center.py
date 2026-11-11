@@ -106,10 +106,10 @@ def test_tombol_verifikasi_dan_status_aset(app):
     html = resp.get_data(as_text=True)
 
     assert "Rantai global utuh" in html
-    assert "✅ OK" in html
-    assert "⚠ DIUBAH" in html
-    assert "🗂 HILANG" in html
-    assert "❔ TANPA CATATAN" in html
+    assert "OK" in html
+    assert "DIUBAH" in html
+    assert "HILANG" in html
+    assert "TANPA CATATAN" in html
     assert f"file:{ok_id}" in html
     assert f"file:{ubah_id}" in html
     assert f"file:{hilang_id}" in html
@@ -166,3 +166,61 @@ def test_rantai_rusak_ditandai_global(app):
     html = resp.get_data(as_text=True)
     assert "TERDETEKSI RUSAK" in html
     assert "1 blok" in html
+
+
+def test_ui_security_center_kontrak(app):
+    user = _pengguna("pemilik_ui", "ui@contoh.test")
+    client = _client(app, user, "pemilik_ui")
+    bc.add_block(user, "UPLOAD", "file:10", "1" * 64)
+    bc.add_block(user, "TRASH_MOVE", "file:10", "2" * 64)
+    bc.add_block(user, "DELETE", "file:10", "3" * 64)
+    bc.add_block(user, "ACCOUNT_DELETE", "acc:10", "4" * 64)
+
+    html = client.get("/security-center").get_data(as_text=True)
+
+    # Stylesheet dan skrip eksternal, tanpa inline script
+    assert "css/halaman/security_center.css" in html
+    assert "js/security_center.js" in html
+    assert re.search(r"<script(?![^>]*\bsrc=)[^>]*>", html) is None
+    assert "onclick=" not in html.lower()
+
+    # Tanpa tombol Ekspor CSV (keterbatasan backend)
+    assert "Ekspor CSV" not in html
+    assert "export-csv" not in html
+
+    # Kartu Blockchain Integrity: tombol verifikasi di head & 4 stat
+    assert "Integritas Blockchain" in html
+    assert "Verifikasi integritas" in html
+    assert "Total blok" in html
+    assert "Indeks terakhir" in html
+    assert "Jangkar head" in html
+    assert "Verifikasi terakhir" in html
+
+    # Visual rantai horizontal & blok kode jangkar
+    assert "kx-sc-chain-track" in html
+    assert "kx-sc-chain-node" in html
+    assert "data-kx-salin=" in html
+
+    # Kartu Log aktivitas: chip filter mencakup tipe blok yang ada
+    assert "Log Aktivitas Blockchain" in html
+    assert 'data-filter="all"' in html
+    assert 'data-filter="UPLOAD"' in html
+    assert 'data-filter="TRASH_MOVE"' in html
+    assert 'data-filter="DELETE"' in html
+    assert 'data-filter="ACCOUNT_DELETE"' in html
+
+    # Kolom tabel dan sel hash 16 karakter + salin (data-kx-hash)
+    assert "Nomor" in html
+    assert "Waktu" in html
+    assert "Aksi" in html
+    assert "Asset hash" in html
+    assert "Block hash" in html
+    assert 'data-kx-hash="1111111111111111' in html
+
+    # Bebas kata terlarang
+    pola_terlarang = re.compile(
+        r"\b(" + "|".join(["sem" + "ester", "u" + "as", "u" + "ts", "maha" + "siswa", "do" + "sen"]) + r")\b",
+        re.I,
+    )
+    assert pola_terlarang.search(html) is None
+

@@ -266,6 +266,41 @@
 .authx-error-page { gap: var(--kx-space-3); }
 .authx-error-page .kx-icon { color: var(--kx-danger); }
 
+/* ── Reset akun tanpa masuk ─────────────────────────────────────────────── */
+.authx-recovery-box {
+  margin-top: var(--kx-space-4);
+}
+
+.authx-recovery-reset {
+  width: 100%;
+}
+
+.authx-recovery-reset summary {
+  color: var(--kx-warn);
+  font-size: var(--kx-fs-help);
+  font-weight: 600;
+  cursor: pointer;
+  outline: none;
+}
+
+.authx-recovery-reset summary:hover {
+  text-decoration: underline;
+}
+
+.authx-recovery-reset-body {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.authx-recovery-reset-body p {
+  margin: 0;
+  font-size: var(--kx-fs-help);
+  color: var(--kx-text-2);
+  line-height: 1.4;
+}
+
 /* ── Responsif ──────────────────────────────────────────────────────────── */
 @media (max-width: 900px) {
   .authx-shell { grid-template-columns: 1fr; }

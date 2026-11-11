@@ -1,266 +1,338 @@
 {% extends "base.html" %}
-{% block title %}Security Center — KOSYAK{% endblock %}
-{% block page_title %}Security Center{% endblock %}
-{% block page_subtitle %}
-<p class="page-subtitle">Pantau integritas blockchain, verifikasi keutuhan aset, dan tinjau log aktivitas keamanan akun Anda.</p>
-{% endblock %}
-{% block page_actions %}
-<form method="POST" action="{{ url_for('security.verify') }}" class="security-verify-form">
-  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-  <button type="submit" class="btn btn-primary btn-sm security-header-action">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/><path d="m8.5 11 1.8 1.8 3.2-3.6"/></svg>
-    Verifikasi Integritas
-  </button>
-</form>
+{% block title %}{{ MSG.SC_TITLE }} — KOSYAK{% endblock %}
+{% block page_title %}{{ MSG.SC_TITLE }}{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/halaman/security_center.css') }}" />
 {% endblock %}
 
-{% macro icon_shield() %}
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2 4 5v6c0 5 3.5 8.5 8 11 4.5-2.5 8-6 8-11V5z"/><path d="m9 12 2 2 4-4"/></svg>
-{% endmacro %}
-
-{% macro icon_chain() %}
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.5.5l2-2a5 5 0 0 0-7-7l-1.1 1.1"/><path d="M14 11a5 5 0 0 0-7.5-.5l-2 2a5 5 0 0 0 7 7l1.1-1.1"/></svg>
-{% endmacro %}
-
-{% macro icon_clock() %}
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
-{% endmacro %}
-
-{% macro icon_blocks() %}
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
-{% endmacro %}
-
-{% macro icon_asset() %}
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h5"/></svg>
-{% endmacro %}
-
-{% macro icon_log() %}
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16M4 12h16M4 19h10"/></svg>
-{% endmacro %}
-
-{% macro icon_check() %}
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 4 4 10-10"/></svg>
-{% endmacro %}
-
-{% macro icon_alert() %}
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2.5 20h19z"/><path d="M12 9v5"/><circle cx="12" cy="17" r=".6" fill="currentColor"/></svg>
-{% endmacro %}
-
-{% macro icon_info() %}
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 10v6"/><circle cx="12" cy="7.5" r=".6" fill="currentColor"/></svg>
-{% endmacro %}
-
-{% macro status_badge(status) %}
-{% if status == 'OK' %}
-<span class="badge badge-success" aria-label="✅ OK">{{ icon_check() }}OK</span>
-{% elif status == 'DIUBAH' %}
-<span class="badge badge-danger" aria-label="⚠ DIUBAH">{{ icon_alert() }}DIUBAH</span>
-{% elif status == 'HILANG' %}
-<span class="badge badge-warning" aria-label="🗂 HILANG">{{ icon_alert() }}HILANG</span>
-{% else %}
-<span class="badge badge-info" aria-label="❔ TANPA CATATAN">{{ icon_info() }}TANPA CATATAN</span>
-{% endif %}
-{% endmacro %}
-
-{% macro block_status(tampered) %}
-{% if tampered %}
-<span class="badge badge-danger" aria-label="⚠ RUSAK">{{ icon_alert() }}RUSAK</span>
-{% else %}
-<span class="badge badge-success" aria-label="✅ OK">{{ icon_check() }}OK</span>
-{% endif %}
+{% macro aksi_badge_class(action) %}
+  {%- if action in ('UPLOAD', 'REGISTER', 'BIOMETRIC_ENROLL', 'DONGLE_REGISTER') -%}
+    kx-badge-ok
+  {%- elif action in ('DELETE', 'ACCOUNT_DELETE', 'ACCOUNT_RESET', 'TAMPER_DETECTED') -%}
+    kx-badge-danger
+  {%- elif action in ('TRASH_MOVE', 'LOGIN_FAIL', 'BIOMETRIC_REMOVE') -%}
+    kx-badge-warn
+  {%- elif action in ('DOWNLOAD', 'STREAM', 'REVEAL', 'MODIFY') -%}
+    kx-badge-info
+  {%- else -%}
+    kx-badge-accent
+  {%- endif -%}
 {% endmacro %}
 
 {% block content %}
-{% if verified is not none %}
-  {% set status_kelas = 'is-valid' if chain_valid else 'is-invalid' %}
-  {% set status_judul = 'Rantai blockchain utuh' if chain_valid else 'Rantai blockchain tidak valid' %}
-  {% set status_ket = (stats.total_blocks or 0)|string ~ ' blok tervalidasi tanpa manipulasi.' if chain_valid else tampered_count|string ~ ' blok terdeteksi rusak atau dimanipulasi.' %}
-{% elif last_verified %}
-  {% set status_kelas = 'is-valid' if last_verified.valid else 'is-invalid' %}
-  {% set status_judul = 'Verifikasi terakhir valid' if last_verified.valid else 'Verifikasi terakhir gagal' %}
-  {% set status_ket = 'Dijalankan ' ~ last_verified.timestamp[:19].replace('T', ' ') %}
-{% else %}
-  {% set status_kelas = 'is-pending' %}
-  {% set status_judul = 'Belum diverifikasi' %}
-  {% set status_ket = 'Jalankan verifikasi untuk memeriksa rantai dan aset Anda.' %}
-{% endif %}
+<div class="kx-sc-page"
+     data-verified="{{ '1' if verified is not none else '0' }}"
+     data-chain-valid="{{ '1' if chain_valid else '0' }}"
+     data-tampered-count="{{ tampered_count or 0 }}"
+     data-msg-valid="{{ MSG.SC_TOAST_VALID }}"
+     data-msg-tampered="{{ MSG.SC_TOAST_TAMPERED }}">
 
-<div class="security-page">
-  <section class="security-overview" aria-label="Ringkasan status keamanan">
-    <div class="security-stat security-stat-status {{ status_kelas }}">
-      <span class="security-stat-label">Status Pemeriksaan</span>
-      <span class="security-stat-value security-stat-status-value">{{ status_judul }}</span>
-      <span class="security-stat-hint">{{ status_ket }}</span>
-    </div>
-    <div class="security-stat">
-      <span class="security-stat-icon" aria-hidden="true">{{ icon_blocks() }}</span>
-      <span class="security-stat-label">Total Blok</span>
-      <span class="security-stat-value">{{ stats.total_blocks or 0 }}</span>
-      <span class="security-stat-hint">Rantai global</span>
-    </div>
-    <div class="security-stat">
-      <span class="security-stat-icon" aria-hidden="true">{{ icon_chain() }}</span>
-      <span class="security-stat-label">Indeks Terakhir</span>
-      <span class="security-stat-value">{{ stats.last_index if stats.last_index is not none else '-' }}</span>
-      <span class="security-stat-hint">Blok terakhir tercatat</span>
-    </div>
-    <div class="security-stat">
-      <span class="security-stat-icon" aria-hidden="true">{{ icon_clock() }}</span>
-      <span class="security-stat-label">Verifikasi Terakhir</span>
-      <span class="security-stat-value security-stat-date mono">{{ last_verified.timestamp[:19].replace('T', ' ') if last_verified else '—' }}</span>
-      <span class="security-stat-hint">Waktu pemeriksaan Anda</span>
-    </div>
-  </section>
-
-  <section class="security-panel" aria-labelledby="security-chain-title">
-    <header class="security-panel-head">
-      <div class="security-panel-heading">
-        <h2 class="security-panel-title" id="security-chain-title">Integritas Blockchain</h2>
-        <p class="security-panel-sub">Pemeriksaan hash, tautan blok, Proof of Work, dan jangkar kepala rantai.</p>
+  <!-- ── Kartu Blockchain Integrity ─────────────────────────────────── -->
+  <section class="kx-card kx-sc-card-chain" aria-labelledby="sc-chain-title">
+    <header class="kx-card-head">
+      <div class="kx-sc-card-title-wrap">
+        <h2 class="kx-card-title" id="sc-chain-title">{{ MSG.SC_CARD_CHAIN }}</h2>
+        {% if verified is not none %}
+          <span class="kx-badge {{ 'kx-badge-ok' if chain_valid else 'kx-badge-danger' }}">
+            {{ ikon('check' if chain_valid else 'alert-triangle', 13) }}
+            <span>{{ MSG.SC_CHAIN_VALID if chain_valid else MSG.SC_CHAIN_BROKEN }}</span>
+          </span>
+        {% elif last_verified %}
+          <span class="kx-badge {{ 'kx-badge-ok' if last_verified.valid else 'kx-badge-danger' }}">
+            {{ ikon('check' if last_verified.valid else 'alert-triangle', 13) }}
+            <span>{{ MSG.SC_CHAIN_LAST_VALID if last_verified.valid else MSG.SC_CHAIN_LAST_INVALID }}</span>
+          </span>
+        {% else %}
+          <span class="kx-badge kx-badge-info">
+            {{ ikon('info', 13) }}
+            <span>{{ MSG.SC_CHAIN_UNVERIFIED }}</span>
+          </span>
+        {% endif %}
       </div>
-      <span class="security-panel-icon" aria-hidden="true">{{ icon_shield() }}</span>
+      <form method="POST" action="{{ url_for('security.verify') }}" class="kx-sc-verify-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        <button type="submit" class="kx-btn kx-btn-primary kx-btn-sm" id="btn-verify-chain">
+          {{ ikon('shield', 15) }}<span>{{ MSG.SC_VERIFY_BTN }}</span>
+        </button>
+      </form>
     </header>
-    <div class="security-panel-body security-chain-body">
+
+    <div class="kx-card-body">
+      {# Banner hasil verifikasi #}
       {% if verified is not none %}
         {% if chain_valid %}
-        <div class="security-result is-valid" role="status">
-          <span class="security-result-icon" aria-hidden="true">{{ icon_check() }}</span>
-          <div class="security-result-text">
-            <p class="security-result-title">Rantai global utuh: {{ stats.total_blocks }} blok valid, tidak ada manipulasi.</p>
-            <p class="security-result-desc">Seluruh blok lolos pemeriksaan integritas dan jangkar kepala sesuai.</p>
+        <div class="kx-sc-banner is-valid" role="status">
+          <span class="kx-sc-banner-icon" aria-hidden="true">{{ ikon('check', 18) }}</span>
+          <div class="kx-sc-banner-content">
+            <p class="kx-sc-banner-title">Rantai global utuh: {{ stats.total_blocks or 0 }} blok valid, tidak ada manipulasi.</p>
+            <p class="kx-sc-banner-desc">Seluruh blok lolos pemeriksaan integritas dan jangkar head sesuai.</p>
           </div>
         </div>
         {% else %}
-        <div class="security-result is-invalid" role="alert">
-          <span class="security-result-icon" aria-hidden="true">{{ icon_alert() }}</span>
-          <div class="security-result-text">
-            <p class="security-result-title">{{ tampered_count }} blok pada rantai global TERDETEKSI RUSAK / DIMANIPULASI!</p>
-            <p class="security-result-desc">Periksa blok yang ditandai pada log aktivitas di bawah.</p>
+        <div class="kx-sc-banner is-invalid" role="alert">
+          <span class="kx-sc-banner-icon" aria-hidden="true">{{ ikon('alert-triangle', 18) }}</span>
+          <div class="kx-sc-banner-content">
+            <p class="kx-sc-banner-title">{{ tampered_count }} blok pada rantai global TERDETEKSI RUSAK / DIMANIPULASI!</p>
+            <p class="kx-sc-banner-desc">Periksa blok yang ditandai merah pada visual rantai dan log aktivitas di bawah.</p>
           </div>
         </div>
         {% endif %}
       {% elif last_verified %}
-        <div class="security-result {{ 'is-valid' if last_verified.valid else 'is-invalid' }}" role="status">
-          <span class="security-result-icon" aria-hidden="true">{{ icon_check() if last_verified.valid else icon_alert() }}</span>
-          <div class="security-result-text">
-            <p class="security-result-title">
-              {{ 'Verifikasi terakhir menyatakan rantai valid.' if last_verified.valid else 'Verifikasi terakhir mendeteksi blok rusak.' }}
-            </p>
-            <p class="security-result-desc">
-              {{ last_verified.total_blocks }} blok diperiksa pada {{ last_verified.timestamp[:19].replace('T', ' ') }}.
-            </p>
+        <div class="kx-sc-banner {{ 'is-valid' if last_verified.valid else 'is-invalid' }}" role="status">
+          <span class="kx-sc-banner-icon" aria-hidden="true">{{ ikon('check' if last_verified.valid else 'alert-triangle', 18) }}</span>
+          <div class="kx-sc-banner-content">
+            <p class="kx-sc-banner-title">{{ MSG.SC_RESULT_LAST_VALID if last_verified.valid else MSG.SC_RESULT_LAST_INVALID }}</p>
+            <p class="kx-sc-banner-desc">{{ last_verified.total_blocks }} blok diperiksa pada {{ last_verified.timestamp[:19].replace('T', ' ') }}.</p>
           </div>
         </div>
       {% else %}
-        <div class="security-result is-info" role="status">
-          <span class="security-result-icon" aria-hidden="true">{{ icon_info() }}</span>
-          <div class="security-result-text">
-            <p class="security-result-title">Rantai belum diperiksa pada sesi ini.</p>
-            <p class="security-result-desc">Klik <strong>Verifikasi Integritas</strong> untuk memeriksa rantai global dan keutuhan setiap aset milik Anda.</p>
+        <div class="kx-sc-banner is-info" role="status">
+          <span class="kx-sc-banner-icon" aria-hidden="true">{{ ikon('info', 18) }}</span>
+          <div class="kx-sc-banner-content">
+            <p class="kx-sc-banner-title">{{ MSG.SC_CHAIN_UNVERIFIED }}</p>
+            <p class="kx-sc-banner-desc">Klik <strong>{{ MSG.SC_VERIFY_BTN }}</strong> untuk memeriksa rantai global dan keutuhan setiap aset milik Anda.</p>
           </div>
         </div>
       {% endif %}
 
-      {% if head and head.head_hash %}
-      <div class="security-anchor">
-        <div class="security-anchor-head">
-          <span class="security-anchor-label">Jangkar Kepala</span>
-          <span class="badge badge-secondary">Blok #{{ head.block_index }}</span>
+      {# 4 stat #}
+      <div class="kx-sc-stats" aria-label="Statistik integritas blockchain">
+        <div class="kx-sc-stat">
+          <div class="kx-sc-stat-head">
+            <span class="kx-sc-stat-icon" aria-hidden="true">{{ ikon('layers', 16) }}</span>
+            <span class="kx-sc-stat-label">{{ MSG.SC_STAT_TOTAL }}</span>
+          </div>
+          <span class="kx-sc-stat-value">{{ stats.total_blocks or 0 }}</span>
+          <span class="kx-sc-stat-hint">{{ MSG.SC_STAT_GLOBAL_HINT }}</span>
         </div>
-        <code class="security-anchor-hash mono">{{ head.head_hash }}</code>
+
+        <div class="kx-sc-stat">
+          <div class="kx-sc-stat-head">
+            <span class="kx-sc-stat-icon" aria-hidden="true">{{ ikon('link', 16) }}</span>
+            <span class="kx-sc-stat-label">{{ MSG.SC_STAT_LAST_INDEX }}</span>
+          </div>
+          <span class="kx-sc-stat-value">{{ stats.last_index if stats.last_index is not none else '-' }}</span>
+          <span class="kx-sc-stat-hint">{{ MSG.SC_STAT_RECORDED_HINT }}</span>
+        </div>
+
+        <div class="kx-sc-stat">
+          <div class="kx-sc-stat-head">
+            <span class="kx-sc-stat-icon" aria-hidden="true">{{ ikon('shield', 16) }}</span>
+            <span class="kx-sc-stat-label">{{ MSG.SC_STAT_HEAD_ANCHOR }}</span>
+          </div>
+          <span class="kx-sc-stat-value">{{ ('#' ~ head.block_index|string) if head and head.block_index is not none else '-' }}</span>
+          <span class="kx-sc-stat-hint mono">{{ (head.head_hash[:16] ~ '…') if head and head.head_hash else MSG.SC_STAT_HEAD_NONE }}</span>
+        </div>
+
+        <div class="kx-sc-stat">
+          <div class="kx-sc-stat-head">
+            <span class="kx-sc-stat-icon" aria-hidden="true">{{ ikon('clock', 16) }}</span>
+            <span class="kx-sc-stat-label">{{ MSG.SC_STAT_LAST_VERIFY }}</span>
+          </div>
+          <span class="kx-sc-stat-value mono">{{ last_verified.timestamp[:19].replace('T', ' ') if last_verified else '—' }}</span>
+          <span class="kx-sc-stat-hint">{{ MSG.SC_STAT_VERIFY_HINT }}</span>
+        </div>
+      </div>
+
+      {# Visual rantai horizontal #}
+      <div class="kx-sc-chain-section">
+        <div class="kx-sc-chain-header">
+          <span class="kx-sc-chain-title">Visual Rantai Rangkaian Blok</span>
+        </div>
+        {% if blocks %}
+        <div class="kx-sc-chain-track" role="region" aria-label="Visual rantai blockchain">
+          {% for blk in blocks|reverse %}
+            {% set is_tampered = verified is not none and blk.get('tampered') %}
+            {% set is_latest = blk.block_index == stats.last_index %}
+            {% set is_ok = verified is not none and not blk.get('tampered') %}
+            <div class="kx-sc-chain-node{% if is_tampered %} is-tampered{% elif is_latest %} is-latest{% elif is_ok %} is-valid{% else %} is-unverified{% endif %}"
+                 title="Blok #{{ blk.block_index }} · {{ blk.action }}">
+              #{{ blk.block_index }}
+            </div>
+            {% if not loop.last %}
+              <span class="kx-sc-chain-arrow" aria-hidden="true">→</span>
+            {% endif %}
+          {% endfor %}
+        </div>
+        <div class="kx-sc-chain-legend">
+          <span class="kx-sc-legend-item"><span class="kx-sc-legend-dot is-valid"></span>Valid</span>
+          <span class="kx-sc-legend-item"><span class="kx-sc-legend-dot is-tampered"></span>Rusak</span>
+          <span class="kx-sc-legend-item"><span class="kx-sc-legend-dot is-latest"></span>Terbaru</span>
+          <span class="kx-sc-legend-item"><span class="kx-sc-legend-dot is-unverified"></span>Belum diverifikasi</span>
+        </div>
+        {% else %}
+        <div class="kx-empty">
+          {{ ikon('layers', 24) }}
+          <p class="kx-help">{{ MSG.SC_BLOCK_EMPTY }}</p>
+        </div>
+        {% endif %}
+      </div>
+
+      {# Hash jangkar lengkap dalam blok kode + Copy #}
+      {% if head and head.head_hash %}
+      <div class="kx-sc-anchor-box">
+        <div class="kx-sc-anchor-header">
+          <span class="kx-sc-anchor-label">Hash Jangkar Head (Blok #{{ head.block_index }})</span>
+        </div>
+        <div class="kx-code-wrap">
+          <pre class="kx-code"><code id="head-anchor-hash">{{ head.head_hash }}</code></pre>
+          <button type="button" class="kx-btn kx-btn-sm kx-btn-secondary kx-copy-btn"
+                  data-kx-salin="{{ head.head_hash }}" aria-label="Salin hash jangkar">
+            {{ ikon('copy', 14) }}<span>Salin</span>
+          </button>
+        </div>
       </div>
       {% endif %}
     </div>
   </section>
 
+  <!-- ── Kartu Keutuhan Aset Milik Anda ──────────────────────────────── -->
   {% if assets is not none %}
-  <section class="security-panel" aria-labelledby="security-assets-title">
-    <header class="security-panel-head">
-      <div class="security-panel-heading">
-        <h2 class="security-panel-title" id="security-assets-title">Keutuhan Aset Milik Anda</h2>
-        <p class="security-panel-sub">Berkas, catatan, dan kredensial dibandingkan dengan catatan serta blok rantai.</p>
+  <section class="kx-card kx-sc-card-assets" aria-labelledby="sc-assets-title">
+    <header class="kx-card-head">
+      <div class="kx-sc-card-title-wrap">
+        <h2 class="kx-card-title" id="sc-assets-title">{{ MSG.SC_CARD_ASSETS }}</h2>
+        <span class="kx-badge">{{ assets|length }} aset</span>
       </div>
-      <span class="security-panel-count">{{ assets|length }} aset</span>
     </header>
-    <div class="security-panel-body security-panel-body-flush">
+    <div class="kx-card-body">
       {% if assets %}
-      <div class="security-asset-list">
-        {% for aset in assets %}
-        <div class="security-asset-row">
-          <div class="security-asset-type">
-            <span class="security-asset-icon" aria-hidden="true">{{ icon_asset() }}</span>
-            <span>{{ aset.jenis }}</span>
-          </div>
-          <div class="security-asset-ref mono" title="{{ aset.ref }}">{{ aset.ref }}</div>
-          <div class="security-asset-status">{{ status_badge(aset.status) }}</div>
-          <p class="security-asset-desc">
-            {% if aset.status == 'OK' %}
-              Isi aset cocok dengan catatan dan blok rantai.
-            {% elif aset.status == 'DIUBAH' %}
-              Isi aset berbeda dari catatan atau blok rantai.
-            {% elif aset.status == 'HILANG' %}
-              Berkas tidak ditemukan di disk.
-            {% else %}
-              Tidak ada blok UPLOAD/MODIFY untuk aset ini.
-            {% endif %}
-          </p>
-        </div>
-        {% endfor %}
+      <div class="kx-table-wrap">
+        <table class="kx-table">
+          <thead>
+            <tr>
+              <th>Jenis</th>
+              <th>Referensi</th>
+              <th>Status</th>
+              <th>Keterangan</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for aset in assets %}
+            <tr>
+              <td>
+                <span class="kx-sc-asset-type">
+                  {{ ikon('file-text' if aset.jenis == 'catatan' else ('key' if aset.jenis == 'kredensial' else 'file'), 14) }}
+                  <span>{{ aset.jenis }}</span>
+                </span>
+              </td>
+              <td class="kx-sc-asset-ref mono">{{ aset.ref }}</td>
+              <td>
+                {% if aset.status == 'OK' %}
+                  <span class="kx-badge kx-badge-ok">{{ ikon('check', 12) }}OK</span>
+                {% elif aset.status == 'DIUBAH' %}
+                  <span class="kx-badge kx-badge-danger">{{ ikon('alert-triangle', 12) }}DIUBAH</span>
+                {% elif aset.status == 'HILANG' %}
+                  <span class="kx-badge kx-badge-warn">{{ ikon('alert-triangle', 12) }}HILANG</span>
+                {% else %}
+                  <span class="kx-badge kx-badge-info">{{ ikon('info', 12) }}TANPA CATATAN</span>
+                {% endif %}
+              </td>
+              <td class="kx-sc-asset-desc">
+                {% if aset.status == 'OK' %}
+                  {{ MSG.SC_ASSET_DESC_OK }}
+                {% elif aset.status == 'DIUBAH' %}
+                  {{ MSG.SC_ASSET_DESC_MODIFIED }}
+                {% elif aset.status == 'HILANG' %}
+                  {{ MSG.SC_ASSET_DESC_MISSING }}
+                {% else %}
+                  {{ MSG.SC_ASSET_DESC_NONE }}
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
       </div>
       {% else %}
-      <div class="security-empty">
-        <span class="security-empty-icon" aria-hidden="true">{{ icon_asset() }}</span>
-        <p class="security-empty-title">Belum ada aset untuk diperiksa</p>
-        <p class="security-empty-text">Belum ada aset (berkas, catatan, atau kredensial) untuk diperiksa.</p>
+      <div class="kx-empty">
+        {{ ikon('file', 28) }}
+        <p class="kx-empty-title">{{ MSG.SC_ASSETS_EMPTY }}</p>
+        <p class="kx-help">{{ MSG.SC_ASSETS_EMPTY_TEXT }}</p>
       </div>
       {% endif %}
     </div>
   </section>
   {% endif %}
 
-  <section class="security-panel" aria-labelledby="security-log-title">
-    <header class="security-panel-head">
-      <div class="security-panel-heading">
-        <h2 class="security-panel-title" id="security-log-title">Log Aktivitas Blockchain</h2>
-        <p class="security-panel-sub">Catatan aktivitas blockchain milik akun Anda, terbaru lebih dahulu.</p>
+  <!-- ── Kartu Log Aktivitas Blockchain ──────────────────────────────── -->
+  <section class="kx-card kx-sc-card-log" aria-labelledby="sc-log-title">
+    <header class="kx-card-head">
+      <div class="kx-sc-card-title-wrap">
+        <h2 class="kx-card-title" id="sc-log-title">{{ MSG.SC_CARD_LOG }}</h2>
+        <span class="kx-badge">{{ blocks|length }} blok</span>
       </div>
-      <span class="security-panel-icon" aria-hidden="true">{{ icon_log() }}</span>
     </header>
-    <div class="security-panel-body security-panel-body-flush">
+
+    <div class="kx-card-body">
       {% if blocks %}
-      <div class="security-log-list">
+        {# Chip filter sesuai tipe blok yang ada #}
+        {% set aksi_ada = [] %}
         {% for blk in blocks %}
-        <article class="security-log-row{% if verified is not none and blk.get('tampered') %} is-tampered{% endif %}">
-          <div class="security-log-index mono">#{{ blk.block_index }}</div>
-          <div class="security-log-main">
-            <div class="security-log-top">
-              <span class="badge badge-{{ 'success' if blk.action == 'UPLOAD' else ('danger' if blk.action in ('DELETE', 'ACCOUNT_DELETE', 'ACCOUNT_RESET') else 'info') }}">{{ blk.action }}</span>
-              <span class="badge badge-{{ 'success' if blk.action == 'UPLOAD' else ('danger' if blk.action in ('DELETE', 'TRASH_MOVE') else 'info') }}">{{ blk.action }}</span>
-              <time class="security-log-time mono" datetime="{{ blk.timestamp }}">{{ blk.timestamp[:19].replace('T', ' ') }}</time>
-              {% if verified is not none %}{{ block_status(blk.get('tampered')) }}{% endif %}
-            </div>
-            <div class="security-hash-grid">
-              <div class="security-hash">
-                <span class="security-hash-label">Asset Hash</span>
-                <code class="security-hash-value mono" title="{{ blk.asset_hash }}">{{ blk.asset_hash }}</code>
-              </div>
-              <div class="security-hash">
-                <span class="security-hash-label">Block Hash</span>
-                <code class="security-hash-value mono" title="{{ blk.block_hash }}">{{ blk.block_hash }}</code>
-              </div>
-            </div>
-          </div>
-        </article>
+          {% if blk.action not in aksi_ada %}
+            {% set _ = aksi_ada.append(blk.action) %}
+          {% endif %}
         {% endfor %}
-      </div>
+
+        <div class="kx-chip-row kx-sc-chips" role="tablist" aria-label="Filter aksi blockchain">
+          <button type="button" class="kx-chip is-active" data-filter="all" aria-pressed="true">{{ MSG.SC_FILTER_ALL }}</button>
+          {% for act in aksi_ada %}
+          <button type="button" class="kx-chip" data-filter="{{ act }}" aria-pressed="false">{{ act }}</button>
+          {% endfor %}
+        </div>
+
+        <div class="kx-table-wrap">
+          <table class="kx-table kx-sc-table" id="table-blockchain-log">
+            <thead>
+              <tr>
+                <th class="kx-sc-col-idx">{{ MSG.SC_COL_NUMBER }}</th>
+                <th class="kx-sc-col-time">{{ MSG.SC_COL_TIME }}</th>
+                <th class="kx-sc-col-act">{{ MSG.SC_COL_ACTION }}</th>
+                <th class="kx-sc-col-hash">{{ MSG.SC_COL_ASSET_HASH }}</th>
+                <th class="kx-sc-col-hash">{{ MSG.SC_COL_BLOCK_HASH }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for blk in blocks %}
+              <tr class="kx-sc-log-row{% if verified is not none and blk.get('tampered') %} is-tampered{% endif %}"
+                  data-action="{{ blk.action }}">
+                <td class="kx-sc-cell-idx mono">#{{ blk.block_index }}</td>
+                <td class="kx-sc-cell-time mono">{{ blk.timestamp[:19].replace('T', ' ') }}</td>
+                <td class="kx-sc-cell-act">
+                  <span class="kx-badge {{ aksi_badge_class(blk.action) }}">{{ blk.action }}</span>
+                  {% if verified is not none %}
+                    {% if blk.get('tampered') %}
+                      <span class="kx-badge kx-badge-danger">{{ MSG.SC_STATUS_TAMPERED }}</span>
+                    {% else %}
+                      <span class="kx-badge kx-badge-ok">{{ MSG.SC_STATUS_OK }}</span>
+                    {% endif %}
+                  {% endif %}
+                </td>
+                <td class="kx-sc-cell-hash">
+                  <span class="kx-hash" data-kx-hash="{{ blk.asset_hash }}"></span>
+                </td>
+                <td class="kx-sc-cell-hash">
+                  <span class="kx-hash" data-kx-hash="{{ blk.block_hash }}"></span>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <p class="kx-sc-filter-empty" id="filter-empty-msg" hidden>{{ MSG.SC_FILTER_EMPTY }}</p>
       {% else %}
-      <div class="security-empty">
-        <span class="security-empty-icon" aria-hidden="true">{{ icon_log() }}</span>
-        <p class="security-empty-title">Belum ada aktivitas</p>
-        <p class="security-empty-text">Belum ada blok di blockchain.</p>
-      </div>
+        <div class="kx-empty">
+          {{ ikon('clock', 28) }}
+          <p class="kx-empty-title">{{ MSG.SC_LOG_EMPTY }}</p>
+          <p class="kx-help">{{ MSG.SC_LOG_EMPTY_TEXT }}</p>
+        </div>
       {% endif %}
     </div>
   </section>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/security_center.js') }}"></script>
 {% endblock %}
