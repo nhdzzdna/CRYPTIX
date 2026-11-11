@@ -65,13 +65,15 @@ def file_info(row, db_key: bytes) -> dict:
     nama = display_name(row, db_key)
     ext = extension(nama)
     jenis = row["file_type"]
+    terkunci = bool(row["locked"])
     return {
         "id": row["id"],
         "original_name": nama,
         "file_type": jenis,
         "extension": ext,
         "icon": IKON.get(jenis, "📄"),
-        "state": None,
+        "state": "locked" if terkunci else None,
+        "locked": terkunci,
         "collection_id": None,
         "view_url": url_for("media.view", file_id=row["id"]),
         "thumb_url": (url_for("media.thumb", file_id=row["id"])
@@ -106,18 +108,23 @@ def grant_sah(scope: str, resource_id) -> bool:
 
 def akses_item(row, file_id: int, scope_item: str = "item.view"):
     """
-    Periksa aturan akses berdasarkan kunci koleksi dan state item.
+    Periksa aturan akses berdasarkan kunci koleksi dan kunci berkas.
 
     Koleksi terkunci dicek lebih dulu (grant ``album.unlock`` untuk id
-    koleksi), lalu state item ``locked`` (grant ``item.view`` untuk id
-    berkas, atau scope pengganti untuk pratinjau dokumen). Item di luar
-    koleksi (Tanpa album) tidak dapat dikunci dan selalu lolos.
+    koleksi), lalu kunci tingkat berkas ``vault_files.locked`` atau state
+    item ``locked`` (grant ``item.view`` untuk id berkas, atau scope
+    pengganti untuk pratinjau dokumen). Item di luar koleksi (Tanpa album)
+    kini juga dapat dikunci dan mengikuti aturan yang sama.
 
     Returns
     -------
     None bila boleh, atau ``(pesan, status)`` untuk penolakan JSON.
     """
     with get_db() as db:
+        berkas = db.execute(
+            "SELECT locked FROM vault_files WHERE id=? AND user_id=?",
+            (file_id, row["user_id"]),
+        ).fetchone()
         item = db.execute(
             """SELECT ci.state AS state, ci.collection_id AS collection_id,
                       c.locked AS collection_locked
@@ -127,12 +134,15 @@ def akses_item(row, file_id: int, scope_item: str = "item.view"):
             (file_id, row["user_id"]),
         ).fetchone()
 
-    if item is None:
+    if berkas is None:
         return None
-    if item["collection_locked"]:
+    if item is not None and item["collection_locked"]:
         if not grant_sah("album.unlock", item["collection_id"]):
             return MSG.COLLECTION_LOCKED_NOTE, 403
-    if item["state"] == "locked":
+    terkunci = bool(berkas["locked"]) or (
+        item is not None and item["state"] == "locked"
+    )
+    if terkunci:
         sah = grant_sah("item.view", file_id)
         if not sah and scope_item != "item.view":
             sah = grant_sah(scope_item, file_id)

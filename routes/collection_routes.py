@@ -402,12 +402,63 @@ def set_item_state(resource_id: int):
             "UPDATE collection_items SET state=? WHERE file_id=? AND collection_id=?",
             ((state, fid, resource_id) for fid in file_ids),
         )
+        db.executemany(
+            "UPDATE vault_files SET locked=? WHERE id=? AND user_id=?",
+            ((1 if state == "locked" else 0, fid, session["user_id"])
+             for fid in file_ids),
+        )
         db.commit()
 
     return jsonify({"success": True,
                     "message": (MSG.ITEM_UNLOCKED if state == "normal"
                                 else MSG.COLLECTION_STATE_CHANGED),
                     "state": state, "count": len(file_ids)})
+
+
+@collection_bp.route("/api/media/<int:file_id>/state", methods=["POST"])
+@login_required
+def set_file_state(file_id: int):
+    """
+    Kunci atau lepas kunci berkas di luar koleksi (kunci tingkat berkas).
+
+    Item yang masih menjadi anggota koleksi ditolak agar state koleksi tetap
+    satu-satunya sumber untuk item tersebut. Melepas kunci memerlukan grant
+    sekali pakai ``item.unlock`` dengan resource id berkas.
+    """
+    data = _badan()
+    state = str(data.get("state", "")).strip().lower()
+    if state not in STATES:
+        return _galat(MSG.COLLECTION_STATE_INVALID, "state")
+
+    if state == "normal":
+        sah, alasan = _grant_alasan("item.unlock", file_id)
+        if not sah:
+            status = 403 if alasan in {"scope", "resource"} else 401
+            return _galat(MSG.REAUTH_REQUIRED, alasan, status)
+
+    with get_db() as db:
+        row = db.execute(
+            "SELECT id FROM vault_files WHERE id=? AND user_id=? "
+            "AND deleted_at IS NULL",
+            (file_id, session["user_id"]),
+        ).fetchone()
+        if row is None:
+            return _galat(MSG.ERROR_NOT_FOUND, "not_found", 404)
+        anggota = db.execute(
+            "SELECT 1 FROM collection_items WHERE file_id=?", (file_id,)
+        ).fetchone()
+        if anggota is not None:
+            return _galat(MSG.COLLECTION_STATE_INVALID, "in_collection", 409)
+        db.execute(
+            "UPDATE vault_files SET locked=? WHERE id=? AND user_id=?",
+            (1 if state == "locked" else 0, file_id, session["user_id"]),
+        )
+        db.commit()
+
+    return jsonify({"success": True,
+                    "message": (MSG.ITEM_UNLOCKED if state == "normal"
+                                else MSG.COLLECTION_STATE_CHANGED),
+                    "state": state, "count": 1})
 
 
 # ── Daftar isi album untuk halaman bergaya galeri ─────────────────────────────
