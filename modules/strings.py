@@ -119,6 +119,14 @@ class MSG:
     )
     CRYPTO_UNKNOWN_CIPHER      = "Algoritma tidak dikenal."
     CRYPTO_OPERATION_FAILED    = "Operasi kriptografi gagal; periksa kembali input Anda."
+    CRYPTO_PROCESSING          = "Memproses…"
+    CRYPTO_COPY_DONE           = "Hasil tersalin ke clipboard."
+    CRYPTO_COPY_FAILED         = "Gagal menyalin. Salin secara manual."
+    CRYPTO_VIGENERE_KEY_HINT   = "Kunci hanya boleh huruf A-Z."
+    CRYPTO_SUPER_KEY_HINT      = (
+        "Kunci turunan untuk keempat layer diturunkan dengan "
+        "PBKDF2-HMAC-SHA256 bersalt dari kunci rahasia ini."
+    )
 
     # â”€â”€ Media Vault â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     MEDIA_DECRYPT_FAILED     = "Dekripsi file media gagal."

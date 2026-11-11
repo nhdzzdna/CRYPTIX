@@ -64,7 +64,7 @@ def _post(client, **fields):
 
 
 def _first_output(html_text: str):
-    match = re.search(r'<pre class="output-box mono">(.*?)</pre>', html_text, re.S)
+    match = re.search(r'<pre class="kx-code[^"]*"[^>]*>(.*?)</pre>', html_text, re.S)
     return html.unescape(match.group(1)) if match else None
 
 
@@ -136,7 +136,7 @@ class TestSuperEncryptionRoute:
         )
         body = dec.get_data(as_text=True)
         assert "CXSE2." not in (_first_output(body) or "")
-        assert "alert-danger" in body
+        assert "kx-infobox-danger" in body
 
     def test_output_not_written_to_cookie(self, client):
         enc = _post(
@@ -159,7 +159,7 @@ class TestIndividualCipherRoute:
         )
         body = page.get_data(as_text=True)
         assert page.status_code == 200
-        assert "alert-danger" not in body
+        assert "kx-infobox-danger" not in body
         token = _first_output(body)
         assert token and ":" in token
 
@@ -182,7 +182,7 @@ class TestIndividualCipherRoute:
             text="putar balik blowfish", key="rahasia-123",
         )
         body = enc.get_data(as_text=True)
-        assert "alert-danger" not in body
+        assert "kx-infobox-danger" not in body
         token = _first_output(body)
         assert token and ":" in token
         dec = _post(
@@ -201,14 +201,14 @@ class TestIndividualCipherRoute:
             client, cipher="blowfish", action="decrypt",
             text=token, key="kunci-dua",
         )
-        assert "alert-danger" in dec.get_data(as_text=True)
+        assert "kx-infobox-danger" in dec.get_data(as_text=True)
 
     def test_empty_key_shows_error(self, client):
         page = _post(
             client, cipher="chacha20", action="encrypt",
             text="pesan", key="",
         )
-        assert "alert-danger" in page.get_data(as_text=True)
+        assert "kx-infobox-danger" in page.get_data(as_text=True)
 
 
 class TestSuperEncryptionTraceRoute:
@@ -219,7 +219,7 @@ class TestSuperEncryptionTraceRoute:
         )
         body = page.get_data(as_text=True)
         assert page.status_code == 200
-        assert "crypto-trace-table" in body
+        assert "kx-ct-trace" in body
         assert "Pasangan Asal" in body
         assert "Sebelum (hex)" in body
         assert "ditampilkan 200 pertama" in body

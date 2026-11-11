@@ -1,0 +1,211 @@
+/* static/css/halaman/crypto_tools.css — halaman Crypto Tools (kx-ct-*) */
+
+/* ── Kartu pilihan algoritma ──────────────────────────────────────────── */
+.kx-ct-algo-row {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: var(--kx-space-2);
+}
+
+.kx-ct-algo {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--kx-space-2);
+  padding: 14px 16px;
+  border: 1px solid var(--kx-border);
+  border-radius: var(--kx-radius-card);
+  background: var(--kx-surface);
+  color: var(--kx-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--kx-transition), background-color var(--kx-transition);
+}
+.kx-ct-algo:hover {
+  background: var(--kx-surface-2);
+}
+.kx-ct-algo:focus-visible {
+  outline: none;
+  box-shadow: var(--kx-focus-ring);
+}
+.kx-ct-algo.is-aktif {
+  border-color: rgba(45, 212, 191, .45);
+  background: var(--kx-accent-soft);
+}
+.kx-ct-algo-ikon {
+  display: inline-flex;
+  color: var(--kx-text-2);
+}
+.kx-ct-algo.is-aktif .kx-ct-algo-ikon {
+  color: var(--kx-accent);
+}
+.kx-ct-algo-nama {
+  font-family: var(--kx-font-display);
+  font-size: var(--kx-fs-body);
+  font-weight: 600;
+}
+
+/* ── Deskripsi algoritma terpilih ─────────────────────────────────────── */
+.kx-ct-deskripsi {
+  margin: var(--kx-space-3) 0 0;
+  padding: 12px 16px;
+  border-left: 3px solid var(--kx-accent);
+  border-radius: 0 var(--kx-radius-input) var(--kx-radius-input) 0;
+  background: var(--kx-surface);
+  color: var(--kx-text-2);
+  font-size: var(--kx-fs-help);
+}
+.kx-ct-deskripsi p {
+  margin: 0;
+}
+.kx-ct-deskripsi code {
+  font-family: var(--kx-font-mono);
+  color: var(--kx-text);
+}
+
+/* ── Grid formulir + hasil ────────────────────────────────────────────── */
+.kx-ct-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  gap: var(--kx-space-4);
+  align-items: start;
+  margin-top: var(--kx-space-4);
+}
+
+.kx-ct-panel-ikon {
+  display: inline-flex;
+  color: var(--kx-text-3);
+}
+
+.kx-ct-form-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kx-space-3);
+}
+.kx-ct-teks {
+  min-height: 140px;
+  font-family: var(--kx-font-mono);
+  font-size: var(--kx-fs-help);
+}
+.kx-ct-hint {
+  margin: 0;
+  color: var(--kx-text-3);
+  font-size: var(--kx-fs-caption);
+}
+.kx-ct-proses {
+  align-self: flex-start;
+}
+
+.kx-ct-hasil-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kx-space-3);
+}
+.kx-ct-hasil {
+  max-height: 420px;
+  overflow-y: auto;
+}
+.kx-ct-hasil-kosong {
+  padding: var(--kx-space-5) var(--kx-space-3);
+}
+
+/* Galat memakai varian bahaya dari infobox (komponen inti hanya punya
+   info dan warn; varian ini dibatasi pada halaman Crypto Tools). */
+.kx-ct-page .kx-infobox-danger {
+  border-color: rgba(239, 68, 68, .35);
+  background: var(--kx-danger-soft);
+}
+.kx-ct-page .kx-infobox-danger .kx-icon {
+  color: var(--kx-danger);
+}
+.kx-ct-page .kx-infobox-danger p {
+  margin: 0;
+  color: var(--kx-text);
+}
+
+/* ── Tahapan Super Encryption ────────────────────────────────────────── */
+.kx-ct-tahapan {
+  margin-top: var(--kx-space-4);
+}
+
+.kx-ct-stepper {
+  margin-top: var(--kx-space-2);
+}
+.kx-ct-keterangan {
+  margin: 4px 0 var(--kx-space-2);
+  color: var(--kx-text-2);
+  font-size: var(--kx-fs-help);
+}
+.kx-ct-step-io {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--kx-space-2);
+}
+.kx-ct-io {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.kx-ct-io-label {
+  color: var(--kx-text-2);
+  font-size: var(--kx-fs-caption);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.kx-ct-io-blok {
+  max-height: 180px;
+  overflow-y: auto;
+}
+.kx-ct-params {
+  margin-top: var(--kx-space-2);
+}
+.kx-ct-jejak {
+  margin-top: var(--kx-space-2);
+}
+.kx-ct-jejak summary {
+  font-size: var(--kx-fs-help);
+}
+.kx-ct-jejak summary .kx-icon {
+  flex: 0 0 auto;
+  color: var(--kx-text-2);
+  transition: transform var(--kx-transition);
+}
+.kx-ct-jejak[open] summary .kx-icon {
+  transform: rotate(180deg);
+}
+.kx-ct-trace {
+  font-size: var(--kx-fs-help);
+}
+.kx-ct-sel-mono {
+  font-family: var(--kx-font-mono);
+}
+.kx-ct-catatan {
+  margin: var(--kx-space-2) 0 0;
+  color: var(--kx-text-3);
+  font-size: var(--kx-fs-caption);
+}
+
+/* ── Responsif ────────────────────────────────────────────────────────── */
+@media (max-width: 1199px) {
+  .kx-ct-algo-row {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .kx-ct-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 767px) {
+  .kx-ct-algo-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .kx-ct-step-io {
+    grid-template-columns: 1fr;
+  }
+  .kx-ct-proses {
+    align-self: stretch;
+    justify-content: center;
+  }
+}
