@@ -1,8 +1,8 @@
 
-# CRYPTIX — Digital Archive Security Platform
+# KOSYAK — Digital Archive Security Platform
 
 ## Deskripsi
-CRYPTIX adalah aplikasi web arsip digital pribadi berbasis Python/Flask yang mengamankan file, teks, gambar, kredensial akun, dan log aktivitas dengan berbagai teknik kriptografi modern dan klasik.
+KOSYAK adalah aplikasi web arsip digital pribadi berbasis Python/Flask yang mengamankan file, teks, gambar, kredensial akun, dan log aktivitas dengan berbagai teknik kriptografi modern dan klasik.
 
 Dikembangkan sebagai proyek akhir mata kuliah Kriptografi oleh Kelompok 3.
 
@@ -39,7 +39,7 @@ Buka browser di `http://127.0.0.1:5000`.
 ## Cara Menyiapkan USB Token
 
 1. Colokkan flashdisk yang akan dijadikan token.
-2. Login ke CRYPTIX, buka **Settings → Security → USB Token**.
+2. Login ke KOSYAK, buka **Settings → Security → USB Token**.
 3. Klik **"Register USB Token"** — aplikasi membaca serial number volume dan menulis file `.cryptix_token` yang ditandatangani HMAC ke root flashdisk.
 4. Set `USB_REQUIRED = True` di `config.py` untuk mengaktifkan wajib USB saat login.
 5. Setiap kali login, flashdisk yang sama harus tercolok.

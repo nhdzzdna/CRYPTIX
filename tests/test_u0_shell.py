@@ -80,6 +80,18 @@ def test_flash_dirender_sebagai_data_pesan(client):
     assert "Pesan uji toast" in html
 
 
+def test_rename_tampilan_kosyak(app):
+    html = app.test_client().get("/login").get_data(as_text=True)
+    assert "KOSYAK" in html
+    assert "CRYPTIX" not in html
+
+
+def test_menu_audio_memakai_label_audio(client):
+    html = client.get("/dashboard").get_data(as_text=True)
+    assert ">Audio<" in html
+    assert ">Musik<" not in html
+
+
 def test_nav_melewati_endpoint_yang_belum_ada(app):
     from modules.navigation import daftar_nav
 

@@ -32,7 +32,7 @@ class MSG:
     RECOVERY_CHECK_REQUIRED = "Centang konfirmasi bahwa kunci pemulihan sudah disimpan untuk melanjutkan."
     RECOVERY_ONLY_ONCE      = "Kunci pemulihan hanya ditampilkan satu kali dan tidak dapat dilihat kembali."
     SETUP_BIOMETRIC_REQUIRED = "Daftarkan setidaknya satu biometrik (wajah atau sidik jari) untuk menyelesaikan penyiapan."
-    SETUP_COMPLETE          = "Penyiapan keamanan selesai. Anda dapat mulai menggunakan CRYPTIX."
+    SETUP_COMPLETE          = "Penyiapan keamanan selesai. Anda dapat mulai menggunakan KOSYAK."
 
     LOGIN_FAILED            = "{error}"   # error string comes from auth module
     LOGIN_SUCCESS           = "Selamat datang, {username}!"
@@ -197,7 +197,7 @@ class MSG:
     RECOVERY_COPY_FAILED      = "Gagal menyalin. Pilih teks kunci lalu salin secara manual."
     RECOVERY_DOWNLOAD_OK      = "Berkas kunci pemulihan diunduh."
     RECOVERY_FILENAME         = "cryptix-kunci-pemulihan.txt"
-    RECOVERY_FILE_HEADER      = "CRYPTIX - Kunci Pemulihan"
+    RECOVERY_FILE_HEADER      = "KOSYAK - Kunci Pemulihan"
     RECOVERY_FILE_HINT        = "Simpan berkas ini di tempat aman. Kunci tidak dapat ditampilkan lagi."
     SETUP_FACE_BUTTON         = "Daftarkan Wajah (30 frame / 3 detik)"
     SETUP_FACE_GUIDE          = "Hadapkan wajah ke kamera, lalu gerakkan kepala pelan selama pengambilan gambar."
