@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}{{ MSG.TRASH_TITLE }} — CRYPTIX{% endblock %}
+{% block page_title %}{{ MSG.TRASH_TITLE }}{% endblock %}
+{% block page_subtitle %}
+<p class="page-subtitle">{{ MSG.TRASH_PAGE_SUBTITLE }}</p>
+{% endblock %}
+
+{% macro icon_trash() %}
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/><path d="M10 11v5M14 11v5"/></svg>
+{% endmacro %}
+
+{% macro icon_restore() %}
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
+{% endmacro %}
+
+{% block content %}
+<div class="trash-page" id="trash-page"
+     data-msg-select-required="{{ MSG.TRASH_SELECT_REQUIRED }}"
+     data-msg-purge-confirm="{{ MSG.TRASH_PURGE_CONFIRM }}"
+     data-msg-empty-confirm="{{ MSG.TRASH_EMPTY_CONFIRM }}">
+  <section class="trash-panel" aria-labelledby="trash-list-title">
+    <header class="trash-panel-head">
+      <div class="trash-panel-heading">
+        <h2 class="trash-panel-title" id="trash-list-title">{{ MSG.TRASH_TITLE }}</h2>
+        <p class="trash-panel-sub">{{ MSG.TRASH_RETENTION_NOTE.format(days=retention_days) }}</p>
+      </div>
+      <span class="trash-panel-count">{{ items|length }}</span>
+    </header>
+
+    {% if items %}
+    <div class="trash-actions">
+      <form method="POST" action="{{ url_for('trash.pulihkan') }}" class="trash-form" id="trash-restore-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        <input type="hidden" name="items" id="trash-items-restore" value="[]" />
+        <button type="submit" class="btn btn-sm btn-success" id="trash-restore-button"
+                data-trash-select>
+          {{ icon_restore() }}<span>{{ MSG.TRASH_RESTORE_BUTTON }}</span>
+        </button>
+      </form>
+      <form method="POST" action="{{ url_for('trash.hapus_permanen') }}" class="trash-form" id="trash-purge-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        <input type="hidden" name="items" id="trash-items-purge" value="[]" />
+        <button type="button" class="btn btn-sm btn-danger" id="trash-purge-button"
+                data-reauth="trash.purge"
+                data-trash-select>
+          {{ icon_trash() }}<span>{{ MSG.TRASH_PURGE_BUTTON }}</span>
+        </button>
+      </form>
+      <form method="POST" action="{{ url_for('trash.kosongkan') }}" class="trash-form" id="trash-empty-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        <button type="button" class="btn btn-sm btn-outline-danger" id="trash-empty-button"
+                data-reauth="trash.purge">
+          {{ icon_trash() }}<span>{{ MSG.TRASH_EMPTY_BUTTON }}</span>
+        </button>
+      </form>
+    </div>
+
+    <div class="trash-table-wrap">
+      <table class="table trash-table" id="trash-table">
+        <thead>
+          <tr>
+            <th>{{ MSG.TRASH_COL_SELECT }}</th>
+            <th>{{ MSG.TRASH_COL_NAME }}</th>
+            <th>{{ MSG.TRASH_COL_KIND }}</th>
+            <th>{{ MSG.TRASH_COL_DELETED }}</th>
+            <th>{{ MSG.TRASH_COL_REMAINING }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in items %}
+          <tr data-trash-item data-jenis="{{ item.jenis }}" data-id="{{ item.id }}">
+            <td>
+              <input type="checkbox" data-trash-select-item value="{{ item.id }}"
+                     data-jenis="{{ item.jenis }}" aria-label="{{ MSG.TRASH_COL_SELECT }} {{ item.nama }}" />
+            </td>
+            <td>{{ item.nama }}</td>
+            <td>{{ item.label }}</td>
+            <td class="mono">{{ item.deleted_at[:16] }}</td>
+            <td class="mono">{{ item.sisa_hari }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="trash-empty">
+      <span class="trash-empty-icon" aria-hidden="true">{{ icon_trash() }}</span>
+      <p class="trash-empty-title">{{ MSG.TRASH_EMPTY }}</p>
+    </div>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/sampah.js') }}"></script>
+{% endblock %}

@@ -4755,3 +4755,32 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent-primary
   .settings-empty { padding: 22px 16px; }
   .settings-key { font-size: .86rem; }
 }
+
+/* -- UB Bagian 2: item terkunci -------------------------------------------- */
+.item-terkunci {
+  border-style: dashed;
+  opacity: .82;
+}
+.item-terkunci:hover {
+  border-color: var(--border-primary);
+}
+.item-lock-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(3, 7, 11, .55);
+  color: #F4D06F;
+}
+.item-lock-overlay svg { width: 30px; height: 30px; }
+.item-lock-note {
+  color: var(--status-warning);
+  font-weight: 600;
+}
+.media-placeholder-locked {
+  border-color: rgba(244, 208, 111, .4);
+  color: var(--status-warning);
+}
+.item-lock-actions { flex-wrap: wrap; }

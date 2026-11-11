@@ -234,7 +234,7 @@
           <div class="security-log-index mono">#{{ blk.block_index }}</div>
           <div class="security-log-main">
             <div class="security-log-top">
-              <span class="badge badge-{{ 'success' if blk.action == 'UPLOAD' else ('danger' if blk.action == 'DELETE' else 'info') }}">{{ blk.action }}</span>
+              <span class="badge badge-{{ 'success' if blk.action == 'UPLOAD' else ('danger' if blk.action in ('DELETE', 'TRASH_MOVE') else 'info') }}">{{ blk.action }}</span>
               <time class="security-log-time mono" datetime="{{ blk.timestamp }}">{{ blk.timestamp[:19].replace('T', ' ') }}</time>
               {% if verified is not none %}{{ block_status(blk.get('tampered')) }}{% endif %}
             </div>

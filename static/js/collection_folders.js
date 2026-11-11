@@ -4,8 +4,10 @@
  * Pengelola folder bersama untuk halaman Musik dan Dokumen.
  *
  * Memakai API koleksi yang sama dengan album Media: buat, ganti nama, hapus,
- * kunci, pindahkan banyak berkas, serta kunci/sembunyikan item. Item hanya
- * dimuat setelah grant album.unlock bila folder terkunci.
+ * kunci, pindahkan banyak berkas, serta kunci/lepas kunci item. Mengunci
+ * item tidak memerlukan grant; melepas kunci memakai grant sekali pakai
+ * ``item.unlock`` untuk koleksi. Isi folder terkunci hanya dimuat setelah
+ * grant ``album.unlock``.
  */
 (function () {
   'use strict';
@@ -23,9 +25,6 @@
   var detail = document.getElementById('folder-detail');
   var judul = document.getElementById('folder-detail-title');
   var daftarItem = document.getElementById('folder-items');
-  var bagianTersembunyi = document.getElementById('folder-hidden');
-  var daftarTersembunyi = document.getElementById('folder-hidden-items');
-  var tombolTersembunyi = document.getElementById('folder-hidden-open');
   var tombolKunci = document.getElementById('folder-lock-toggle');
   var tombolKembali = document.getElementById('folder-back');
   var tombolGantiNama = document.getElementById('folder-rename');
@@ -37,7 +36,7 @@
   var targetPindah = document.getElementById('move-target');
   var tombolPindah = document.getElementById('move-button');
   var tombolKunciItem = document.getElementById('lock-items-button');
-  var tombolSembunyiItem = document.getElementById('hide-items-button');
+  var tombolLepasItem = document.getElementById('unlock-items-button');
   var formBuat = document.getElementById('folder-create-form');
   var inputBuat = document.getElementById('folder-create-name');
   var cekBuatTerkunci = document.getElementById('folder-create-locked');
@@ -154,8 +153,11 @@
     var tombol = document.createElement('button');
     tombol.type = 'submit';
     tombol.className = 'btn btn-sm doc-action ' + kelas;
-    tombol.setAttribute('data-reauth', scope);
-    tombol.setAttribute('data-reauth-resource', String(id));
+    if (scope !== 'item.delete') {
+      // Hapus lunak tidak memerlukan grant; scope lain tetap diverifikasi.
+      tombol.setAttribute('data-reauth', scope);
+      tombol.setAttribute('data-reauth-resource', String(id));
+    }
 
     var ikon = document.createElement('span');
     ikon.className = 'doc-action-icon';
@@ -171,14 +173,15 @@
   }
 
   function buatKartuMusik(item, folderId) {
+    var terkunci = item.state === 'locked';
     var kartu = document.createElement('div');
-    kartu.className = 'music-track';
+    kartu.className = 'music-track' + (terkunci ? ' item-terkunci' : '');
     kartu.setAttribute('data-track', '');
     kartu.setAttribute('data-file-id', String(item.id));
     kartu.setAttribute('data-kind', item.file_type);
     kartu.setAttribute('data-name', item.name);
     kartu.setAttribute('data-view-url', item.view_url);
-    kartu.setAttribute('data-locked', item.state === 'locked' ? '1' : '0');
+    kartu.setAttribute('data-locked', terkunci ? '1' : '0');
     kartu.setAttribute('data-collection-id', String(folderId || ''));
 
     var label = document.createElement('label');
@@ -194,7 +197,7 @@
     tombol.type = 'button';
     tombol.className = 'music-track-play';
     tombol.setAttribute('data-track-play', '');
-    tombol.innerHTML = item.state === 'locked' ? IKON_KUNCI : IKON_PUTAR;
+    tombol.innerHTML = terkunci ? IKON_KUNCI : IKON_PUTAR;
     kartu.appendChild(tombol);
 
     var isi = document.createElement('div');
@@ -204,27 +207,25 @@
     nama.textContent = item.name;
     var meta = document.createElement('span');
     meta.className = 'audio-track-meta';
-    meta.textContent = 'Audio' + (item.state === 'locked' ? ' · Terkunci' : '');
+    meta.textContent = 'Audio' + (terkunci ? ' · Terkunci' : '');
     isi.appendChild(nama);
     isi.appendChild(meta);
     kartu.appendChild(isi);
-
-    if (item.state === 'locked') {
-      kartu.setAttribute('data-reauth', 'media.stream');
-      kartu.setAttribute('data-reauth-resource', String(item.id));
-    }
     return kartu;
   }
 
   function buatKartuDokumen(item, folderId) {
+    var terkunci = item.state === 'locked';
     var kartu = document.createElement('div');
-    kartu.className = 'collection-item';
+    kartu.className = 'collection-item doc-file-row' +
+      (terkunci ? ' item-terkunci' : '');
     kartu.setAttribute('data-doc-item', '');
     kartu.setAttribute('data-file-id', String(item.id));
     kartu.setAttribute('data-kind', item.file_type);
     kartu.setAttribute('data-name', item.name);
     kartu.setAttribute('data-size', String(item.file_size || 0));
     kartu.setAttribute('data-date', String(item.uploaded_at || ''));
+    kartu.setAttribute('data-locked', terkunci ? '1' : '0');
     kartu.setAttribute('data-collection-id', String(folderId || ''));
 
     var label = document.createElement('label');
@@ -241,7 +242,7 @@
     var ikon = document.createElement('span');
     ikon.className = 'media-icon doc-file-icon';
     ikon.setAttribute('aria-hidden', 'true');
-    ikon.innerHTML = item.state === 'locked' ? IKON_KUNCI : IKON_DOKUMEN;
+    ikon.innerHTML = terkunci ? IKON_KUNCI : IKON_DOKUMEN;
     var teks = document.createElement('div');
     teks.className = 'doc-file-text';
     var nama = document.createElement('span');
@@ -250,7 +251,8 @@
     var meta = document.createElement('span');
     meta.className = 'doc-file-meta';
     meta.textContent = ukuranTeks(item.file_size) + ' · ' +
-      String(item.uploaded_at || '').slice(0, 16);
+      String(item.uploaded_at || '').slice(0, 16) +
+      (terkunci ? ' · Terkunci' : '');
     teks.appendChild(nama);
     teks.appendChild(meta);
     isi.appendChild(ikon);
@@ -259,6 +261,7 @@
 
     var aksi = document.createElement('div');
     aksi.className = 'collection-item-actions doc-file-actions';
+
     aksi.appendChild(buatFormAksi(item.id, 'file.download', 'Unduh', 'btn-success'));
     aksi.appendChild(buatFormAksi(item.id, 'item.delete', 'Hapus', 'btn-danger'));
     kartu.appendChild(aksi);
@@ -295,11 +298,8 @@
       ? (tombolKunci.getAttribute('data-label-unlock') || 'Buka kunci folder')
       : (tombolKunci.getAttribute('data-label-lock') || 'Kunci folder');
     tombolKunci.setAttribute('data-reauth-resource', String(id));
-    tombolTersembunyi.setAttribute('data-reauth-resource', String(id));
     formGantiNama.hidden = true;
     daftarItem.innerHTML = '';
-    daftarTersembunyi.innerHTML = '';
-    bagianTersembunyi.hidden = true;
     if (folderLoading) {
       folderLoading.hidden = false;
     }
@@ -325,28 +325,11 @@
       if (folderEmpty) {
         folderEmpty.hidden = daftar.length > 0;
       }
-      bagianTersembunyi.hidden = !(data.hidden_count > 0);
       detail.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }).catch(function (err) {
       if (folderLoading) {
         folderLoading.hidden = true;
       }
-      tampilkanGalat(err.message);
-    });
-  }
-
-  function muatTersembunyi() {
-    if (!folderAktif) {
-      return;
-    }
-    var grant = grantUntuk('album.unlock', folderAktif);
-    if (!grant) {
-      tampilkanGalat(pesan('error'));
-      return;
-    }
-    ambil('/api/collections/' + folderAktif + '/hidden', grant).then(function (data) {
-      isiDaftar(daftarTersembunyi, data.items || [], folderAktif);
-    }).catch(function (err) {
       tampilkanGalat(err.message);
     });
   }
@@ -377,18 +360,20 @@
       }
     });
 
-    [tombolKunciItem, tombolSembunyiItem].forEach(function (tombol) {
-      if (!tombol) {
-        return;
-      }
+    if (tombolKunciItem) {
+      // Mengunci item tidak memerlukan verifikasi ulang.
+      tombolKunciItem.removeAttribute('data-reauth');
+      tombolKunciItem.removeAttribute('data-reauth-resource');
+    }
+    if (tombolLepasItem) {
       if (sah && koleksi) {
-        tombol.setAttribute('data-reauth', 'album.unlock');
-        tombol.setAttribute('data-reauth-resource', koleksi);
+        tombolLepasItem.setAttribute('data-reauth', 'item.unlock');
+        tombolLepasItem.setAttribute('data-reauth-resource', koleksi);
       } else {
-        tombol.removeAttribute('data-reauth');
-        tombol.removeAttribute('data-reauth-resource');
+        tombolLepasItem.removeAttribute('data-reauth');
+        tombolLepasItem.removeAttribute('data-reauth-resource');
       }
-    });
+    }
 
     if (targetPindah && tombolPindah) {
       var opsi = targetPindah.options[targetPindah.selectedIndex];
@@ -429,7 +414,7 @@
     });
   }
 
-  function ubahStatus(state) {
+  function ubahStatus(state, grant) {
     var ids = idTerpilih();
     var cek = document.querySelector('[data-select-file]:checked');
     var kartu = cek ? cek.closest('[data-collection-id]') : null;
@@ -438,15 +423,11 @@
       tampilkanGalat(pesan('need-folder'));
       return null;
     }
-    var grant = grantUntuk('album.unlock', koleksi);
-    if (!grant) {
-      tampilkanGalat(pesan('error'));
-      return null;
-    }
+    // Melepas kunci memakai grant sekali pakai item.unlock; mengunci bebas grant.
     return kirim('/api/collections/' + koleksi + '/items/state', {
       file_ids: ids,
       state: state
-    }, grant).then(function () {
+    }, state === 'normal' ? grant : null).then(function () {
       window.location.reload();
     }).catch(function (err) {
       tampilkanGalat(err.message);
@@ -479,14 +460,10 @@
         nama: pemicu.getAttribute('data-folder-name'),
         terkunci: pemicu.getAttribute('data-folder-locked') === '1'
       };
-    } else if (pemicu.id === 'folder-hidden-open') {
-      intent = { jenis: 'tersembunyi' };
     } else if (pemicu.id === 'folder-lock-toggle') {
       intent = { jenis: 'kunciFolder' };
-    } else if (pemicu.id === 'lock-items-button') {
-      intent = { jenis: 'status', state: 'locked' };
-    } else if (pemicu.id === 'hide-items-button') {
-      intent = { jenis: 'status', state: 'hidden' };
+    } else if (pemicu.id === 'unlock-items-button') {
+      intent = { jenis: 'status', state: 'normal' };
     } else if (pemicu.id === 'move-button') {
       intent = { jenis: 'pindah' };
     }
@@ -501,19 +478,19 @@
 
   document.addEventListener('cryptix:reauth-grant', function (event) {
     var grant = event.detail || {};
-    if (grant.scope !== 'album.unlock' || !intent) {
+    if (!intent) {
       return;
     }
-    if (intent.jenis === 'folder') {
-      bukaFolder(intent.id, intent.nama, intent.terkunci);
-    } else if (intent.jenis === 'tersembunyi') {
-      muatTersembunyi();
-    } else if (intent.jenis === 'kunciFolder') {
-      ubahKunciFolder();
-    } else if (intent.jenis === 'status') {
-      ubahStatus(intent.state);
-    } else if (intent.jenis === 'pindah') {
-      pindahkan();
+    if (grant.scope === 'album.unlock') {
+      if (intent.jenis === 'folder') {
+        bukaFolder(intent.id, intent.nama, intent.terkunci);
+      } else if (intent.jenis === 'kunciFolder') {
+        ubahKunciFolder();
+      } else if (intent.jenis === 'pindah') {
+        pindahkan();
+      }
+    } else if (grant.scope === 'item.unlock' && intent.jenis === 'status') {
+      ubahStatus(intent.state, grant.token);
     }
     intent = null;
   });
@@ -542,7 +519,11 @@
       pindahkan();
       return;
     }
-    if (event.target === tombolKunciItem || event.target === tombolSembunyiItem) {
+    if (event.target === tombolKunciItem) {
+      ubahStatus('locked');
+      return;
+    }
+    if (event.target === tombolLepasItem) {
       tampilkanGalat(pesan('need-folder'));
       return;
     }

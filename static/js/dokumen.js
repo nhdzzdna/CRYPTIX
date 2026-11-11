@@ -1,7 +1,7 @@
 /**
  * static/js/dokumen.js
  * ────────────────────
- * Pencarian nama dan pengurutan (nama, tanggal, ukuran) halaman Dokumen
+ * Halaman Dokumen: pencarian nama dan pengurutan (nama, tanggal, ukuran)
  * di sisi klien dari data yang sudah dirender server.
  */
 (function () {
@@ -15,6 +15,8 @@
 
   var pesanKosong = document.getElementById('document-no-results');
   var daftarKosong = document.getElementById('documents-empty');
+
+  // ── Pencarian dan urutan ─────────────────────────────────────────────
 
   function kartuDalam(wadah) {
     return Array.prototype.slice.call(
@@ -31,7 +33,7 @@
     return (kartu.getAttribute('data-name') || '').toLowerCase();
   }
 
-  function terapkan(wadah) {
+  function terapkan(wadah, sudahDilihat) {
     if (!wadah) {
       return { total: 0, tampil: 0 };
     }
@@ -52,6 +54,16 @@
     kartu.forEach(function (kartuItem) {
       var nama = (kartuItem.getAttribute('data-name') || '').toLowerCase();
       var cocok = !kueri || nama.indexOf(kueri) !== -1;
+      // Section "Semua" menduplikasi item "Tanpa folder"; saat mencari,
+      // setiap hasil hanya tampil sekali (container lebih dulu menang).
+      if (cocok && sudahDilihat) {
+        var fid = kartuItem.getAttribute('data-file-id');
+        if (fid && sudahDilihat[fid]) {
+          cocok = false;
+        } else if (fid) {
+          sudahDilihat[fid] = true;
+        }
+      }
       kartuItem.hidden = !cocok;
       if (cocok) {
         tampil += 1;
@@ -69,14 +81,15 @@
   function semua() {
     var total = 0;
     var tampil = 0;
+    var kueri = kotakCari.value.trim();
+    var sudahDilihat = kueri ? Object.create(null) : null;
     Array.prototype.forEach.call(
       document.querySelectorAll('[data-doc-list]'), function (wadah) {
-        var hasil = terapkan(wadah);
+        var hasil = terapkan(wadah, sudahDilihat);
         total += hasil.total;
         tampil += hasil.tampil;
       });
 
-    var kueri = kotakCari.value.trim();
     if (pesanKosong) {
       pesanKosong.hidden = !(kueri && total > 0 && tampil === 0);
     }

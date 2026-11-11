@@ -470,26 +470,20 @@ class TestAccountVaultSesiI:
         assert resp.status_code == 404
         assert _baris_kredensial(baris["id"]) == baris
 
-    def test_hapus_memerlukan_item_delete(self, client):
+    def test_hapus_lunak_tanpa_grant(self, client):
         baris = _tambah_kredensial(client)
         token = _csrf(client, "/account-vault")
-        tanpa_grant = client.post(
+        resp = client.post(
             f"/account-vault/delete/{baris['id']}",
             data={"csrf_token": token},
         )
-        assert tanpa_grant.status_code == 401
-        assert _baris_kredensial(baris["id"]) is not None
-
-        grant = _token_grant(client, "item.delete", baris["id"])
-        resp = client.post(
-            f"/account-vault/delete/{baris['id']}",
-            data={"csrf_token": token, "reauth_grant": grant},
-        )
         assert resp.status_code == 302
-        assert _baris_kredensial(baris["id"]) is None
+        sesudah = _baris_kredensial(baris["id"])
+        assert sesudah is not None
+        assert sesudah["deleted_at"] is not None
         with get_db() as db:
             blok = db.execute(
-                "SELECT * FROM blockchain_log WHERE action='DELETE' "
+                "SELECT * FROM blockchain_log WHERE action='TRASH_MOVE' "
                 "AND asset_ref=?",
                 (f"cred:{baris['id']}",),
             ).fetchall()
@@ -648,26 +642,20 @@ class TestSecureNotesSesiI:
         assert resp.status_code == 404
         assert _baris_catatan(baris["id"]) == baris
 
-    def test_hapus_memerlukan_item_delete(self, client):
+    def test_hapus_lunak_tanpa_grant(self, client):
         baris = _tambah_catatan(client)
         token = _csrf(client, "/secure-notes")
-        tanpa_grant = client.post(
+        resp = client.post(
             f"/secure-notes/delete/{baris['id']}",
             data={"csrf_token": token},
         )
-        assert tanpa_grant.status_code == 401
-        assert _baris_catatan(baris["id"]) is not None
-
-        grant = _token_grant(client, "item.delete", baris["id"])
-        resp = client.post(
-            f"/secure-notes/delete/{baris['id']}",
-            data={"csrf_token": token, "reauth_grant": grant},
-        )
         assert resp.status_code == 302
-        assert _baris_catatan(baris["id"]) is None
+        sesudah = _baris_catatan(baris["id"])
+        assert sesudah is not None
+        assert sesudah["deleted_at"] is not None
         with get_db() as db:
             blok = db.execute(
-                "SELECT * FROM blockchain_log WHERE action='DELETE' "
+                "SELECT * FROM blockchain_log WHERE action='TRASH_MOVE' "
                 "AND asset_ref=?",
                 (f"note:{baris['id']}",),
             ).fetchall()
@@ -767,26 +755,27 @@ class TestVaultSesiI:
         )
         assert resp.status_code == 404
 
-    def test_hapus_memerlukan_item_delete(self, client):
+    def test_hapus_lunak_tanpa_grant(self, client):
         row = _unggah_berkas(client, "akan-dihapus.pdf", b"isi")
         token = _csrf(client, "/vault")
-        tanpa_grant = client.post(
+        resp = client.post(
             f"/vault/delete/{row['id']}", data={"csrf_token": token}
         )
-        assert tanpa_grant.status_code == 401
-        assert _baris_berkas(row["id"]) is not None
-
-        grant = _token_grant(client, "item.delete", row["id"])
-        resp = client.post(
-            f"/vault/delete/{row['id']}",
-            data={"csrf_token": token, "reauth_grant": grant},
-        )
         assert resp.status_code == 302
-        assert _baris_berkas(row["id"]) is None
-        assert not os.path.exists(
+        sesudah = _baris_berkas(row["id"])
+        assert sesudah is not None
+        assert sesudah["deleted_at"] is not None
+        # Berkas terenkripsi tetap di disk sampai dihapus permanen.
+        assert os.path.exists(
             os.path.join(config.ENCRYPTED_FILES_DIR, row["stored_name"])
         )
-        assert "DELETE" in _blok()
+        with get_db() as db:
+            blok = db.execute(
+                "SELECT * FROM blockchain_log WHERE action='TRASH_MOVE' "
+                "AND asset_ref=?",
+                (f"file:{row['id']}",),
+            ).fetchall()
+        assert len(blok) == 1
 
     def test_hapus_idor_pengguna_lain(self, app, client):
         row = _unggah_berkas(client, "milik-satu.pdf", b"rahasia satu")

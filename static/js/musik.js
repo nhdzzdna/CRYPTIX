@@ -21,7 +21,6 @@
   var daftar = [];
   var indeks = -1;
   var trekAktif = null;
-  var tertunda = null;
 
   function pesan(kunci) {
     var kotak = document.getElementById('collection-messages');
@@ -105,24 +104,9 @@
       return true;
     }
     return Boolean(window.CryptixReauth &&
-      window.CryptixReauth.grantFor('media.stream',
+      window.CryptixReauth.grantFor('item.view',
         kartu.getAttribute('data-file-id')));
   }
-
-  document.addEventListener('pointerdown', function (event) {
-    var kartu = event.target.closest('[data-track]');
-    if (kartu && !bolehDiputar(kartu)) {
-      tertunda = kartu;
-    }
-  }, true);
-
-  document.addEventListener('cryptix:reauth-grant', function (event) {
-    var detail = event.detail || {};
-    if (detail.scope === 'media.stream' && tertunda) {
-      putarKartu(tertunda);
-      tertunda = null;
-    }
-  });
 
   document.addEventListener('click', function (event) {
     var pemicu = event.target.closest('[data-track-play], .music-track-name');
@@ -134,6 +118,10 @@
       return;
     }
     if (!bolehDiputar(kartu)) {
+      // Trek terkunci: dialog pilihan lihat sekali / lepas kunci.
+      if (window.CryptixLock) {
+        window.CryptixLock.pilih(kartu, putarKartu);
+      }
       return;
     }
     putarKartu(kartu);

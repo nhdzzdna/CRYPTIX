@@ -161,9 +161,7 @@
                 <form method="POST" action="{{ url_for('notes.delete', resource_id=note.id) }}"
                       class="notes-delete-form">
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-                  <button type="submit" class="btn btn-sm btn-danger notes-delete-btn"
-                          data-reauth="item.delete"
-                          data-reauth-resource="{{ note.id }}">
+                  <button type="submit" class="btn btn-sm btn-danger notes-delete-btn">
                     {{ icon_trash() }}<span>Hapus</span>
                   </button>
                 </form>
