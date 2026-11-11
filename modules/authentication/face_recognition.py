@@ -52,6 +52,26 @@ _JUMLAH_FRAME_VERIFIKASI = 5
 _AMBANG_IOU = 0.3
 _AMBANG_CAKUPAN = 0.8
 
+# Deteksi wajah: kandidat kecil di latar sering muncul sebagai deteksi palsu.
+# Ukuran minimum 15% sisi terpendek frame, scaleFactor 1.1, minNeighbors 6.
+_RASIO_MIN_WAJAH = 0.15
+_SCALE_FACTOR_WAJAH = 1.1
+_MIN_NEIGHBORS_WAJAH = 6
+# Wajah sekunder baru dianggap "wajah lain" bila luasnya minimal 40% wajah
+# terbesar pada frame yang sama.
+_RASIO_WAJAH_LAIN = 0.40
+# Penolakan "lebih dari satu wajah" diambil dari seluruh frame, bukan satu
+# frame: tolak bila lebih dari 30% frame memuat wajah sekunder signifikan.
+_AMBANG_FRAME_WAJAH_LAIN = 0.30
+
+# Pemeriksaan mata: hanya 60% bagian atas ROI wajah yang diperiksa.
+_RASIO_ATAS_MATA = 0.60
+_CASCADE_MATA = "haarcascade_eye.xml"
+_CASCADE_MATA_CADANGAN = "haarcascade_eye_tree_eyeglasses.xml"
+_MIN_KOTAK_MATA = 2
+# Verifikasi login menuntut minimal 70% frame dengan mata terbuka.
+_AMBANG_FRAME_MATA_TERBUKA = 0.70
+
 
 def _perlu_cv2() -> None:
     """Pastikan OpenCV tersedia sebelum operasi gambar dijalankan."""
@@ -124,25 +144,97 @@ def _deduplikasi_kotak(kotak) -> list:
     return dipilih
 
 
+def _saring_wajah_signifikan(kotak: list) -> list:
+    """
+    Buang kandidat yang luasnya kurang dari 40% wajah terbesar.
+
+    Deteksi palsu di latar biasanya jauh lebih kecil daripada wajah utama;
+    kandidat seperti itu tidak boleh dihitung sebagai wajah kedua.
+    """
+    if not kotak:
+        return []
+    terbesar = max(w * h for _x, _y, w, h in kotak)
+    return [
+        item for item in kotak
+        if item[2] * item[3] >= _RASIO_WAJAH_LAIN * terbesar
+    ]
+
+
 def _deteksi_semua_wajah(frame) -> list[np.ndarray]:
     """
     Deteksi seluruh wajah pada frame dan kembalikan ROI abu-abu 200x200.
 
     Urutan ROI mengikuti luas wajah dari terbesar ke terkecil. Bounding box
-    yang saling tumpang tindih dideduplikasi agar satu wajah tidak dihitung
-    berkali-kali. Dipisah agar pendaftaran dapat menolak frame tanpa wajah
-    atau dengan lebih dari satu wajah, dan agar dapat diganti pada pengujian.
+    yang saling tumpang tindih dideduplikasi, lalu kandidat yang jauh lebih
+    kecil daripada wajah terbesar dibuang agar deteksi palsu di latar tidak
+    dihitung sebagai wajah lain. Dipisah agar pendaftaran dapat menolak frame
+    tanpa wajah atau dengan lebih dari satu wajah, dan agar dapat diganti pada
+    pengujian.
     """
     _perlu_cv2()
     if frame is None or getattr(frame, "size", 0) == 0:
         return []
     abu = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    wajah = _get_cascade().detectMultiScale(abu, scaleFactor=1.2, minNeighbors=5)
-    kotak = _deduplikasi_kotak(wajah)
+    tinggi, lebar = abu.shape[:2]
+    sisi_min = max(20, int(min(tinggi, lebar) * _RASIO_MIN_WAJAH))
+    wajah = _get_cascade().detectMultiScale(
+        abu,
+        scaleFactor=_SCALE_FACTOR_WAJAH,
+        minNeighbors=_MIN_NEIGHBORS_WAJAH,
+        minSize=(sisi_min, sisi_min),
+    )
+    kotak = _saring_wajah_signifikan(_deduplikasi_kotak(wajah))
     return [
         cv2.resize(abu[y:y + h, x:x + w], _UKURAN_ROI)
         for x, y, w, h in kotak
     ]
+
+
+def _get_cascade_mata(nama: str = _CASCADE_MATA):
+    """Muat Haar Cascade mata; None bila berkas tidak tersedia atau rusak."""
+    _perlu_cv2()
+    path = cv2.data.haarcascades + nama
+    cascade = cv2.CascadeClassifier(path)
+    return None if cascade.empty() else cascade
+
+
+def _kotak_mata(roi) -> list:
+    """
+    Deteksi kotak mata pada 60% bagian atas ROI wajah.
+
+    Cascade mata biasa dicoba lebih dahulu; bila kurang dari dua kotak
+    ditemukan, cascade kacamata dipakai sebagai cadangan. Kotak yang saling
+    tumpang tindih dideduplikasi agar satu mata tidak dihitung dua kali.
+    """
+    if roi is None or getattr(roi, "size", 0) == 0:
+        return []
+    tinggi = roi.shape[0]
+    atas = roi[:max(1, int(tinggi * _RASIO_ATAS_MATA)), :]
+    sisi_min = max(8, int(min(atas.shape[:2]) * 0.08))
+    for nama in (_CASCADE_MATA, _CASCADE_MATA_CADANGAN):
+        cascade = _get_cascade_mata(nama)
+        if cascade is None:
+            continue
+        try:
+            kotak = cascade.detectMultiScale(
+                atas,
+                scaleFactor=1.1,
+                minNeighbors=6,
+                minSize=(sisi_min, sisi_min),
+            )
+        except Exception:
+            continue
+        terpilih = _deduplikasi_kotak(
+            [tuple(int(nilai) for nilai in item) for item in kotak]
+        )
+        if len(terpilih) >= _MIN_KOTAK_MATA:
+            return terpilih
+    return []
+
+
+def _mata_terbuka(roi) -> bool:
+    """True bila minimal dua kotak mata tak-tumpang-tindih terdeteksi."""
+    return len(_kotak_mata(roi)) >= _MIN_KOTAK_MATA
 
 
 def _deteksi_roi(frame) -> np.ndarray | None:
@@ -255,20 +347,32 @@ def daftarkan_wajah(user_id: int, frames: list, dek: bytes) -> dict:
 
     samples: list[np.ndarray] = []
     terdeteksi = 0
+    frame_wajah_lain = 0
+    mata_tertutup = 0
     for item in frames:
         wajah = _deteksi_semua_wajah(_decode_frame(item))
-        if len(wajah) > 1:
-            return {"success": False, "error": MSG.FACE_MULTIPLE_FACES}
         if not wajah:
             continue
         terdeteksi += 1
+        # Frame dengan kandidat wajah sekunder tetap menyumbang wajah
+        # terbesar sebagai sampel, tetapi dihitung untuk keputusan akhir.
+        if len(wajah) > 1:
+            frame_wajah_lain += 1
+        if not _mata_terbuka(wajah[0]):
+            mata_tertutup += 1
+            continue
         if len(samples) < _MAKS_SAMPEL:
             samples.append(wajah[0])
+
+    if frame_wajah_lain / len(frames) > _AMBANG_FRAME_WAJAH_LAIN:
+        return {"success": False, "error": MSG.FACE_MULTIPLE_FACES}
 
     if terdeteksi / len(frames) < 0.8:
         return {"success": False, "error": MSG.FACE_LOW_DETECTION_RATE}
 
     if len(samples) < _MIN_SAMPEL:
+        if mata_tertutup:
+            return {"success": False, "error": MSG.FACE_ENROLL_EYES_CLOSED}
         return {"success": False, "error": MSG.FACE_NOT_ENOUGH_SAMPLES}
 
     unik = {hashlib.sha256(s.tobytes()).hexdigest() for s in samples}
@@ -318,11 +422,23 @@ def verifikasi_wajah(user_id: int, bukti, dek: bytes | None = None) -> dict:
     ]
     beku = len(set(sidik)) < 2
 
+    roi_frame = [_deteksi_roi(_decode_frame(item)) for item in frames]
+    mata_terbuka = sum(1 for roi in roi_frame if _mata_terbuka(roi))
+    if mata_terbuka / len(frames) < _AMBANG_FRAME_MATA_TERBUKA:
+        return {
+            "success": False,
+            "error": MSG.FACE_EYES_CLOSED,
+            "code": "mata_tertutup",
+            "confidences": [],
+            "median": None,
+            "lolos": 0,
+            "beku": beku,
+        }
+
     pengenal = _latih(samples)
     ambang = float(config.FACE_CONFIDENCE_THRESHOLD)
     confidence: list[float] = []
-    for item in frames:
-        roi = _deteksi_roi(_decode_frame(item))
+    for roi in roi_frame:
         if roi is None:
             confidence.append(float("inf"))
             continue

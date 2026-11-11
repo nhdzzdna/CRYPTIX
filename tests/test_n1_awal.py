@@ -149,6 +149,7 @@ class TestPendaftaranWajah:
             return [np.full((200, 200), nomor, dtype=np.uint8)]
 
         monkeypatch.setattr(face_mod, "_deteksi_semua_wajah", _wajah)
+        monkeypatch.setattr(face_mod, "_mata_terbuka", lambda roi: True)
         hasil = face_mod.daftarkan_wajah(
             1, [f"frame-{i}" for i in range(30)], b"x" * 32
         )
@@ -161,9 +162,12 @@ class TestPendaftaranWajah:
         def _wajah(frame):
             nomor = int(str(frame).split("-")[1])
             roi = np.full((200, 200), nomor, dtype=np.uint8)
-            return [roi, roi] if nomor == 7 else [roi]
+            # Sepuluh dari tiga puluh frame memuat wajah sekunder (33%),
+            # melewati ambang 30% sehingga pendaftaran harus ditolak.
+            return [roi, roi] if nomor < 10 else [roi]
 
         monkeypatch.setattr(face_mod, "_deteksi_semua_wajah", _wajah)
+        monkeypatch.setattr(face_mod, "_mata_terbuka", lambda roi: True)
         hasil = face_mod.daftarkan_wajah(
             1, [f"frame-{i}" for i in range(30)], b"x" * 32
         )

@@ -99,6 +99,9 @@ def _pasang_deteksi(monkeypatch):
     # Pendaftaran memakai deteksi seluruh wajah agar dapat menolak frame
     # tanpa wajah atau dengan lebih dari satu wajah.
     monkeypatch.setattr(face_mod, "_deteksi_semua_wajah", _wajah)
+    # Mata dianggap terbuka pada data sintetis; kasus mata tertutup diuji
+    # terpisah dengan fungsi ini dimock secara eksplisit.
+    monkeypatch.setattr(face_mod, "_mata_terbuka", lambda roi: True)
 
 
 def _konfidensi(monkeypatch, angka):
@@ -160,6 +163,7 @@ class TestDeteksiWajah:
         monkeypatch.setattr(
             face_mod, "_deteksi_semua_wajah", lambda frame: [roi, roi]
         )
+        monkeypatch.setattr(face_mod, "_mata_terbuka", lambda roi: True)
         hasil = face_mod.daftarkan_wajah(
             pengguna["id"], [f"frame-{i}" for i in range(30)], dek
         )
@@ -209,6 +213,7 @@ class TestPendaftaran:
             lambda frame: [] if int(str(frame).split("-")[1]) >= 24
             else [np.full((200, 200), 7, dtype=np.uint8)],
         )
+        monkeypatch.setattr(face_mod, "_mata_terbuka", lambda roi: True)
         hasil = face_mod.daftarkan_wajah(
             pengguna["id"], [f"frame-{i}" for i in range(30)], dek
         )

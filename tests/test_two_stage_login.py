@@ -301,48 +301,37 @@ class TestTahapDua:
         assert resp.get_json()["error"] == MSG.LOGIN_STAGE_ORDER
 
 
-# ── Kebijakan biometrik ──────────────────────────────────────────────────────
+# ── Pilihan biometrik tahap 2 ────────────────────────────────────────────────
 
-class TestKebijakanBiometrik:
-    def test_all_enrolled_menuntut_semua_lulus(self, app, client, dua_metode):
-        csrf = _csrf(client)
-        pending = _tahap1(client, csrf).get_json()["pending"]
-        resp = _tahap2(client, csrf, pending, {
-            "uji_a": {"kunci": "sah"}, "uji_b": {"kunci": "salah"},
-        })
-        assert resp.status_code == 401
-        assert resp.get_json()["error"] == MSG.LOGIN_BIOMETRIC_FAILED
-
-        resp = _tahap2(client, csrf, pending, {
-            "uji_a": {"kunci": "sah"}, "uji_b": {"kunci": "sah"},
-        })
-        assert resp.status_code == 200
-
-    def test_all_enrolled_tanpa_bukti_metode_ditolak(self, app, client,
-                                                     dua_metode):
+class TestPilihanBiometrik:
+    def test_satu_metode_terpilih_lulus(self, app, client, dua_metode):
         csrf = _csrf(client)
         pending = _tahap1(client, csrf).get_json()["pending"]
         resp = _tahap2(client, csrf, pending, {"uji_a": {"kunci": "sah"}})
-        assert resp.status_code == 401
-        assert resp.get_json()["error"] == MSG.LOGIN_BIOMETRIC_FAILED
-
-    def test_any_cukup_satu_lulus(self, app, client, dua_metode, monkeypatch):
-        monkeypatch.setattr(config, "BIOMETRIC_POLICY", "any")
-        csrf = _csrf(client)
-        pending = _tahap1(client, csrf).get_json()["pending"]
-        resp = _tahap2(client, csrf, pending, {
-            "uji_a": {"kunci": "sah"}, "uji_b": {"kunci": "salah"},
-        })
         assert resp.status_code == 200
+        assert resp.get_json()["success"] is True
 
-    def test_any_tanpa_yang_lulus_ditolak(self, app, client, dua_metode,
-                                          monkeypatch):
-        monkeypatch.setattr(config, "BIOMETRIC_POLICY", "any")
+    def test_metode_lain_juga_bisa_dipilih(self, app, client, dua_metode):
+        csrf = _csrf(client)
+        pending = _tahap1(client, csrf).get_json()["pending"]
+        resp = _tahap2(client, csrf, pending, {"uji_b": {"kunci": "sah"}})
+        assert resp.status_code == 200
+        assert resp.get_json()["success"] is True
+
+    def test_dua_bukti_tanpa_pilihan_ditolak(self, app, client, dua_metode):
         csrf = _csrf(client)
         pending = _tahap1(client, csrf).get_json()["pending"]
         resp = _tahap2(client, csrf, pending, {
-            "uji_a": {"kunci": "salah"}, "uji_b": {"kunci": "salah"},
+            "uji_a": {"kunci": "sah"}, "uji_b": {"kunci": "sah"},
         })
+        assert resp.status_code == 400
+        assert resp.get_json()["error"] == MSG.LOGIN_BIOMETRIC_CHOOSE
+
+    def test_metode_terpilih_tanpa_bukti_ditolak(self, app, client,
+                                                 dua_metode):
+        csrf = _csrf(client)
+        pending = _tahap1(client, csrf).get_json()["pending"]
+        resp = _tahap2(client, csrf, pending, {"uji_a": {"kunci": "salah"}})
         assert resp.status_code == 401
         assert resp.get_json()["error"] == MSG.LOGIN_BIOMETRIC_FAILED
 

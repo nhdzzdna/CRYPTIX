@@ -141,6 +141,22 @@ class TestHalamanSettings:
         assert 'data-reauth="biometric.manage"' in body
         assert "recovery_key_baru" not in body
 
+    def test_menampilkan_pilihan_dongle_dari_daftar_drive(
+        self, app, client, monkeypatch
+    ):
+        _masuk(client, app)
+        monkeypatch.setattr(usb_mod, "daftar_drive", lambda: [
+            {"mountpoint": "D:\\dongle-a", "volume_serial": "AAAA1111"},
+            {"mountpoint": "D:\\dongle-b", "volume_serial": "BBBB2222"},
+        ])
+
+        body = client.get("/settings").get_data(as_text=True)
+        assert 'name="mountpoint"' in body
+        assert "D:\\dongle-a" in body
+        assert "D:\\dongle-b" in body
+        assert "Pilih dongle tujuan" in body
+        assert MSG.USB_REREGISTER_HINT in body
+
     def test_kredensial_webauthn_ditampilkan_dengan_nama(self, app, client):
         _masuk(client, app)
         _seed_credential(_baris()["id"], "Laptop kantor")

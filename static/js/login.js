@@ -3,8 +3,9 @@
  *
  * Tahap 1: username dan password dikirim ke POST /login; server menahan
  *   DEK di sisi server dan membalas daftar metode biometrik.
- * Tahap 2: bukti tiap metode dikirim ke POST /login/biometric, lalu
- *   halaman diarahkan ke dasbor.
+ * Tahap 2: pengguna memilih satu metode (otomatis bila hanya satu), bukti
+ *   metode itu dikirim ke POST /login/biometric, lalu halaman diarahkan
+ *   ke dasbor.
  *
  * Penangan metode biometrik didaftarkan lewat window.CryptixBiometrik
  * (lihat webauthn.js atau modul metode lain) sehingga metode baru cukup
@@ -18,14 +19,35 @@ document.addEventListener("DOMContentLoaded", function () {
   const form = document.getElementById("login-form");
   const stage2 = document.getElementById("stage2");
   const daftarMetode = document.getElementById("metode-list");
+  const hint2 = document.getElementById("stage2-hint");
+  const status2 = document.getElementById("stage2-status");
   const galat1 = document.getElementById("login-error");
   const galat2 = document.getElementById("stage2-error");
-  const btnVerifikasi = document.getElementById("btn-verifikasi");
   let tahap = null;   // hasil tahap 1: {pending, metode}
+  let sedangVerifikasi = false;
+
+  function teksPanel(nama, cadangan) {
+    if (stage2 && stage2.dataset && stage2.dataset[nama]) {
+      return stage2.dataset[nama];
+    }
+    return cadangan;
+  }
 
   function tampilkanGalat(el, pesan) {
     el.textContent = pesan || "";
     el.classList.toggle("visible", Boolean(pesan));
+  }
+
+  function aturStatus(pesan) {
+    if (status2) {
+      status2.textContent = pesan || "";
+    }
+  }
+
+  function nonaktifkanTombol(aktif) {
+    daftarMetode.querySelectorAll("button").forEach(function (tombol) {
+      tombol.disabled = aktif;
+    });
   }
 
   // ── Status dongle pada mesin ini (tanpa username) ─────────────────────────
@@ -86,18 +108,42 @@ document.addEventListener("DOMContentLoaded", function () {
         form.hidden = true;
         stage2.hidden = false;
         daftarMetode.innerHTML = "";
-        (data.metode || []).forEach(function (m) {
-          const item = document.createElement("li");
-          item.textContent = m.label;
-          item.dataset.metode = m.nama;
-          daftarMetode.appendChild(item);
-        });
-        if (!(data.metode || []).length) {
+        aturStatus("");
+        const metode = data.metode || [];
+        if (!metode.length) {
+          if (hint2) {
+            hint2.textContent = "";
+          }
           tampilkanGalat(
             galat2,
-            "Belum ada metode biometrik terdaftar untuk akun ini."
+            teksPanel(
+              "msgNone",
+              "Belum ada metode biometrik terdaftar untuk akun ini."
+            )
           );
-          btnVerifikasi.disabled = true;
+          return;
+        }
+        metode.forEach(function (m) {
+          const tombol = document.createElement("button");
+          tombol.type = "button";
+          tombol.className = "btn btn-primary btn-full";
+          tombol.textContent = m.label;
+          tombol.dataset.metode = m.nama;
+          tombol.addEventListener("click", function () {
+            jalankanMetode(m);
+          });
+          daftarMetode.appendChild(tombol);
+        });
+        if (hint2) {
+          hint2.textContent = teksPanel(
+            "msgChoose",
+            "Pilih satu metode biometrik untuk melanjutkan."
+          );
+        }
+        // Satu metode langsung dijalankan; dua metode atau lebih menunggu
+        // pilihan pengguna lewat tombol.
+        if (metode.length === 1) {
+          jalankanMetode(metode[0]);
         }
       })
       .catch(function () {
@@ -105,42 +151,62 @@ document.addEventListener("DOMContentLoaded", function () {
       });
   });
 
-  // ── Tahap 2 ───────────────────────────────────────────────────────────────
-  btnVerifikasi.addEventListener("click", function () {
-    if (!tahap) return;
-    tampilkanGalat(galat2, "");
-    btnVerifikasi.disabled = true;
+  // ── Tahap 2: satu metode pilihan ──────────────────────────────────────────
+  function jalankanMetode(metode) {
+    if (!tahap || sedangVerifikasi) {
+      return;
+    }
+    const penangan = window.CryptixBiometrik.penangan[metode.nama];
+    if (!penangan) {
+      tampilkanGalat(
+        galat2,
+        teksPanel(
+          "msgUnsupported",
+          "Metode biometrik ini belum didukung peramban. Pilih metode lain."
+        )
+      );
+      return;
+    }
 
-    Promise.all(
-      (tahap.metode || []).map(function (m) {
-        const penangan = window.CryptixBiometrik.penangan[m.nama];
-        if (!penangan) {
-          return Promise.reject(new Error("Metode belum didukung."));
-        }
-        return Promise.resolve(penangan()).then(function (bukti) {
-          return [m.nama, bukti];
-        });
+    tampilkanGalat(galat2, "");
+    aturStatus(
+      teksPanel("msgVerifying", "Memverifikasi {metode}...")
+        .replace("{metode}", metode.label)
+    );
+    sedangVerifikasi = true;
+    nonaktifkanTombol(true);
+
+    Promise.resolve()
+      .then(function () {
+        return penangan();
       })
-    )
-      .then(function (pasangan) {
-        const bukti = {};
-        pasangan.forEach(function (p) { bukti[p[0]] = p[1]; });
+      .then(function (bukti) {
+        const isiBukti = {};
+        isiBukti[metode.nama] = bukti;
         return apiFetch("/login/biometric", {
           method: "POST",
-          body: JSON.stringify({ pending: tahap.pending, bukti: bukti }),
+          body: JSON.stringify({
+            pending: tahap.pending,
+            metode: metode.nama,
+            bukti: isiBukti,
+          }),
         }).then(function (r) { return r.json(); });
       })
       .then(function (data) {
         if (!data.success) {
           tampilkanGalat(galat2, data.error || "Verifikasi biometrik gagal.");
-          btnVerifikasi.disabled = false;
+          aturStatus("");
+          sedangVerifikasi = false;
+          nonaktifkanTombol(false);
           return;
         }
         window.location.href = data.redirect || "/dashboard";
       })
       .catch(function (err) {
         tampilkanGalat(galat2, err.message || "Verifikasi biometrik gagal.");
-        btnVerifikasi.disabled = false;
+        aturStatus("");
+        sedangVerifikasi = false;
+        nonaktifkanTombol(false);
       });
-  });
+  }
 });
