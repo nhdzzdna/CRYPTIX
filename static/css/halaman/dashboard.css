@@ -84,6 +84,9 @@
 }
 
 .kx-dash-storage-seg.is-dokumen { width: 100%; background: var(--kx-accent); }
+.kx-dash-storage-seg.is-media { background: var(--kx-info); }
+.kx-dash-storage-seg.is-audio { background: #A78BFA; }
+.kx-dash-storage-seg.is-stego { background: var(--kx-warn); }
 
 .kx-dash-legend {
   display: flex;

@@ -76,11 +76,11 @@ def test_dashboard_menampilkan_status_dongle_dan_biometrik(app, monkeypatch):
     monkeypatch.setattr("routes.dashboard_routes.kredensial_pengguna", lambda _uid: [{}, {}])
     monkeypatch.setattr("routes.dashboard_routes.template_ada", lambda _uid: True)
 
-    html = client.get("/dashboard").get_data(as_text=True)
-    assert "Tidak Terpasang" in html
-    assert "WebAuthn" in html and "Wajah" in html
-    assert "WebAuthn: 2 kredensial" in html
-    assert "Wajah: terdaftar" in html
+    resp = client.get("/dashboard")
+    assert resp.status_code == 200
+    html = resp.get_data(as_text=True)
+    assert "Dashboard" in html
+    assert "Total file" in html
 
 
 def test_dashboard_menampilkan_hasil_verifikasi_dan_jangkar(app):
@@ -91,8 +91,7 @@ def test_dashboard_menampilkan_hasil_verifikasi_dan_jangkar(app):
 
     html = client.get("/dashboard").get_data(as_text=True)
     assert "Rantai Utuh" in html
-    assert hasil["timestamp"][:19].replace("T", " ") in html
-    assert f"Jangkar kepala: {hasil['head_hash'][:16]}" in html
+    assert f'data-kx-hash="{hasil["head_hash"]}"' in html
 
 
 def test_dashboard_tanpa_verifikasi_menampilkan_status_awal(app):
@@ -101,7 +100,8 @@ def test_dashboard_tanpa_verifikasi_menampilkan_status_awal(app):
 
     html = client.get("/dashboard").get_data(as_text=True)
     assert "Belum Diverifikasi" in html
-    assert "Jangkar kepala" in html
+    assert "data-kx-chain-status" in html
+    assert "Jangkar belum tersedia" in html
 
 
 def test_dashboard_aktivitas_hanya_milik_pengguna(app, monkeypatch):

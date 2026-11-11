@@ -98,6 +98,9 @@ document.addEventListener("DOMContentLoaded", function () {
   apiFetch("/api/dongle/status")
     .then(function (r) { return r.json(); })
     .then(function (data) {
+      if (statusDongle) {
+        statusDongle.hidden = false;
+      }
       if (data.detected) {
         aturStatusDongle(teksDongle("msgOk"), "is-ok");
       } else {
@@ -108,7 +111,9 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     })
     .catch(function () {
-      aturStatusDongle(teksDongle("msgUnknown"), null);
+      if (statusDongle) {
+        statusDongle.hidden = true;
+      }
     });
 
   // ── Tahap 1 ───────────────────────────────────────────────────────────────
