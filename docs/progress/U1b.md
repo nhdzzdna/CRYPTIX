@@ -1,4 +1,4 @@
-# U1b — Security Center & Settings
+# U1b — Security Center, Settings & Pemulihan Reset Akun
 
 ## Bagian 1: Security Center (P1)
 
@@ -13,7 +13,7 @@ Sesi U1b menyelesaikan modernisasi antarmuka Security Center (`templates/securit
 
 ---
 
-### Audit Elemen Lama (Sebelum → Sesudah)
+### Audit Elemen Lama (Sebelum → Sesudah) — Security Center
 
 | Elemen / Fitur | Sebelum | Sesudah | Status | Alasan |
 |---|---|---|---|---|
@@ -129,26 +129,78 @@ Sesi U1b menyelesaikan redesain antarmuka Settings (`templates/settings.html`, `
 
 ---
 
+## Bagian 3: Pemulihan Reset Akun (P3)
+
+### Ringkasan
+
+Sesi P3 memodernisasi bagian reset akun tanpa masuk pada `templates/account_recovery.html` (elemen `<details id="recovery-reset">` dari UC2):
+
+1. **Restyle dengan Komponen `kx-*`**:
+   - Kontainer accordion `<details id="recovery-reset">` dikemas dalam infobox peringatan kuning `.kx-infobox.kx-infobox-warn` (`.authx-recovery-box`).
+   - Teks ringkasan memuat label tautan resmi `MSG.RECOVERY_RESET_LINK` ("Hapus akun tanpa masuk") dan deskripsi keterbatasan `MSG.RECOVERY_RESET_LIMITATION`.
+   - Tombol pembuka modal merah outline `.kx-btn.kx-btn-danger.kx-btn-sm` berlabel `MSG.RECOVERY_RESET_TITLE` ("Hapus Akun Tanpa Masuk") dengan pemicu `data-buka-modal="#modal-reset-account"`.
+2. **Modal Dialog Konfirmasi**:
+   - Menggunakan markup modal standar `.kx-modal-overlay` dan `.kx-modal` dengan id `#modal-reset-account`.
+   - Memuat peringatan keterbatasan yang jelas: *"Bila kata sandi dan dongle sama-sama hilang, akun tidak dapat dihapus dari halaman ini dan data terenkripsi tidak dapat dipulihkan. Jika kata sandi dan dongle hilang, tidak ada jalur dari aplikasi."*
+   - Form mengarah ke rute asli `POST /recovery/reset-account` (`action="{{ url_for('auth.recovery_reset_account') }}"`) dengan token CSRF.
+   - Kolom isian mencakup: Username (`#reset-username`), Ketik Ulang Username (`#reset-confirm-username`), Kata Sandi Saat Ini (`#reset-password`) dengan toggle mata tunggal `data-kx-sandi`, dan penanda Dongle Akun (`#reset-dongle`).
+   - Tombol kirim bahaya solid `.kx-btn.kx-btn-danger-solid` dan tombol pembatalan `.kx-btn.kx-btn-secondary`.
+3. **Skrip dan Aksesibilitas**:
+   - Pemicu modal dialog dikelola oleh `static/js/account_recovery.js` dan pustaka `static/js/ui/modal.js` tanpa JavaScript inline (mematuhi CSP).
+   - Inisialisasi komponen sandi terpasang rapi.
+4. **Pembaruan Dokumen U1**:
+   - Catatan historis pada `docs/progress/U1.md` yang sebelumnya menyatakan tautan reset akun dilewati telah diperbarui untuk merefleksikan keberadaan dan integrasi rute `POST /recovery/reset-account`.
+
+---
+
+### Audit Elemen Lama (Sebelum → Sesudah) — Pemulihan Reset Akun
+
+| Elemen / Fitur | Sebelum | Sesudah | Status | Alasan |
+|---|---|---|---|---|
+| Kontainer Details | `<div class="auth-note auth-note-warning">` dengan kelas CSS Bootstrap lama | `.kx-infobox.kx-infobox-warn.authx-recovery-box` dengan token kx-* | Diubah | Selaras dengan desain token U0 dan konsistensi warna peringatan. |
+| Form Reset Akun | Form inline panjang di dalam `<details>` | Tombol pembuka modal di dalam details, form lengkap ditempatkan di modal `#modal-reset-account` | Diubah | Mencegah penyerahan tidak sengaja dan memberikan dialog konfirmasi terfokus. |
+| Peringatan Keterbatasan | Paragraf biasa di bawah summary | Box peringatan `.kx-infobox.kx-infobox-warn` di dalam modal dengan penegasan keterbatasan aplikasi | Diubah | Memenuhi persyaratan instruksi agar konsekuensi kehilangan dongle/sandi jelas terlihat. |
+| Kolom Input | `.form-control` dan `.form-group` Bootstrap lama | `.kx-field`, `.kx-label`, dan `.kx-input` dengan toggle satu mata `.kx-sandi` | Diubah | Standardisasi komponen form KOSYAK. |
+| Tombol Submit | `.btn.btn-outline-danger.btn-full` | `.kx-btn.kx-btn-danger-solid` di kaki modal dialog | Diubah | Standar tombol aksi destruktif aplikasi. |
+| Skrip Pemicu | Tanpa skrip modal di halaman auth | `static/js/ui/modal.js` dan `static/js/account_recovery.js` via `{% block scripts %}` | Diubah | Mematuhi CSP tanpa inline JS dan mendukung interaksi modal dialog. |
+
+---
+
+### Tabel Kepatuhan Spesifikasi (P3)
+
+| Kebutuhan Spesifikasi / Prompt | Realisasi pada Sesi U1b | Status |
+|---|---|---|
+| Restyle `<details id="recovery-reset">` dengan komponen kx-* | Menggunakan `.kx-infobox-warn`, tombol `.kx-btn-danger`, dan summary bersih | sesuai |
+| Modal konfirmasi berisi username, konfirmasi username, kata sandi | Modal `#modal-reset-account` memuat seluruh kolom isian yang disyaratkan | sesuai |
+| Peringatan keterbatasan (jika kata sandi dan dongle hilang, tidak ada jalur dari aplikasi) | Box peringatan kuning di dalam modal memuat teks peringatan eksplisit | sesuai |
+| Form tetap mengarah ke `POST /recovery/reset-account` | Rute target, metode POST, dan seluruh nama parameter form dipertahankan utuh | sesuai |
+| Perbarui catatan di `docs/progress/U1.md` | Catatan pada tabel dan butir keputusan di `docs/progress/U1.md` diperbarui | sesuai |
+| Tanpa inline JavaScript (CSP ketat) | Logika modal ditangani oleh `static/js/account_recovery.js` | sesuai |
+| Bebas kata terlarang dan tanpa emoji | Seluruh teks berbahasa Indonesia formal tanpa emoji dan bebas kata terlarang | sesuai |
+
+---
+
 ### Keputusan Desain
 
-1. **Aktivasi Tab Otomatis saat Kunci Pemulihan Terbit**: Saat rute `/settings/recovery-key` mengembalikan respons dengan `recovery_key_baru`, halaman secara otomatis mengaktifkan tab `keamanan` agar pengguna langsung melihat kunci baru tanpa harus berpindah tab secara manual.
-2. **Pencegahan Klik Prematur pada Hapus Kredensial**: Tombol Hapus pada daftar kredensial WebAuthn memanfaatkan event listener pada fase *capturing* untuk memunculkan dialog `KX.konfirmasiHapus` terlebih dahulu. Setelah pengguna mengonfirmasi, event klik dipicu kembali untuk dilanjutkan ke alur autentikasi ulang `reauth.js`.
-3. **Pemberian Hak Akses Zona Bahaya**: Tombol kirim form Reset Data dan Hapus Akun di dalam modal dialog diberi status `disabled` sejak awal. Skrip `settings.js` secara dinamis membandingkan input dengan nilai atribut `data-target-username` sebelum mengaktifkan tombol, sehingga mematuhi prinsip kehati-hatian ganda bersama grant `account.danger`.
+1. **Struktur Pembukaan Dua Tahap**: Pengguna yang membuka `<details id="recovery-reset">` terlebih dahulu membaca penjelasan keterbatasan sebelum menekan tombol merah untuk membuka dialog modal konfirmasi. Hal ini mencegah formulir destruktif terisi atau terkirim tanpa kesadaran penuh.
+2. **Penggunaan Toggle Sandi pada Modal Pemulihan**: Input kata sandi di dalam modal dilengkapi komponen `data-kx-sandi` agar pengguna dapat memverifikasi ketikan kata sandi saat ini sebelum mengirim permohonan reset permanen.
 
 ---
 
 ### Keterbatasan
 
-1. **Ekspor CSV**: Tombol Ekspor CSV pada Security Center tetap ditiadakan karena rute backend tidak menyediakannya.
-2. **Batas Sesi di Sisi Server**: Pengubahan batas waktu sesi diterapkan pada sesi aktif dan database pengguna, namun tidak memengaruhi sesi perangkat lain yang sedang berjalan secara bersamaan.
+1. **Verifikasi Fisik Dongle**: Rute `/recovery/reset-account` tetap mewajibkan dongle fisik terpasang di server/perangkat lokal untuk membuktikan kepemilikan token sebelum penghapusan data diizinkan.
+2. **Keterbatasan Aplikasi**: Sesuai prinsip kriptografi KOSYAK, jika kata sandi akun dan dongle USB sama-sama hilang, tidak ada *backdoor* maupun jalur pemulihan apa pun dari dalam aplikasi.
 
 ---
 
-### Hasil Pengujian
+## Hasil Pengujian Keseluruhan
 
-Pengujian terarah dan suite penuh dijalankan menggunakan `pytest` di dalam lingkungan virtual Python:
+Rangkaian pengujian lengkap dijalankan menggunakan `pytest` di dalam lingkungan virtual Python:
 - `tests/test_settings.py`: 22 passed.
-- `tests/test_account_management.py`: 15 passed.
+- `tests/test_account_management.py`: 17 passed.
 - `tests/test_password_change.py`: 6 passed.
+- `tests/test_webauthn.py`: 18 passed.
+- `tests/test_account_recovery.py`: 5 passed.
 - `tests/test_security_center.py`: 5 passed.
-- Suite lengkap (`python -m pytest -q`): seluruh 748 pengujian passed tanpa kegagalan.
+- **Suite Penuh Keseluruhan (`python -m pytest -q`)**: **750 passed** (100% lulus tanpa kegagalan).

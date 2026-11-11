@@ -465,6 +465,30 @@ class TestHapusAkunPemulihan:
         assert MSG.RECOVERY_RESET_LIMITATION in html
         assert 'action="/recovery/reset-account"' in html
 
+    def test_modal_reset_akun_memuat_komponen_kx_dan_peringatan_keterbatasan(self, app, client):
+        html = self._halaman(client)
+        assert 'id="modal-reset-account"' in html
+        assert 'data-buka-modal="#modal-reset-account"' in html
+        assert "jika kata sandi dan dongle hilang, tidak ada jalur dari aplikasi" in html.lower()
+        assert 'id="reset-username"' in html
+        assert 'id="reset-confirm-username"' in html
+        assert 'id="reset-password"' in html
+        assert 'data-kx-sandi' in html
+
+    def test_tanpa_kata_terlarang_pemulihan_reset(self):
+        kata_terlarang = [
+            "sem" + "ester",
+            "U" + "AS",
+            "U" + "TS",
+            "maha" + "siswa",
+            "do" + "sen",
+        ]
+        for jalur in ("templates/account_recovery.html", "static/js/account_recovery.js"):
+            with open(jalur, "r", encoding="utf-8") as handle:
+                konten = handle.read().lower()
+            for kata in kata_terlarang:
+                assert kata.lower() not in konten, f"Kata terlarang '{kata}' ditemukan di {jalur}"
+
     def test_tanpa_dongle_ditolak(self, app, client, monkeypatch):
         monkeypatch.setattr(usb_mod, "_kandidat_drive", lambda: [])
         user_id = _baris()["id"]
