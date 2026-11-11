@@ -82,6 +82,23 @@ def get(session_id: str) -> bytes | None:
         return bytes(entri["dek"])
 
 
+def sisa_detik(session_id: str) -> int:
+    """Sisa detik sebelum batas diam sesi berakhir (0 bila tidak ada)."""
+    if not session_id:
+        return 0
+    now = time.monotonic()
+    with _lock:
+        entri = _store.get(session_id)
+        if entri is None:
+            return 0
+        menit_diam = entri.get("timeout_minutes")
+        if menit_diam is None:
+            menit_diam = config.SESSION_IDLE_MINUTES
+        batas = menit_diam * 60
+        sisa = batas - (now - entri["last_seen"])
+        return max(0, int(sisa))
+
+
 def drop(session_id: str) -> None:
     """Buang DEK sesi (logout) dan timpa bytearray-nya."""
     if not session_id:

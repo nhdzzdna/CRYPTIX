@@ -14,6 +14,7 @@ import os
 
 from flask import (
     Blueprint, jsonify, request, session, abort, url_for, render_template,
+    redirect,
 )
 
 from database.db import get_db
@@ -120,9 +121,9 @@ def _butuh_grant_koleksi(row) -> bool:
     return not _grant_sah("album.unlock", row["id"])
 
 
-# ── Halaman Musik ─────────────────────────────────────────────────────────────
+# ── Halaman Audio ─────────────────────────────────────────────────────────────
 
-@collection_bp.route("/musik")
+@collection_bp.route("/audio")
 @login_required
 def musik():
     """Daftar audio dalam folder kind='musik' dan pemutar HTML5."""
@@ -174,6 +175,13 @@ def musik():
             "error": MSG.COLLECTION_ACTION_DENIED,
         },
     )
+
+
+@collection_bp.route("/musik")
+@login_required
+def musik_lama():
+    """Alamat lama diarahkan permanen ke /audio."""
+    return redirect(url_for("collection.musik"), code=308)
 
 
 # ── Buat koleksi ──────────────────────────────────────────────────────────────

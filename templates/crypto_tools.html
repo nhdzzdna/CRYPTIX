@@ -1,8 +1,8 @@
 {% extends "base.html" %}
-{% block title %}Crypto Tools — CRYPTIX{% endblock %}
+{% block title %}Crypto Tools — KOSYAK{% endblock %}
 {% block page_title %}Crypto Tools{% endblock %}
 {% block page_subtitle %}
-<p class="page-subtitle">Uji algoritma kriptografi CRYPTIX secara langsung. Enkripsi dan dekripsi diproses dengan implementasi asli tanpa penyimpanan data masukan.</p>
+<p class="page-subtitle">Uji algoritma kriptografi KOSYAK secara langsung. Enkripsi dan dekripsi diproses dengan implementasi asli tanpa penyimpanan data masukan.</p>
 {% endblock %}
 
 {% macro icon_cipher() %}
@@ -113,7 +113,7 @@
             <label for="key-input">Kunci</label>
             <input type="text" id="key-input" name="key" class="form-control mono"
                    placeholder="Masukkan kunci (teks atau hex untuk modern)" />
-            <small class="form-hint">Teks diturunkan menjadi kunci 32 byte; 64 digit heksadesimal dipakai langsung.</small>
+            <small class="form-hint">{{ MSG.CRYPTO_KEY_HINT }}</small>
           </div>
 
           <!-- Passphrase field (for super) -->
@@ -179,28 +179,86 @@
     </div>
   </form>
 
-  {% if steps %}
+  {% if stages %}
   <section class="crypto-panel crypto-steps-panel" aria-labelledby="crypto-steps-title">
     <header class="crypto-panel-head">
       <div class="crypto-panel-heading">
         <h2 id="crypto-steps-title" class="crypto-panel-title">Tahapan Super Encryption</h2>
-        <p class="crypto-panel-sub">Keluaran tiap layer untuk keperluan pembelajaran.</p>
+        <p class="crypto-panel-sub">Keluaran dan jejak tiap layer untuk keperluan pembelajaran.</p>
       </div>
       <span class="crypto-panel-icon" aria-hidden="true">{{ icon_layers() }}</span>
     </header>
     <div class="crypto-panel-body crypto-steps-body">
-      {% set step_labels = {
-        "vigenere": "Layer 1 — Vigenere",
-        "playfair": "Layer 2 — Playfair",
-        "chacha20": "Layer 3 — ChaCha20",
-        "blowfish": "Layer 4 — Blowfish-CBC",
-        "final": "Keluaran Akhir (CXSE2 + HMAC-SHA256)"
-      } %}
-      {% for name, value in steps.items() %}
-      <div class="crypto-step">
-        <label class="crypto-step-label">{{ step_labels.get(name, name) }}</label>
-        <pre class="output-box mono">{{ value }}</pre>
-      </div>
+      {% for stage in stages %}
+      <article class="crypto-step" data-stage="{{ stage.kode }}">
+        <h3 class="crypto-step-label">{{ stage.nama }}</h3>
+        <p class="form-hint">{{ stage.keterangan }}</p>
+
+        <div class="crypto-step-io">
+          <div>
+            <span class="crypto-step-io-label">Input</span>
+            <pre class="output-box mono">{{ stage.input }}</pre>
+          </div>
+          <div>
+            <span class="crypto-step-io-label">Output</span>
+            <pre class="output-box mono">{{ stage.output }}</pre>
+          </div>
+        </div>
+
+        {% if stage.parameter %}
+        <dl class="crypto-step-params">
+          {% for param in stage.parameter %}
+          <div>
+            <dt>{{ param.label }}</dt>
+            <dd class="mono">{{ param.nilai }}</dd>
+          </div>
+          {% endfor %}
+        </dl>
+        {% endif %}
+
+        {% if stage.jejak %}
+        <div class="crypto-trace-wrap">
+          <table class="crypto-trace-table">
+            <thead>
+              {% if stage.jenis == "vigenere" %}
+              <tr><th>Posisi</th><th>Asal</th><th>Kunci</th><th>Hasil</th></tr>
+              {% elif stage.jenis == "playfair" %}
+              <tr><th>Pasangan Asal</th><th>Pasangan Hasil</th><th>Aturan</th></tr>
+              {% else %}
+              <tr><th>Offset</th><th>Sebelum (hex)</th><th>Sesudah (hex)</th></tr>
+              {% endif %}
+            </thead>
+            <tbody>
+              {% for baris in stage.jejak %}
+              {% if stage.jenis == "vigenere" %}
+              <tr>
+                <td>{{ loop.index }}</td>
+                <td class="mono">{{ baris.asal }}</td>
+                <td class="mono">{{ baris.kunci or "—" }}</td>
+                <td class="mono">{{ baris.hasil }}</td>
+              </tr>
+              {% elif stage.jenis == "playfair" %}
+              <tr>
+                <td class="mono">{{ baris.pasangan_asal }}</td>
+                <td class="mono">{{ baris.pasangan_hasil }}</td>
+                <td>{{ baris.aturan }}</td>
+              </tr>
+              {% else %}
+              <tr>
+                <td>{{ loop.index0 }}</td>
+                <td class="mono">{{ baris.sebelum }}</td>
+                <td class="mono">{{ baris.sesudah }}</td>
+              </tr>
+              {% endif %}
+              {% endfor %}
+            </tbody>
+          </table>
+          {% if stage.catatan %}
+          <p class="form-hint">{{ stage.catatan }}</p>
+          {% endif %}
+        </div>
+        {% endif %}
+      </article>
       {% endfor %}
     </div>
   </section>

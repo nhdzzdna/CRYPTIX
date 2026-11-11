@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Settings — CRYPTIX{% endblock %}
+{% block title %}Settings — KOSYAK{% endblock %}
 {% block page_title %}Settings{% endblock %}
 {% block page_subtitle %}
 <p class="page-subtitle">Kelola profil, perangkat tepercaya, dan metode autentikasi akun Anda.</p>
@@ -230,6 +230,24 @@
                   Diperlukan untuk membungkus ulang kunci data dengan dongle baru.
                 </small>
               </div>
+              <div class="form-group">
+                <label for="dongle-mountpoint">Dongle Tujuan</label>
+                <select id="dongle-mountpoint" name="mountpoint"
+                        class="form-control" {% if drives %}required{% endif %}>
+                  {% if not drives %}
+                    <option value="">Tidak ada dongle terdeteksi</option>
+                  {% elif drives|length > 1 %}
+                    <option value="">Pilih dongle tujuan</option>
+                  {% endif %}
+                  {% for drive in drives %}
+                    <option value="{{ drive.mountpoint }}"
+                            {% if drives|length == 1 %}selected{% endif %}>
+                      {{ drive.mountpoint }}{% if drive.volume_serial %} — {{ drive.volume_serial }}{% endif %}
+                    </option>
+                  {% endfor %}
+                </select>
+                <small class="form-hint">{{ MSG.USB_REREGISTER_HINT }}</small>
+              </div>
               <div class="settings-actions">
                 <button type="submit" class="btn btn-secondary btn-sm" data-reauth="settings.change">
                   <span class="settings-btn-icon" aria-hidden="true">{{ icon_usb() }}</span>
@@ -238,8 +256,8 @@
               </div>
             </form>
             <p class="settings-note">
-              Colok dongle pengganti sebelum mendaftar. Kunci data, berkas, dan
-              template biometrik tidak berubah.
+              {{ MSG.USB_REREGISTER_HINT }} Kunci data, berkas, dan template
+              biometrik tidak berubah.
             </p>
           </div>
 

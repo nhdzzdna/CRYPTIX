@@ -1,5 +1,5 @@
 {% extends "auth_base.html" %}
-{% block title %}Masuk — CRYPTIX{% endblock %}
+{% block title %}Masuk — KOSYAK{% endblock %}
 {% block auth_title %}Masuk ke akun Anda{% endblock %}
 {% block auth_subtitle %}Gunakan username, password, dan dongle Anda untuk membuka brankas.{% endblock %}
 
@@ -61,7 +61,11 @@
   </div>
 </form>
 
-<section id="stage2" class="auth-stage" hidden>
+<section id="stage2" class="auth-stage" hidden
+         data-msg-choose="{{ MSG.LOGIN_BIOMETRIC_CHOOSE }}"
+         data-msg-verifying="{{ MSG.LOGIN_BIOMETRIC_VERIFYING }}"
+         data-msg-unsupported="{{ MSG.LOGIN_BIOMETRIC_UNSUPPORTED }}"
+         data-msg-none="{{ MSG.LOGIN_BIOMETRIC_NONE }}">
   <div class="auth-stage-head">
     <span class="auth-stage-icon" aria-hidden="true">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -78,18 +82,12 @@
     </span>
     <div>
       <h3 class="auth-stage-title">Verifikasi biometrik</h3>
-      <p class="form-hint">Selesaikan verifikasi biometrik untuk menyelesaikan masuk.</p>
+      <p class="form-hint" id="stage2-hint">{{ MSG.LOGIN_BIOMETRIC_CHOOSE }}</p>
     </div>
   </div>
-  <ul id="metode-list" class="auth-method-list"></ul>
+  <div id="metode-list" class="auth-method-list"></div>
+  <p class="form-hint" id="stage2-status" role="status"></p>
   <div id="stage2-error" class="auth-field-error" role="alert"></div>
-  <button type="button" class="btn btn-primary btn-full" id="btn-verifikasi">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-      <path d="m22 4-10 10.01-3-3" />
-    </svg>
-    Verifikasi
-  </button>
   <p class="auth-link"><a href="{{ url_for('auth.login') }}">Mulai dari awal</a></p>
 </section>
 {% endblock %}

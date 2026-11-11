@@ -197,13 +197,12 @@ def create_app() -> Flask:
     from routes.stego_routes     import stego_bp
     from routes.security_routes  import security_bp
     from routes.settings_routes  import settings_bp
-    from routes.assistant_routes import assistant_bp
-    from routes.trash_routes     import trash_bp
+    from routes.trash_routes import trash_bp
 
     for bp in [
         auth_bp, dashboard_bp, vault_bp, account_bp, document_bp,
         media_bp, notes_bp, crypto_bp, stego_bp, security_bp, settings_bp,
-        assistant_bp, collection_bp, trash_bp,
+        collection_bp, trash_bp,
     ]:
         app.register_blueprint(bp)
 
@@ -211,27 +210,9 @@ def create_app() -> Flask:
     from routes.reauth_routes import reauth_bp
     app.register_blueprint(reauth_bp)
 
-    # ── Jinja2 custom filters ─────────────────────────────────────────────
-    import markupsafe
-
-    @app.template_filter("safe_markdown")
-    def safe_markdown_filter(text: str) -> markupsafe.Markup:
-        """
-        Minimal server-side markdown → HTML conversion for agent answer history.
-        Only used in assistant.html to render stored history safely.
-        """
-        import re
-        t = markupsafe.escape(text)
-        t = str(t)
-        t = re.sub(r"^## (.+)$",   r"<h3 class='msg-h3'>\1</h3>",   t, flags=re.M)
-        t = re.sub(r"^# (.+)$",    r"<h2 class='msg-h2'>\1</h2>",   t, flags=re.M)
-        t = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>",         t)
-        t = re.sub(r"\*(.+?)\*",     r"<em>\1</em>",                 t)
-        t = re.sub(r"`([^`]+)`",     r"<code class='inline-code'>\1</code>", t)
-        t = re.sub(r"^[•\-\*] (.+)$", r"<li>\1</li>",               t, flags=re.M)
-        t = re.sub(r"(<li>.*</li>)", r"<ul class='msg-ul'>\1</ul>",  t, flags=re.S)
-        t = re.sub(r"\n",            r"<br>",                         t)
-        return markupsafe.Markup(t)
+    # ── Navigasi bersama dan badge sesi ───────────────────────────────────────
+    from modules.navigation import nav_context
+    app.context_processor(nav_context)
 
     # ── Root redirect ─────────────────────────────────────────────────────────
     @app.route("/")
