@@ -1,0 +1,410 @@
+/* static/css/halaman/documents.css
+   Halaman Dokumen (kx-doc-*)
+   Tiga lebar: desktop ≥901px | tablet 641–900px | mobile ≤640px
+   Semua token memakai --kx-* dari tokens.css; jangan mengubah style.css. */
+
+/* ── Layout utama ───────────────────────────────────────────────────────── */
+.kx-doc-layout {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: var(--kx-space-4);
+  align-items: start;
+}
+
+/* ── Panel samping (upload + folder) ────────────────────────────────────── */
+.kx-doc-side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kx-space-3);
+}
+
+/* ── Area unggah ────────────────────────────────────────────────────────── */
+.kx-doc-dropzone-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kx-space-2);
+}
+
+.kx-doc-hint {
+  margin: 0;
+  color: var(--kx-text-2);
+  font-size: var(--kx-fs-caption);
+  line-height: 1.4;
+}
+
+/* ── Daftar folder ───────────────────────────────────────────────────────── */
+.kx-doc-folder-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kx-space-2);
+  padding-bottom: var(--kx-space-3);
+  border-bottom: 1px solid var(--kx-border-soft);
+  margin-bottom: var(--kx-space-3);
+}
+
+.kx-doc-folder-lock {
+  display: flex;
+  align-items: center;
+  gap: var(--kx-space-2);
+  font-size: var(--kx-fs-body);
+  cursor: pointer;
+}
+
+.kx-doc-folder-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.kx-doc-folder-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--kx-space-3);
+  padding: 10px 12px;
+  border: 0;
+  border-radius: var(--kx-radius-input);
+  background: transparent;
+  cursor: pointer;
+  color: var(--kx-text);
+  text-align: left;
+  width: 100%;
+  transition: background 0.15s;
+}
+.kx-doc-folder-btn:hover,
+.kx-doc-folder-btn:focus-visible {
+  background: var(--kx-surface-2);
+  outline: none;
+}
+.kx-doc-folder-btn:focus-visible {
+  box-shadow: 0 0 0 2px var(--kx-accent);
+}
+
+.kx-doc-folder-icon {
+  flex: 0 0 auto;
+  color: var(--kx-accent);
+}
+.kx-doc-folder-icon.is-locked {
+  color: var(--kx-warn);
+}
+
+.kx-doc-folder-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.kx-doc-folder-name {
+  font-size: var(--kx-fs-body);
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.kx-doc-folder-count {
+  font-size: var(--kx-fs-caption);
+  color: var(--kx-text-2);
+}
+
+.kx-doc-folder-chevron {
+  flex: 0 0 auto;
+  color: var(--kx-text-3);
+}
+
+/* ── Panel utama ─────────────────────────────────────────────────────────── */
+.kx-doc-main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kx-space-4);
+}
+
+/* ── Detail folder (panel sliding) ──────────────────────────────────────── */
+.kx-doc-folder-detail-head {
+  display: flex;
+  align-items: center;
+  gap: var(--kx-space-3);
+  flex-wrap: wrap;
+}
+
+.kx-doc-breadcrumb {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--kx-fs-subtitle);
+  font-weight: 600;
+  overflow: hidden;
+}
+
+.kx-doc-breadcrumb-root {
+  color: var(--kx-text-2);
+}
+
+.kx-doc-breadcrumb-sep {
+  color: var(--kx-text-3);
+}
+
+.kx-doc-breadcrumb-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--kx-text);
+}
+
+.kx-doc-folder-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--kx-space-2);
+  flex-wrap: wrap;
+}
+
+.kx-doc-folder-rename-form {
+  display: flex;
+  gap: var(--kx-space-2);
+  align-items: center;
+  flex-wrap: wrap;
+  width: 100%;
+  margin-top: var(--kx-space-2);
+}
+
+.kx-doc-folder-rename-form .kx-input {
+  flex: 1;
+}
+
+/* ── Toolbar pencarian dan urutan ──────────────────────────────────────── */
+.kx-doc-toolbar {
+  display: flex;
+  gap: var(--kx-space-3);
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.kx-doc-search-wrap {
+  flex: 1;
+  min-width: 180px;
+}
+
+.kx-doc-sort-wrap {
+  min-width: 140px;
+}
+
+/* ── Daftar berkas ───────────────────────────────────────────────────────── */
+.kx-doc-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* ── Baris berkas ────────────────────────────────────────────────────────── */
+.kx-doc-row {
+  display: flex;
+  align-items: center;
+  gap: var(--kx-space-3);
+  padding: 10px 12px;
+  border-radius: var(--kx-radius-input);
+  border: 1px solid transparent;
+  transition: background 0.15s;
+}
+.kx-doc-row:hover {
+  background: var(--kx-surface-2);
+}
+.kx-doc-row.item-terkunci {
+  border-color: var(--kx-warn-soft, rgba(234, 179, 8, 0.15));
+}
+
+.kx-doc-row-select {
+  flex: 0 0 auto;
+}
+
+.kx-doc-row-icon {
+  flex: 0 0 auto;
+  color: var(--kx-accent);
+}
+.item-terkunci .kx-doc-row-icon {
+  color: var(--kx-warn);
+}
+
+.kx-doc-row-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.kx-doc-row-name {
+  display: block;
+  font-size: var(--kx-fs-body);
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--kx-text);
+}
+
+.kx-doc-row-meta {
+  display: flex;
+  gap: 6px;
+  margin-top: 2px;
+  font-size: var(--kx-fs-caption);
+  color: var(--kx-text-2);
+  font-family: var(--kx-font-mono);
+  flex-wrap: wrap;
+}
+
+.kx-doc-row-meta-sep {
+  color: var(--kx-text-3);
+}
+
+.kx-doc-row-lock-note {
+  color: var(--kx-warn);
+}
+
+.kx-doc-row-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--kx-space-2);
+  flex: 0 0 auto;
+}
+
+/* ── Pemuatan ────────────────────────────────────────────────────────────── */
+.kx-doc-loading {
+  padding: var(--kx-space-3) 0;
+  color: var(--kx-text-2);
+  font-size: var(--kx-fs-body);
+}
+
+/* ── Empty state inline ──────────────────────────────────────────────────── */
+.kx-doc-empty-inline {
+  padding: var(--kx-space-4) 0;
+}
+
+/* ── Bar aksi mengambang (bulk action bar) ───────────────────────────────── */
+/* Komponen .kx-aksi-mengambang sudah ada di components.css;
+   tambahan khusus halaman di bawah ini. */
+.kx-doc-bulk-select {
+  display: flex;
+  align-items: center;
+  gap: var(--kx-space-2);
+}
+
+/* ── Modal peringatan ────────────────────────────────────────────────────── */
+.kx-doc-alert {
+  padding: var(--kx-space-3) var(--kx-space-4);
+  background: var(--kx-danger-soft, rgba(220, 38, 38, 0.1));
+  border: 1px solid var(--kx-danger);
+  border-radius: var(--kx-radius-card);
+  color: var(--kx-danger);
+  font-size: var(--kx-fs-body);
+  margin-top: var(--kx-space-3);
+}
+
+/* ── Modal pratinjau ─────────────────────────────────────────────────────── */
+.kx-doc-preview-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.kx-doc-preview-stage iframe {
+  width: 100%;
+  height: 100%;
+  min-height: 400px;
+  border: 0;
+  flex: 1;
+}
+
+.kx-doc-preview-stage img {
+  max-width: 100%;
+  max-height: 70vh;
+  object-fit: contain;
+  margin: auto;
+  display: block;
+}
+
+.kx-doc-preview-stage pre {
+  margin: 0;
+  padding: var(--kx-space-3);
+  font-family: var(--kx-font-mono);
+  font-size: var(--kx-fs-caption);
+  white-space: pre-wrap;
+  word-break: break-all;
+  background: var(--kx-surface-2);
+  border-radius: var(--kx-radius-input);
+  flex: 1;
+  overflow: auto;
+}
+
+.kx-doc-preview-meta {
+  margin: 0 0 var(--kx-space-2);
+  font-size: var(--kx-fs-caption);
+  color: var(--kx-text-2);
+  font-family: var(--kx-font-mono);
+}
+
+/* Modal pratinjau ukuran besar */
+#doc-preview-modal .kx-modal {
+  width: min(90vw, 900px);
+  height: min(90vh, 700px);
+  display: flex;
+  flex-direction: column;
+}
+
+#doc-preview-modal .kx-modal-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* ── Responsif ───────────────────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .kx-doc-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .kx-doc-side {
+    display: contents;
+  }
+
+  .kx-doc-main {
+    order: 2;
+  }
+}
+
+@media (max-width: 640px) {
+  .kx-doc-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .kx-doc-sort-wrap {
+    min-width: unset;
+  }
+
+  .kx-doc-row {
+    flex-wrap: wrap;
+  }
+
+  .kx-doc-row-actions {
+    width: 100%;
+    justify-content: flex-end;
+    padding-top: var(--kx-space-2);
+  }
+
+  .kx-doc-folder-actions {
+    flex-wrap: wrap;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kx-doc-folder-btn,
+  .kx-doc-row {
+    transition: none;
+  }
+}
+

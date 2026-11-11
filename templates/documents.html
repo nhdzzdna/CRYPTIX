@@ -1,70 +1,93 @@
 {% extends "base.html" %}
-{% block title %}Documents — KOSYAK{% endblock %}
-{% block page_title %}Documents{% endblock %}
+{% block title %}Dokumen — KOSYAK{% endblock %}
+{% block page_title %}Dokumen{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/halaman/documents.css') }}" />
+{% endblock %}
 
 {% block content %}
-<div class="card mb-4">
-  <div class="card-header">Upload Dokumen</div>
-  <div class="card-body">
-    <form method="POST" action="{{ url_for('vault.upload') }}" enctype="multipart/form-data">
+<div class="kx-card mb-4">
+  <div class="kx-card-head">
+    <h2 class="kx-card-title">Unggah Dokumen</h2>
+  </div>
+  <div class="kx-card-body">
+    <form method="POST" action="{{ url_for('vault.upload') }}" enctype="multipart/form-data" class="kx-doc-dropzone-wrap">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-      <div class="form-row">
-        <input type="file" name="file" class="form-control"
+      <input type="hidden" name="kategori" value="dokumen" />
+      <div class="kx-dropzone" data-kx-dropzone tabindex="0" role="button" aria-label="Area unggah dokumen">
+        <input type="file" name="file"
                accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt" required />
-        <button type="submit" class="btn btn-primary">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
-          Enkripsi &amp; Upload
-        </button>
+        <div class="kx-dropzone-icon" aria-hidden="true">
+          {{ ikon('upload', 32) }}
+        </div>
+        <p class="kx-dropzone-title">Tarik dokumen ke sini</p>
+        <p class="kx-doc-hint">atau klik untuk memilih berkas</p>
       </div>
+      <p class="kx-doc-hint">PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, TXT · Maks. 64 MB · Berkas dienkripsi sebelum disimpan</p>
+      <button type="submit" class="kx-btn kx-btn-primary">
+        {{ ikon('lock', 16) }}
+        <span>Enkripsi &amp; Unggah</span>
+      </button>
     </form>
   </div>
 </div>
 
-<div class="card">
-  <div class="card-header">Dokumen Terenkripsi ({{ files|length }})</div>
-  <div class="card-body p-0">
+<div class="kx-card">
+  <div class="kx-card-head">
+    <h2 class="kx-card-title">Dokumen Terenkripsi ({{ files|length if files is defined else 0 }})</h2>
+  </div>
+  <div class="kx-card-body p-0">
     {% if files %}
-    <table class="table">
-      <thead>
-        <tr><th>Nama File</th><th>Ukuran</th><th>Upload</th><th>Aksi</th></tr>
-      </thead>
-      <tbody>
-        {% for f in files %}
-        <tr>
-          <td>
-            <span class="media-icon doc-file-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
-            </span>
-            {{ f.original_name }}
-          </td>
-          <td>{{ "%.1f"|format(f.file_size / 1024) }} KB</td>
-          <td>{{ f.uploaded_at[:16] }}</td>
-          <td>
-            <form method="POST" action="{{ url_for('vault.decrypt', resource_id=f.id) }}"
-                  style="display:inline">
-              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-              <button type="submit" class="btn btn-sm btn-success"
-                      data-reauth="file.download"
-                      data-reauth-resource="{{ f.id }}">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12"/><path d="m7 11 5 5 5-5"/><path d="M4 20h16"/></svg>
-                Unduh
-              </button>
-            </form>
-            <form method="POST" action="{{ url_for('vault.delete', resource_id=f.id) }}"
-                  style="display:inline">
-              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-              <button type="submit" class="btn btn-sm btn-danger"
-                      aria-label="Hapus">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/><path d="M10 11v5M14 11v5"/></svg>
-              </button>
-            </form>
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+    <div class="kx-table-wrap">
+      <table class="kx-table">
+        <thead>
+          <tr>
+            <th>Nama Berkas</th>
+            <th>Ukuran</th>
+            <th>Unggah</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for f in files %}
+          <tr>
+            <td>
+              <span class="media-icon doc-file-icon" aria-hidden="true">
+                {{ ikon('file-text', 18) }}
+              </span>
+              {{ f.original_name }}
+            </td>
+            <td>{{ "%.1f"|format(f.file_size / 1024) }} KB</td>
+            <td>{{ f.uploaded_at[:16] }}</td>
+            <td class="kx-cell-actions">
+              <form method="POST" action="{{ url_for('vault.decrypt', resource_id=f.id) }}" class="d-inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                <button type="submit" class="kx-btn kx-btn-secondary kx-btn-sm"
+                        data-reauth="file.download"
+                        data-reauth-resource="{{ f.id }}">
+                  {{ ikon('download', 15) }}
+                  <span>Unduh</span>
+                </button>
+              </form>
+              <form method="POST" action="{{ url_for('vault.delete', resource_id=f.id) }}" class="d-inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                <button type="submit" class="kx-btn kx-btn-danger kx-btn-sm" aria-label="Hapus">
+                  {{ ikon('trash', 15) }}
+                </button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
     {% else %}
-    <p class="p-3 text-muted">Belum ada dokumen.</p>
+    <div class="kx-empty">
+      <div class="kx-empty-icon" aria-hidden="true">{{ ikon('file-text', 32) }}</div>
+      <p class="kx-empty-title">Belum ada dokumen</p>
+      <p class="kx-empty-text">Unggah dokumen baru untuk memulai enkripsi berkas.</p>
+    </div>
     {% endif %}
   </div>
 </div>
