@@ -8,12 +8,14 @@ Pure Python, no file I/O needed.
 import hashlib
 import re
 
-from flask import Blueprint, render_template, request
+from flask import Blueprint, jsonify, render_template, request
 
 import config
 from routes.auth_routes import login_required
 from modules.strings import MSG
-from modules.cryptography.classical_cipher_1 import vigenere_encrypt, vigenere_decrypt
+from modules.cryptography.classical_cipher_1 import (
+    is_valid_vigenere_key, vigenere_letter_encrypt, vigenere_letter_decrypt,
+)
 from modules.cryptography.classical_cipher_2 import playfair_encrypt, playfair_decrypt
 from modules.cryptography.modern_cipher_1    import chacha20_encrypt, chacha20_decrypt
 from modules.cryptography.modern_cipher_2    import blowfish_encrypt, blowfish_decrypt
@@ -25,6 +27,19 @@ crypto_bp = Blueprint("crypto", __name__)
 
 # Salt tetap untuk turunan kunci alat (domain separation antar penggunaan).
 _TOOL_KDF_SALT = b"cryptix-crypto-tools-v1"
+
+
+def _wants_json() -> bool:
+    """True bila pemanggil mengharapkan balasan JSON, bukan halaman HTML."""
+    if request.is_json:
+        return True
+    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        return True
+    penerima = request.accept_mimetypes
+    return (
+        penerima.best_match(["text/html", "application/json"]) == "application/json"
+        and penerima["application/json"] > penerima["text/html"]
+    )
 
 
 def _tool_key(key: str) -> bytes:
@@ -54,6 +69,7 @@ def index():
     result = None
     error  = None
     steps  = None
+    status = 200
 
     if request.method == "POST":
         action     = request.form.get("action", "encrypt")   # encrypt / decrypt
@@ -64,7 +80,17 @@ def index():
 
         try:
             if cipher == "vigenere":
-                result = vigenere_encrypt(text, key) if action == "encrypt" else vigenere_decrypt(text, key)
+                if not is_valid_vigenere_key(key):
+                    error = MSG.CRYPTO_VIGENERE_KEY_INVALID
+                    status = 400
+                    if _wants_json():
+                        return jsonify({"error": error}), status
+                else:
+                    result = (
+                        vigenere_letter_encrypt(text, key)
+                        if action == "encrypt"
+                        else vigenere_letter_decrypt(text, key)
+                    )
 
             elif cipher == "playfair":
                 result = playfair_encrypt(text, key) if action == "encrypt" else playfair_decrypt(text, key)
@@ -94,4 +120,6 @@ def index():
         except Exception:
             error = MSG.CRYPTO_OPERATION_FAILED
 
-    return render_template("crypto_tools.html", result=result, error=error, steps=steps)
+    return render_template(
+        "crypto_tools.html", result=result, error=error, steps=steps,
+    ), status

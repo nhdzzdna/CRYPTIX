@@ -3,9 +3,28 @@ modules/cryptography/classical_cipher_1.py
 ───────────────────────────────────────────
 Vigenere Cipher (Classic Cipher #1)
 
-Standard Vigenere cipher operating on printable ASCII (32–126).
-Key is cycled character-by-character; non-printable bytes are passed through.
+Dua varian disediakan:
+
+* ``vigenere_encrypt`` / ``vigenere_decrypt`` — varian printable ASCII yang
+  dipakai layer pertama Super Encryption. Format lama dipertahankan agar data
+  tersimpan tetap dapat didekripsi.
+* ``vigenere_letter_encrypt`` / ``vigenere_letter_decrypt`` — varian klasik
+  A-Z untuk alat Vigenere mandiri. Kunci hanya boleh huruf, sedangkan karakter
+  bukan huruf pada teks dibiarkan dan tidak memajukan indeks kunci.
 """
+
+import re
+
+
+def is_valid_vigenere_key(key: str) -> bool:
+    """True bila *key* hanya berisi huruf A-Z (tidak peka huruf besar/kecil)."""
+    return bool(key) and re.fullmatch(r"[A-Za-z]+", key) is not None
+
+
+def _letter_shifts(key: str) -> list[int]:
+    if not is_valid_vigenere_key(key):
+        raise ValueError("Vigenere key must contain letters A-Z only.")
+    return [ord(c.upper()) - ord("A") for c in key]
 
 
 def _key_stream(key: str, length: int):
@@ -69,4 +88,48 @@ def vigenere_decrypt(ciphertext: str, key: str) -> str:
             result.append(chr((ord(ch) - 32 - shift) % 95 + 32))
         else:
             result.append(ch)
+    return "".join(result)
+
+
+def vigenere_letter_encrypt(plaintext: str, key: str) -> str:
+    """
+    Enkripsi *plaintext* dengan Vigenere klasik A-Z.
+
+    Hanya huruf yang digeser dan huruf besar/kecil dipertahankan. Karakter
+    bukan huruf (spasi, tanda baca, angka) dibiarkan dan tidak memajukan
+    indeks kunci.
+    """
+    shifts = _letter_shifts(key)
+    result = []
+    index = 0
+    for ch in plaintext:
+        if "A" <= ch <= "Z":
+            base = ord("A")
+        elif "a" <= ch <= "z":
+            base = ord("a")
+        else:
+            result.append(ch)
+            continue
+        shift = shifts[index % len(shifts)]
+        result.append(chr((ord(ch) - base + shift) % 26 + base))
+        index += 1
+    return "".join(result)
+
+
+def vigenere_letter_decrypt(ciphertext: str, key: str) -> str:
+    """Kebalikan dari :func:`vigenere_letter_encrypt`."""
+    shifts = _letter_shifts(key)
+    result = []
+    index = 0
+    for ch in ciphertext:
+        if "A" <= ch <= "Z":
+            base = ord("A")
+        elif "a" <= ch <= "z":
+            base = ord("a")
+        else:
+            result.append(ch)
+            continue
+        shift = shifts[index % len(shifts)]
+        result.append(chr((ord(ch) - base - shift) % 26 + base))
+        index += 1
     return "".join(result)
