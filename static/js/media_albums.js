@@ -5,7 +5,8 @@
  * banyak berkas, serta tindakan yang memerlukan grant album.unlock.
  *
  * Tidak ada data rahasia di DOM: URL pratinjau hanya ada pada album yang
- * boleh dilihat; item terkunci/tersembunyi dimuat setelah grant diterbitkan.
+ * boleh dilihat. Item terkunci tetap tampil dengan penanda; mengunci item
+ * bebas grant, melepas kunci memakai grant sekali pakai item.unlock.
  */
 (function () {
   'use strict';
@@ -56,9 +57,6 @@
   var kotakGalat = document.getElementById('media-alert');
   var judulAlbum = document.getElementById('album-detail-title');
   var daftarItem = document.getElementById('album-items');
-  var bagianTersembunyi = document.getElementById('album-hidden');
-  var daftarTersembunyi = document.getElementById('album-hidden-items');
-  var tombolTersembunyi = document.getElementById('album-hidden-open');
   var tombolKunciAlbum = document.getElementById('album-lock-toggle');
   var tombolKembali = document.getElementById('album-back');
   var tombolGantiNamaAlbum = document.getElementById('album-rename');
@@ -70,7 +68,7 @@
   var targetPindah = document.getElementById('move-target');
   var tombolPindah = document.getElementById('move-button');
   var tombolKunciItem = document.getElementById('lock-items-button');
-  var tombolSembunyiItem = document.getElementById('hide-items-button');
+  var tombolLepasItem = document.getElementById('unlock-items-button');
   var formBuatAlbum = document.getElementById('album-create-form');
   var inputBuatAlbum = document.getElementById('album-create-name');
   var cekBuatTerkunci = document.getElementById('album-create-locked');
@@ -178,15 +176,16 @@
   }
 
   function buatKartu(item, albumId) {
+    var terkunci = item.state === 'locked';
     var kartu = document.createElement('div');
-    kartu.className = 'media-item';
+    kartu.className = 'media-item' + (terkunci ? ' item-terkunci' : '');
     kartu.setAttribute('data-media-item', '');
     kartu.setAttribute('data-file-id', String(item.id));
     kartu.setAttribute('data-kind', item.file_type);
     kartu.setAttribute('data-name', item.name);
     kartu.setAttribute('data-view-url', item.view_url);
     kartu.setAttribute('data-thumb-url', item.thumb_url || '');
-    kartu.setAttribute('data-locked', item.state === 'locked' ? '1' : '0');
+    kartu.setAttribute('data-locked', terkunci ? '1' : '0');
     kartu.setAttribute('data-collection-id', String(albumId || ''));
 
     var label = document.createElement('label');
@@ -209,10 +208,26 @@
       gambar.src = item.thumb_url;
       gambar.alt = item.name;
       tombol.appendChild(gambar);
+      if (terkunci) {
+        var penanda = document.createElement('span');
+        penanda.className = 'item-lock-overlay';
+        penanda.setAttribute('aria-hidden', 'true');
+        penanda.innerHTML = IKON_KUNCI;
+        tombol.appendChild(penanda);
+      }
     } else {
       var kotak = document.createElement('span');
-      kotak.className = 'media-placeholder media-placeholder-' + item.file_type;
-      kotak.innerHTML = ikonBerkas(item);
+      kotak.className = 'media-placeholder media-placeholder-' +
+        item.file_type + (terkunci ? ' media-placeholder-locked' : '');
+      var ikonPlaceholder = document.createElement('span');
+      ikonPlaceholder.className = 'media-placeholder-icon';
+      ikonPlaceholder.setAttribute('aria-hidden', 'true');
+      ikonPlaceholder.innerHTML = ikonBerkas(item);
+      var labelPlaceholder = document.createElement('span');
+      labelPlaceholder.className = 'media-placeholder-label';
+      labelPlaceholder.textContent = terkunci ? 'Terkunci' : 'Media';
+      kotak.appendChild(ikonPlaceholder);
+      kotak.appendChild(labelPlaceholder);
       tombol.appendChild(kotak);
     }
     kartu.appendChild(tombol);
@@ -228,11 +243,6 @@
     ket.appendChild(ikon);
     ket.appendChild(nama);
     kartu.appendChild(ket);
-
-    if (item.state === 'locked') {
-      kartu.setAttribute('data-reauth', 'media.stream');
-      kartu.setAttribute('data-reauth-resource', String(item.id));
-    }
     return kartu;
   }
 
@@ -252,11 +262,8 @@
     judulAlbum.textContent = nama || '';
     tombolKunciAlbum.textContent = albumTerkunci ? 'Buka kunci album' : 'Kunci album';
     tombolKunciAlbum.setAttribute('data-reauth-resource', String(id));
-    tombolTersembunyi.setAttribute('data-reauth-resource', String(id));
     formGantiNamaAlbum.hidden = true;
     daftarItem.innerHTML = '';
-    daftarTersembunyi.innerHTML = '';
-    bagianTersembunyi.hidden = true;
     if (kosongAlbum) {
       kosongAlbum.hidden = true;
     }
@@ -271,7 +278,6 @@
     ambil('/api/collections/' + id + '/items', grant).then(function (data) {
       var item = data.items || [];
       isiGaleri(daftarItem, item, id);
-      bagianTersembunyi.hidden = !(data.hidden_count > 0);
       if (kosongAlbum) {
         kosongAlbum.hidden = item.length > 0;
       }
@@ -279,22 +285,6 @@
       detail.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }).catch(function (err) {
       tampilkanPemuatAlbum(false);
-      tampilkanGalat(err.message);
-    });
-  }
-
-  function muatTersembunyi() {
-    if (!albumAktif) {
-      return;
-    }
-    var grant = grantUntuk('album.unlock', albumAktif);
-    if (!grant) {
-      tampilkanGalat(pesan('error'));
-      return;
-    }
-    ambil('/api/collections/' + albumAktif + '/hidden', grant).then(function (data) {
-      isiGaleri(daftarTersembunyi, data.items || [], albumAktif);
-    }).catch(function (err) {
       tampilkanGalat(err.message);
     });
   }
@@ -414,18 +404,20 @@
       }
     });
 
-    [tombolKunciItem, tombolSembunyiItem].forEach(function (tombol) {
-      if (!tombol) {
-        return;
-      }
+    if (tombolKunciItem) {
+      // Mengunci item tidak memerlukan verifikasi ulang.
+      tombolKunciItem.removeAttribute('data-reauth');
+      tombolKunciItem.removeAttribute('data-reauth-resource');
+    }
+    if (tombolLepasItem) {
       if (sah && koleksi) {
-        tombol.setAttribute('data-reauth', 'album.unlock');
-        tombol.setAttribute('data-reauth-resource', koleksi);
+        tombolLepasItem.setAttribute('data-reauth', 'item.unlock');
+        tombolLepasItem.setAttribute('data-reauth-resource', koleksi);
       } else {
-        tombol.removeAttribute('data-reauth');
-        tombol.removeAttribute('data-reauth-resource');
+        tombolLepasItem.removeAttribute('data-reauth');
+        tombolLepasItem.removeAttribute('data-reauth-resource');
       }
-    });
+    }
 
     if (targetPindah && tombolPindah) {
       var opsi = targetPindah.options[targetPindah.selectedIndex];
@@ -466,7 +458,7 @@
     });
   }
 
-  function ubahStatus(state) {
+  function ubahStatus(state, grant) {
     var ids = idTerpilih();
     if (!ids.length) {
       tampilkanGalat(pesan('need-collection'));
@@ -479,15 +471,11 @@
       tampilkanGalat(pesan('need-collection'));
       return null;
     }
-    var grant = grantUntuk('album.unlock', koleksi);
-    if (!grant) {
-      tampilkanGalat(pesan('error'));
-      return null;
-    }
+    // Melepas kunci memakai grant sekali pakai item.unlock; mengunci bebas grant.
     return kirim('/api/collections/' + koleksi + '/items/state', {
       file_ids: ids,
       state: state
-    }, grant).then(function () {
+    }, state === 'normal' ? grant : null).then(function () {
       window.location.reload();
     }).catch(function (err) {
       tampilkanGalat(err.message);
@@ -520,30 +508,17 @@
         nama: pemicu.getAttribute('data-album-name'),
         terkunci: pemicu.getAttribute('data-album-locked') === '1'
       };
-    } else if (pemicu.id === 'album-hidden-open') {
-      intent = { jenis: 'tersembunyi' };
     } else if (pemicu.id === 'album-lock-toggle') {
       intent = { jenis: 'kunciAlbum' };
-    } else if (pemicu.id === 'lock-items-button') {
-      intent = { jenis: 'status', state: 'locked' };
-    } else if (pemicu.id === 'hide-items-button') {
-      intent = { jenis: 'status', state: 'hidden' };
+    } else if (pemicu.id === 'unlock-items-button') {
+      intent = { jenis: 'status', state: 'normal' };
     } else if (pemicu.id === 'move-button') {
       intent = { jenis: 'pindah' };
-    } else if (pemicu.hasAttribute('data-media-item')) {
-      intent = { jenis: 'lihat', kartu: pemicu };
     }
   }
 
   document.addEventListener('pointerdown', function (event) {
-    var pemicu = event.target.closest(
-      '[data-reauth], [data-album-open], [data-open-media]');
-    if (!pemicu) {
-      return;
-    }
-    if (pemicu.hasAttribute('data-open-media')) {
-      pemicu = pemicu.closest('[data-media-item]');
-    }
+    var pemicu = event.target.closest('[data-reauth], [data-album-open]');
     if (pemicu) {
       simpulkanIntent(pemicu);
     }
@@ -552,23 +527,19 @@
   document.addEventListener('cryptix:reauth-grant', function (event) {
     var detailGrant = event.detail || {};
     var scope = detailGrant.scope;
+    if (!intent) {
+      return;
+    }
     if (scope === 'album.unlock') {
-      if (!intent) {
-        return;
-      }
       if (intent.jenis === 'album') {
         bukaAlbum(intent.id, intent.nama, intent.terkunci);
-      } else if (intent.jenis === 'tersembunyi') {
-        muatTersembunyi();
       } else if (intent.jenis === 'kunciAlbum') {
         ubahKunciAlbum();
-      } else if (intent.jenis === 'status') {
-        ubahStatus(intent.state);
       } else if (intent.jenis === 'pindah') {
         pindahkan();
       }
-    } else if (scope === 'media.stream' && intent && intent.jenis === 'lihat') {
-      bukaPenampil(intent.kartu);
+    } else if (scope === 'item.unlock' && intent.jenis === 'status') {
+      ubahStatus(intent.state, detailGrant.token);
     }
     intent = null;
   });
@@ -586,7 +557,11 @@
     if (buka) {
       var kartu = buka.closest('[data-media-item]');
       if (kartu && kartu.getAttribute('data-locked') === '1'
-          && !grantUntuk('media.stream', kartu.getAttribute('data-file-id'))) {
+          && !grantUntuk('item.view', kartu.getAttribute('data-file-id'))) {
+        // Item terkunci: dialog pilihan lihat sekali / lepas kunci.
+        if (window.CryptixLock) {
+          window.CryptixLock.pilih(kartu, bukaPenampil);
+        }
         return;
       }
       if (kartu) {
@@ -612,7 +587,11 @@
       pindahkan();
       return;
     }
-    if (event.target === tombolKunciItem || event.target === tombolSembunyiItem) {
+    if (event.target === tombolKunciItem) {
+      ubahStatus('locked');
+      return;
+    }
+    if (event.target === tombolLepasItem) {
       tampilkanGalat(pesan('need-collection'));
       return;
     }

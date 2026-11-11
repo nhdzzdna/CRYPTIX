@@ -48,16 +48,21 @@
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
 {% endmacro %}
 
+{% macro icon_lock() %}
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/><circle cx="12" cy="15" r="1.2"/></svg>
+{% endmacro %}
+
 {% macro track_row(f) %}
-<div class="music-track" data-track data-file-id="{{ f.id }}"
+<div class="music-track{% if f.state == 'locked' %} item-terkunci{% endif %}" data-track data-file-id="{{ f.id }}"
      data-kind="audio" data-name="{{ f.original_name }}"
-     data-view-url="{{ f.view_url }}" data-locked="0"
+     data-view-url="{{ f.view_url }}"
+     data-locked="{{ 1 if f.state == 'locked' else 0 }}"
      data-collection-id="{{ f.collection_id or '' }}">
   <label class="media-select" title="{{ msg.pick }}">
     <input type="checkbox" data-select-file value="{{ f.id }}" />
   </label>
   <button type="button" class="music-track-play" data-track-play
-          title="{{ msg.play }}">{{ icon_play() }}</button>
+          title="{{ msg.play }}">{% if f.state == 'locked' %}{{ icon_lock() }}{% else %}{{ icon_play() }}{% endif %}</button>
   <div class="music-track-main">
     <span class="music-track-name">{{ f.original_name }}</span>
     <span class="audio-track-meta">
@@ -65,6 +70,10 @@
       {% if f.uploaded_at %}
       <span aria-hidden="true">·</span>
       <span class="mono">{{ f.uploaded_at[:16] }}</span>
+      {% endif %}
+      {% if f.state == 'locked' %}
+      <span aria-hidden="true">·</span>
+      <span class="mono item-lock-note">Terkunci</span>
       {% endif %}
     </span>
   </div>
@@ -261,12 +270,30 @@
             <p class="audio-empty-title">Folder ini belum berisi audio</p>
             <p class="audio-empty-text">Pindahkan audio ke folder ini dari daftar tanpa folder.</p>
           </div>
+        </div>
+      </section>
 
-          <div id="folder-hidden" class="hidden-section mt-3" hidden>
-            <button type="button" id="folder-hidden-open" class="btn btn-sm btn-secondary"
-                    data-reauth="album.unlock" data-reauth-resource="">{{ msg.hidden_button }}</button>
-            <div id="folder-hidden-items" class="audio-track-list mt-3" data-track-list></div>
+      <section class="audio-panel audio-library" aria-labelledby="audio-all-title">
+        <header class="audio-panel-head">
+          <div class="audio-panel-heading">
+            <h2 class="audio-panel-title" id="audio-all-title">Semua</h2>
+            <p class="audio-panel-sub">Seluruh audio, termasuk item terkunci. Isi folder terkunci tidak dimuat.</p>
           </div>
+          <span class="audio-panel-count">{{ semua|length }} audio</span>
+        </header>
+        <div class="audio-panel-body">
+          <div id="all-items" class="audio-track-list" data-track-list>
+            {% if semua %}
+            {% for f in semua %}{{ track_row(f) }}{% endfor %}
+            {% endif %}
+          </div>
+          {% if not semua %}
+          <div class="audio-empty">
+            <span class="audio-empty-icon" aria-hidden="true">{{ icon_music() }}</span>
+            <p class="audio-empty-title">Belum ada audio</p>
+            <p class="audio-empty-text">Unggah audio untuk memulai.</p>
+          </div>
+          {% endif %}
         </div>
       </section>
 
@@ -303,15 +330,15 @@
       {% for a in folders %}<option value="{{ a.id }}" data-locked="{{ 1 if a.locked else 0 }}">{{ a.name }}</option>{% endfor %}
     </select>
     <button type="button" id="move-button" class="btn btn-sm btn-primary">{{ msg.move_button }}</button>
-    <button type="button" id="lock-items-button" class="btn btn-sm btn-secondary"
-            data-reauth="album.unlock" data-reauth-resource="">{{ msg.lock_items }}</button>
-    <button type="button" id="hide-items-button" class="btn btn-sm btn-secondary"
-            data-reauth="album.unlock" data-reauth-resource="">{{ msg.hide_items }}</button>
+    <button type="button" id="lock-items-button" class="btn btn-sm btn-secondary">{{ msg.lock_items }}</button>
+    <button type="button" id="unlock-items-button" class="btn btn-sm btn-secondary"
+            data-reauth="item.unlock" data-reauth-resource="">{{ msg.unlock_items }}</button>
   </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
+<script src="{{ url_for('static', filename='js/item_lock.js') }}"></script>
 <script src="{{ url_for('static', filename='js/collection_folders.js') }}"></script>
 <script src="{{ url_for('static', filename='js/musik.js') }}"></script>
 {% endblock %}

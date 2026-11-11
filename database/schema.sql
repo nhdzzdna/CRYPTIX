@@ -132,6 +132,6 @@ CREATE TABLE IF NOT EXISTS collections (
 CREATE TABLE IF NOT EXISTS collection_items (
     file_id       INTEGER PRIMARY KEY REFERENCES vault_files(id) ON DELETE CASCADE,
     collection_id INTEGER NOT NULL REFERENCES collections(id) ON DELETE CASCADE,
-    state         TEXT    NOT NULL DEFAULT 'normal', -- normal/locked/hidden
+    state         TEXT    NOT NULL DEFAULT 'normal', -- normal/locked
     added_at      TEXT    NOT NULL DEFAULT (datetime('now'))
 );

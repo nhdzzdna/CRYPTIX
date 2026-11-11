@@ -3,8 +3,8 @@ tests/test_n3b_musik_dokumen.py
 â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 Uji halaman Musik dan Dokumen yang memakai mekanisme koleksi N3a:
 CRUD folder, IDOR antar pengguna, pemisahan audio/dokumen antarahalaman,
-folder terkunci tanpa grant, pemindahan banyak berkas, item tersembunyi,
-serta penanda pencarian dan pengurutan.
+folder terkunci tanpa grant, pemindahan banyak berkas, bagian "Semua"
+yang memuat isi folder terbuka, serta penanda pencarian dan pengurutan.
 """
 
 import io
@@ -193,7 +193,9 @@ class TestFolderCrud:
         assert _pindah(client, cid, [fid]).status_code == 200
         body = client.get("/vault").get_data(as_text=True)
         assert "Arsip" in body
-        assert "laporan.pdf" not in body
+        # Isi folder terbuka kini tampil di bagian "Semua" (UB).
+        assert f'data-file-id="{fid}"' in body
+        assert 'data-name="laporan.pdf"' in body
 
         data = client.get(f"/api/collections/{cid}/items").get_json()
         assert [i["name"] for i in data["items"]] == ["laporan.pdf"]
@@ -295,7 +297,7 @@ class TestFolderTerkunci:
         assert client.get(f"/api/collections/{cid}/items").status_code == 401
 
 
-class TestPindahDanTersembunyi:
+class TestPindahDanKunci:
     def test_pindah_banyak_berkas(self, client):
         cid = _buat_koleksi(client, "Album Musik", "musik")
         a = _buat_berkas(1, "satu.mp3", ISI_AUDIO)
@@ -313,25 +315,26 @@ class TestPindahDanTersembunyi:
                 "SELECT COUNT(*) AS n FROM collection_items WHERE file_id=?",
                 (a,)).fetchone()["n"] == 0
 
-    def test_hidden_tidak_muncul_di_daftar_biasa(self, client):
+    def test_locked_tetap_tampil_tapi_butuh_grant(self, client):
         cid = _buat_koleksi(client, "Musik", "musik")
-        fid = _buat_berkas(1, "tersembunyi.mp3", ISI_AUDIO)
+        fid = _buat_berkas(1, "terkunci.mp3", ISI_AUDIO)
         _pindah(client, cid, [fid])
-        grant = _grant(client, "album.unlock", cid)
-        assert _ubah_state(client, cid, [fid], "hidden", grant).status_code == 200
+        # Mengunci tidak memerlukan grant.
+        assert _ubah_state(client, cid, [fid], "locked").status_code == 200
 
+        # Item terkunci tetap tampil di bagian "Semua" dengan penanda.
         body = client.get("/audio").get_data(as_text=True)
-        assert "tersembunyi.mp3" not in body
+        assert "terkunci.mp3" in body
+        assert 'data-locked="1"' in body
         data = client.get(f"/api/collections/{cid}/items").get_json()
-        assert data["items"] == []
-        assert data["hidden_count"] == 1
+        assert data["items"][0]["state"] == "locked"
 
-        tersembunyi = client.get(
-            f"/api/collections/{cid}/hidden",
-            headers={"X-Reauth-Grant": _grant(client, "album.unlock", cid)},
-        )
-        assert tersembunyi.status_code == 200
-        assert tersembunyi.get_json()["items"][0]["id"] == fid
+        terkunci = client.get(f"/media-vault/view/{fid}")
+        assert terkunci.status_code == 403
+        assert terkunci.get_json()["reason"] == "terkunci"
+        grant = _grant(client, "item.view", fid)
+        assert client.get(f"/media-vault/view/{fid}",
+                          headers={"X-Reauth-Grant": grant}).status_code == 200
 
 
 class TestUnggahMusik:

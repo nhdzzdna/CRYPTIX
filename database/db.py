@@ -55,6 +55,23 @@ def _tambah_kolom_sampah(conn: sqlite3.Connection) -> None:
             _logger.info("Kolom deleted_at ditambahkan pada tabel %s", tabel)
 
 
+def _migrasi_state_item(conn: sqlite3.Connection) -> None:
+    """
+    Ubah state item 'hidden' lama menjadi 'locked' (UB: kunci item).
+
+    State 'hidden' dihapus total; basis data lama dimigrasi saat startup
+    sehingga item yang dulu disembunyikan kini memerlukan item.view.
+    Idempoten: UPDATE tidak mengubah baris yang sudah 'locked'/'normal'.
+    """
+    diubah = conn.execute(
+        "UPDATE collection_items SET state='locked' WHERE state='hidden'"
+    ).rowcount
+    if diubah:
+        _logger.info(
+            "State item 'hidden' lama diubah menjadi 'locked': %d baris", diubah
+        )
+
+
 @contextlib.contextmanager
 def get_db():
     """
@@ -84,6 +101,7 @@ def init_db() -> None:
             conn.executescript(f.read())
         _tambah_kolom_users(conn)
         _tambah_kolom_sampah(conn)
+        _migrasi_state_item(conn)
         # Ensure schema_meta exists and has version row
         conn.execute(
             "INSERT OR IGNORE INTO schema_meta (version) VALUES (1)"

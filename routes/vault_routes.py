@@ -30,7 +30,7 @@ from modules.cryptography.file_encryption import (
     encrypt_stream, decrypt_all, generate_stored_name, file_aad,
 )
 from modules.blockchain.blockchain import add_block
-from routes.collection_shared import halaman_koleksi
+from routes.collection_shared import halaman_koleksi, akses_item
 from modules import trash
 
 vault_bp = Blueprint("vault", __name__)
@@ -103,6 +103,7 @@ def index():
         "vault.html",
         folders=data["folders"],
         unfiled=data["unfiled"],
+        semua=data["semua"],
         msg=_dokumen_msg(),
     )
 
@@ -129,13 +130,12 @@ def _dokumen_msg() -> dict:
         "folder_delete": MSG.FOLDER_DELETE_BUTTON,
         "folder_lock_toggle": MSG.FOLDER_LOCK_TOGGLE,
         "folder_unlock_toggle": MSG.FOLDER_UNLOCK_TOGGLE,
-        "hidden_button": MSG.FOLDER_HIDDEN_BUTTON,
         "count": MSG.FOLDER_COUNT,
         "locked_suffix": MSG.FOLDER_LOCKED_SUFFIX,
         "move_none": MSG.FOLDER_MOVE_TARGET_NONE,
         "move_button": MSG.FOLDER_MOVE_BUTTON,
         "lock_items": MSG.COLLECTION_LOCK_ITEMS,
-        "hide_items": MSG.COLLECTION_HIDE_ITEMS,
+        "unlock_items": MSG.COLLECTION_UNLOCK_ITEMS,
         "delete_confirm": MSG.DOCUMENT_DELETE_CONFIRM,
         "download": MSG.DOCUMENT_DOWNLOAD,
         "delete_file": MSG.DOCUMENT_DELETE,
@@ -230,6 +230,15 @@ def decrypt(resource_id: int):
 
     if not row:
         abort(404)
+
+    ditolak = akses_item(row, resource_id)
+    if ditolak:
+        pesan, status = ditolak
+        return jsonify({
+            "success": False,
+            "error": pesan,
+            "reason": "terkunci",
+        }), status
 
     try:
         fkey = _get_file_key()

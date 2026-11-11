@@ -31,22 +31,31 @@
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/><path d="M10 11v5M14 11v5"/></svg>
 {% endmacro %}
 
+{% macro icon_lock() %}
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/><circle cx="12" cy="15" r="1.2"/></svg>
+{% endmacro %}
+
 {% macro doc_item(f) %}
-<div class="collection-item doc-file-row" data-doc-item data-file-id="{{ f.id }}"
+<div class="collection-item doc-file-row{% if f.state == 'locked' %} item-terkunci{% endif %}" data-doc-item data-file-id="{{ f.id }}"
      data-kind="document" data-name="{{ f.original_name }}"
      data-size="{{ f.file_size }}" data-date="{{ f.uploaded_at }}"
+     data-locked="{{ 1 if f.state == 'locked' else 0 }}"
      data-collection-id="{{ f.collection_id or '' }}">
   <label class="media-select" title="Pilih">
     <input type="checkbox" data-select-file value="{{ f.id }}" />
   </label>
   <div class="collection-item-main">
-    <span class="media-icon doc-file-icon" aria-hidden="true">{{ icon_document() }}</span>
+    <span class="media-icon doc-file-icon" aria-hidden="true">{% if f.state == 'locked' %}{{ icon_lock() }}{% else %}{{ icon_document() }}{% endif %}</span>
     <div class="doc-file-text">
       <span class="collection-item-name">{{ f.original_name }}</span>
       <span class="doc-file-meta">
         <span class="mono">{{ "%.1f"|format(f.file_size / 1024) }} KB</span>
         <span aria-hidden="true">·</span>
         <span class="mono">{{ f.uploaded_at[:16] }}</span>
+        {% if f.state == 'locked' %}
+        <span aria-hidden="true">·</span>
+        <span class="mono item-lock-note">Terkunci</span>
+        {% endif %}
       </span>
     </div>
   </div>
@@ -201,12 +210,30 @@
             <p class="doc-empty-title">Folder ini belum berisi dokumen</p>
             <p class="doc-empty-text">Pindahkan dokumen ke folder ini dari daftar dokumen.</p>
           </div>
+        </div>
+      </section>
 
-          <div id="folder-hidden" class="hidden-section mt-3" hidden>
-            <button type="button" id="folder-hidden-open" class="btn btn-sm btn-secondary"
-                    data-reauth="album.unlock" data-reauth-resource="">{{ msg.hidden_button }}</button>
-            <div id="folder-hidden-items" class="doc-list mt-3" data-doc-list></div>
+      <section class="doc-panel doc-files" aria-labelledby="doc-all-title">
+        <header class="doc-panel-head">
+          <div class="doc-panel-heading">
+            <h2 class="doc-panel-title" id="doc-all-title">Semua</h2>
+            <p class="doc-panel-sub">Seluruh dokumen, termasuk item terkunci. Isi folder terkunci tidak dimuat.</p>
           </div>
+          <span class="doc-panel-count">{{ semua|length }} dokumen</span>
+        </header>
+        <div class="doc-panel-body">
+          <div id="all-items" class="doc-list" data-doc-list>
+            {% if semua %}
+            {% for f in semua %}{{ doc_item(f) }}{% endfor %}
+            {% endif %}
+          </div>
+          {% if not semua %}
+          <div class="doc-empty">
+            <span class="doc-empty-icon" aria-hidden="true">{{ icon_document() }}</span>
+            <p class="doc-empty-title">Belum ada dokumen</p>
+            <p class="doc-empty-text">Unggah dokumen untuk memulai.</p>
+          </div>
+          {% endif %}
         </div>
       </section>
 
@@ -274,15 +301,15 @@
       {% for a in folders %}<option value="{{ a.id }}" data-locked="{{ 1 if a.locked else 0 }}">{{ a.name }}</option>{% endfor %}
     </select>
     <button type="button" id="move-button" class="btn btn-sm btn-primary">{{ msg.move_button }}</button>
-    <button type="button" id="lock-items-button" class="btn btn-sm btn-secondary"
-            data-reauth="album.unlock" data-reauth-resource="">{{ msg.lock_items }}</button>
-    <button type="button" id="hide-items-button" class="btn btn-sm btn-secondary"
-            data-reauth="album.unlock" data-reauth-resource="">{{ msg.hide_items }}</button>
+    <button type="button" id="lock-items-button" class="btn btn-sm btn-secondary">{{ msg.lock_items }}</button>
+    <button type="button" id="unlock-items-button" class="btn btn-sm btn-secondary"
+            data-reauth="item.unlock" data-reauth-resource="">{{ msg.unlock_items }}</button>
   </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
+<script src="{{ url_for('static', filename='js/item_lock.js') }}"></script>
 <script src="{{ url_for('static', filename='js/collection_folders.js') }}"></script>
 <script src="{{ url_for('static', filename='js/dokumen.js') }}"></script>
 {% endblock %}

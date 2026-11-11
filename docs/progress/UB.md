@@ -1,6 +1,8 @@
-# UB — Sampah (hapus lunak, pulihkan, hapus permanen)
+# UB — Sampah, kunci item & album, pratinjau dokumen
 
-## Ringkasan
+## Bagian 1 — Sampah (hapus lunak, pulihkan, hapus permanen)
+
+### Ringkasan
 Fitur Sampah untuk berkas, catatan, kredensial, dan gambar stego:
 - Hapus lunak lewat kolom `deleted_at` (TEXT NULL) pada `vault_files`,
   `secure_notes`, `account_vault`, `stego_images`; migrasi aditif dan
@@ -22,7 +24,7 @@ Fitur Sampah untuk berkas, catatan, kredensial, dan gambar stego:
   startup (semua pengguna) dan saat `/sampah` dibuka (pengguna sesi),
   tanpa scheduler.
 
-## File yang berubah
+### File yang berubah
 - Inti: `modules/trash.py` (baru), `routes/trash_routes.py` (baru),
   `templates/sampah.html` (baru), `static/js/sampah.js` (baru).
 - Skema/migrasi: `config.py`, `database/schema.sql`, `database/db.py`
@@ -43,7 +45,7 @@ Fitur Sampah untuk berkas, catatan, kredensial, dan gambar stego:
 - Uji: `tests/test_ub_sampah.py` (baru), `tests/test_encrypted_storage.py`
   (3 test hapus disesuaikan).
 
-## Keputusan
+### Keputusan
 1. Blok `DELETE` ditulis di dalam `modules/trash.py` (bukan di route),
    dengan hash aset dihitung SEBELUM berkas fisik dihapus — kritis untuk
    gambar stego yang hash-nya adalah SHA-256 berkas tersimpan.
@@ -69,7 +71,7 @@ Fitur Sampah untuk berkas, catatan, kredensial, dan gambar stego:
    `reauth_grant` — tanpa JavaScript inline dan tanpa melonggarkan CSP.
 9. Endpoint hapus stego tetap tanpa limiter/grant sesuai perilaku lama.
 
-## Keterbatasan
+### Keterbatasan
 - Pemulihan (restore) tidak menulis blok blockchain apa pun; jejak
   pindah-ke-sampah (`TRASH_MOVE`) tetap terlihat di log.
 - `_humanize_action` pada `modules/assistant/security_agent.py` tidak
@@ -80,7 +82,7 @@ Fitur Sampah untuk berkas, catatan, kredensial, dan gambar stego:
 - Uji manual peramban (alur konfirmasi + modal autentikasi ulang) belum
   dilakukan; hanya diuji otomatis di level endpoint.
 
-## Temuan di luar lingkup
+### Temuan di luar lingkup
 - Berkas tak terlacak `t fix N2B matcher endpoint test` sudah ada di
   repo sebelum perubahan ini; tidak disentuh dan tidak ikut di-commit.
 - `templates/documents.html` masih memakai atribut `style="display:inline"`
@@ -88,7 +90,7 @@ Fitur Sampah untuk berkas, catatan, kredensial, dan gambar stego:
 - `_humanize_action` belum mengenali `DOWNLOAD` dan `TAMPER_DETECTED`
   (pra-ada).
 
-## Tes
+### Tes
 - `tests/test_ub_sampah.py` (baru): 41 lulus — migrasi dua kali tanpa
   galat, kolom `deleted_at`, hapus lunak tanpa grant + blok `TRASH_MOVE`
   + berkas fisik tetap ada, 404 akses langsung (decrypt/view/thumb/
@@ -105,3 +107,115 @@ Fitur Sampah untuk berkas, catatan, kredensial, dan gambar stego:
   baris dan berkas fisik tetap ada) — perubahan spek, bukan pelemahan;
   uji IDOR hapus lama tetap lolos tanpa perubahan.
 - Suite penuh: 731 lulus (baseline sebelum perubahan: 690).
+
+## Bagian 2 — Kunci item dan kunci album/folder
+
+### Ringkasan
+Fitur kunci per item dan kunci album/folder untuk Media, Dokumen, dan
+Audio:
+- State item `hidden` dihapus total (schema, kode, uji); migrasi aditif
+  idempoten `_migrasi_state_item()` mengubah baris lama `hidden` menjadi
+  `locked` saat startup. State sah tinggal `normal`/`locked`.
+- Item terkunci tetap tampil di daftar dengan penanda (ikon gembok,
+  label "Terkunci"); thumbnail-nya ditolak server dengan 403 JSON
+  reason `terkunci` sampai grant aktif.
+- Scope baru: `item.view` (reusable 15 menit per item) dan `item.unlock`
+  (sekali pakai, resource = id koleksi). Kunci koleksi tetap
+  `album.unlock` (reusable) dan hanya menjadi pintu masuk — isi album
+  terkunci tidak muncul di bagian "Semua".
+- "Semua" = "Tanpa album" + isi koleksi terbuka; isi koleksi terkunci
+  ikut disertakan hanya bila grant `album.unlock` koleksi itu sedang
+  aktif saat render.
+- Mengunci item tidak memerlukan grant; melepas kunci memerlukan
+  `item.unlock` sekali pakai untuk koleksi pemilik item.
+- Semua endpoint konten (thumb/view/stream/play/download/decrypt)
+  menolak item terkunci dengan 403 JSON reason `terkunci`.
+- Filter `deleted_at` Bagian 1 tetap bekerja di semua jalur baru
+  (item sampah 404 walau grant valid).
+
+### File yang berubah
+- Skema/migrasi: `database/schema.sql`, `database/db.py`.
+- Registri: `modules/authentication/reauth.py` (`item.view`,
+  `item.unlock` di SCOPES; `item.view` di REUSABLE_TTL),
+  `modules/strings.py` (`ITEM_LOCKED`, `ITEM_UNLOCKED`,
+  `COLLECTION_ALL_SECTION`, tombol Kunci/Lepas kunci, dsb.; string
+  `*HIDDEN*` lama dihapus).
+- Backend: `routes/collection_routes.py` (`set_item_state` dengan grant
+  manual saat melepas kunci, `list_items` mengirim state terkunci,
+  `musik()` mengirim "Semua"), `routes/collection_shared.py`
+  (`akses_item`, `grant_sah` dengan fallback grant aktif,
+  `halaman_koleksi` menyusun "Semua", `file_info` membawa state dan
+  collection_id), `routes/media_routes.py` (helper `_respons_terkunci`
+  + cek `akses_item` di view/thumb/stream/play/download),
+  `routes/vault_routes.py` (decrypt terkunci + pesan dialog kunci).
+- Antarmuka: `templates/media_vault.html`, `templates/musik.html`,
+  `templates/vault.html` (bagian "Semua", tombol Kunci/Lepas kunci,
+  penanda item terkunci), `static/js/item_lock.js` (baru — dialog
+  CryptixLock: Lihat sekali / Lepas kunci / Batal),
+  `static/js/collection_folders.js`, `static/js/media_albums.js`,
+  `static/js/musik.js`, `static/js/dokumen.js` (dedupe pencarian),
+  `static/css/style.css`.
+- Uji: `tests/test_ub_kunci.py` (baru), `tests/test_n3a_koleksi.py` dan
+  `tests/test_n3b_musik_dokumen.py` diperbarui dari semantik
+  tersembunyi ke semantik terkunci.
+
+### Keputusan
+1. Urutan cek akses: album terkunci dicek DULU (`album.unlock`,
+   resource = id koleksi), baru state item (`item.view`, resource = id
+   berkas). Penolakan berupa JSON 403 reason `terkunci` lewat helper
+   `_respons_terkunci`.
+2. `/api/collections/<id>/items` tetap 401 REAUTH_REQUIRED saat album
+   terkunci tanpa grant (perilaku pra-ada); hanya endpoint konten yang
+   memakai 403 `terkunci` agar `<img>` gagal senyap dan fetch JS
+   mendapat alasan yang jelas.
+3. `set_item_state`: grant `item.unlock` dicek manual HANYA saat state
+   target `normal` (mengunci bebas grant), dan dicek SEBELUM cek
+   eksistensi/milik koleksi — item sampah tanpa grant ditolak 401
+   (bukan 404); dengan grant valid baru 404. 401 untuk
+   missing/expired/invalid, 403 untuk scope/resource salah.
+4. Pesan sukses melepas kunci = `ITEM_UNLOCKED` (mengunci tetap
+   `COLLECTION_STATE_CHANGED`) agar UI dapat membedakan hasil.
+5. Bagian "Semua" ditempatkan setelah panel detail koleksi, sebelum
+   "Tanpa album/folder"; pencarian dokumen melakukan dedupe hanya saat
+   kueri aktif (wadah yang lebih dulu menang).
+6. Dialog pilihan tampil DULU ("Lihat sekali"/"Lepas kunci"/"Batal")
+   sebelum autentikasi ulang — penyimpangan disengaja dari spek
+   ("verifikasi dulu") agar hanya SATU reauth sesuai aksi yang dipilih.
+7. `mintaGrant` selalu via tombol sintetis ber-atribut `data-reauth`
+   (memakai modal `reauth.js` tanpa menyalin logikanya); guard generasi
+   mencegah grant basi dari dialog yang sudah ditutup.
+8. Thumbnail terkunci ditolak server (403), bukan disembunyikan dari
+   daftar — klien mengganti gambar gagal dengan ikon gembok lewat
+   listener fase capture.
+9. `grant_sah` mencoba token header lebih dulu lalu kembali ke grant
+   berulang aktif sesi — dibutuhkan saat header membawa token scope
+   lain (mis. `item.view`) sementara cek album membutuhkan
+   `album.unlock` yang sudah aktif.
+
+### Keterbatasan
+- Item di luar koleksi ("Tanpa album") tidak dapat dikunci — baris
+  `collection_items` mengharuskan koleksi; tombol lepas kunci juga
+  menolaknya di klien.
+- Isi koleksi terkunci hanya muncul di "Semua" bila grant
+  `album.unlock` aktif saat render; tidak ada tautan khusus untuk
+  membukanya dari bagian itu (harus lewat panel album).
+- Halaman Media dan Audio tidak memiliki pencarian nama (pra-ada;
+  hanya halaman Dokumen).
+- Aturan CSS `.hidden-section`/`.media-hidden-*` lama kini tanpa
+  pemakai (pra-ada; dibiarkan agar diff tetap fokus).
+
+### Tes
+- `tests/test_ub_kunci.py` (baru): 22 lulus — migrasi `hidden`→
+  `locked` idempoten, state invalid 400, mengunci tanpa grant, item
+  terkunci tetap tampil dengan penanda + `data-locked`, `/hidden` 404,
+  tanpa `hidden_count`, view/thumb/stream/play/download/decrypt 403
+  reason `terkunci`, `item.view` membuka semua endpoint, grant
+  reusable kedaluwarsa (+901 detik), `item.unlock` sekali pakai /
+  scope salah / resource salah / koleksi salah, "Semua"
+  mengecualikan lalu menyertakan album terkunci (Media, Musik,
+  Dokumen), interaksi sampah (404 walau grant ada).
+- `tests/test_n3a_koleksi.py`, `tests/test_n3b_musik_dokumen.py`:
+  tes "tersembunyi" lama diganti semantik terkunci (item tetap tampil
+  tapi butuh grant) — perubahan spek, bukan pelemahan.
+- Suite penuh pada tree Bagian 2 (tanpa tes pratinjau): 661 lulus
+  (639 baseline setelah merge origin/main + 22 tes kunci baru).
