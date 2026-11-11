@@ -17,16 +17,13 @@ from modules.blockchain import blockchain as bc
 
 CSP = (
     "default-src 'self'; script-src 'self'; "
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
-    "font-src 'self' https://fonts.gstatic.com; "
+    "style-src 'self' 'unsafe-inline'; "
+    "font-src 'self'; "
     "img-src 'self' data:; media-src 'self'; connect-src 'self'; "
     "frame-ancestors 'none'"
 )
 
-SUMBER_FONT_DIIZINKAN = (
-    "https://fonts.googleapis.com/",
-    "https://fonts.gstatic.com/",
-)
+SUMBER_FONT_DIIZINKAN = ()
 
 ROOT = Path(__file__).resolve().parent.parent
 TEMPLATES = ROOT / "templates"
