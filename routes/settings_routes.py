@@ -11,6 +11,8 @@ Semua tindakan yang mengubah faktor keamanan memerlukan autentikasi ulang:
     wajah (lewat endpoint API dengan ``when`` sesi login).
 """
 
+import sqlite3
+
 import config
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash
 
@@ -18,7 +20,10 @@ from modules.strings import MSG
 from routes.auth_routes import login_required, _respon_tanpa_simpan
 from database.db import get_db
 from modules.authentication.auth import (
-    get_user_by_id, reregister_usb_token, validate_password,
+    get_user_by_id, reregister_usb_token, validate_password, validate_email,
+)
+from modules.authentication.account_cleanup import (
+    hapus_berkas_stego, hapus_berkas_terenkripsi, hapus_data_pengguna,
 )
 from modules.authentication.password_hash import hash_password, verify_password
 from modules.authentication import usb_authentication as usb_mod
@@ -122,6 +127,146 @@ def change_password():
     session_keys.drop(session.get("session_id", ""))
     session.clear()
     flash(MSG.SETTINGS_PASSWORD_CHANGED, "success")
+    return redirect(url_for("auth.login"))
+
+
+@settings_bp.route("/settings/email", methods=["POST"])
+@login_required
+@require_grant("settings.change")
+def change_email():
+    """Perbarui surel akun setelah kata sandi saat ini diverifikasi."""
+    user = get_user_by_id(session["user_id"])
+    current = request.form.get("current_password", "")
+    email = request.form.get("email", "").strip().lower()
+
+    if not verify_password(current, user["password_hash"], user["salt"]):
+        flash(MSG.SETTINGS_WRONG_PASSWORD, "danger")
+        return redirect(url_for("settings.index"))
+
+    galat = validate_email(email)
+    if galat:
+        flash(galat, "danger")
+        return redirect(url_for("settings.index"))
+
+    if email == (user["email"] or "").lower():
+        flash(MSG.SETTINGS_EMAIL_UNCHANGED, "info")
+        return redirect(url_for("settings.index"))
+
+    with get_db() as db:
+        bentrok = db.execute(
+            "SELECT 1 FROM users WHERE email = ? AND id <> ?",
+            (email, user["id"]),
+        ).fetchone()
+        if bentrok is not None:
+            flash(MSG.SETTINGS_EMAIL_TAKEN, "danger")
+            return redirect(url_for("settings.index"))
+        try:
+            db.execute(
+                "UPDATE users SET email = ? WHERE id = ?", (email, user["id"])
+            )
+            db.commit()
+        except sqlite3.IntegrityError:
+            # Bila dua permintaan berlomba, batasan UNIQUE tetap menang.
+            db.rollback()
+            flash(MSG.SETTINGS_EMAIL_TAKEN, "danger")
+            return redirect(url_for("settings.index"))
+
+    add_block(user["id"], "MODIFY", "auth:email",
+              content_hash(f"email:{user['id']}".encode("utf-8")))
+    flash(MSG.SETTINGS_EMAIL_CHANGED, "success")
+    return redirect(url_for("settings.index"))
+
+
+def _konfirmasi_username(user: dict) -> bool:
+    """True bila nama pengguna yang diketik sama persis dengan akun aktif."""
+    return request.form.get("confirm_username", "").strip() == user["username"]
+
+
+@settings_bp.route("/settings/reset-data", methods=["POST"])
+@login_required
+@require_grant("account.danger")
+def reset_data():
+    """
+    Hapus seluruh data pengguna tanpa menghapus akun.
+
+    Akun, DEK, dongle, kredensial WebAuthn, templat wajah, dan kunci
+    pemulihan dipertahankan. Penghapusan baris basis data berlangsung dalam
+    satu transaksi; berkas penyimpanan dihapus setelah transaksi berhasil.
+    """
+    user = get_user_by_id(session["user_id"])
+    current = request.form.get("current_password", "")
+
+    if not verify_password(current, user["password_hash"], user["salt"]):
+        flash(MSG.SETTINGS_WRONG_PASSWORD, "danger")
+        return redirect(url_for("settings.index"))
+    if not _konfirmasi_username(user):
+        flash(MSG.SETTINGS_CONFIRM_USERNAME_MISMATCH, "danger")
+        return redirect(url_for("settings.index"))
+
+    try:
+        hasil = hapus_data_pengguna(user["id"], hapus_akun=False)
+    except Exception:
+        flash(MSG.SETTINGS_RESET_FAILED, "danger")
+        return redirect(url_for("settings.index"))
+    if not hasil["success"]:
+        flash(MSG.SETTINGS_RESET_FAILED, "danger")
+        return redirect(url_for("settings.index"))
+
+    hapus_berkas_terenkripsi(hasil["encrypted_files"])
+    hapus_berkas_stego(hasil["stego_files"])
+    try:
+        add_block(user["id"], "ACCOUNT_RESET", "account:data",
+                  content_hash(f"reset:{user['id']}".encode("utf-8")))
+    except Exception:
+        # Jejak audit bersifat upaya terbaik; data sudah terhapus.
+        pass
+    flash(MSG.SETTINGS_RESET_DONE, "success")
+    return redirect(url_for("settings.index"))
+
+
+@settings_bp.route("/settings/delete-account", methods=["POST"])
+@login_required
+@require_grant("account.danger")
+def delete_account():
+    """
+    Hapus akun beserta seluruh datanya.
+
+    Baris pengguna dihapus dalam satu transaksi sehingga kredensial WebAuthn,
+    templat wajah, kunci pemulihan, dan seluruh data ikut hilang. Berkas
+    penyimpanan dan berkas token dongle dihapus sebagai upaya terbaik.
+    """
+    user = get_user_by_id(session["user_id"])
+    current = request.form.get("current_password", "")
+
+    if not verify_password(current, user["password_hash"], user["salt"]):
+        flash(MSG.SETTINGS_WRONG_PASSWORD, "danger")
+        return redirect(url_for("settings.index"))
+    if not _konfirmasi_username(user):
+        flash(MSG.SETTINGS_CONFIRM_USERNAME_MISMATCH, "danger")
+        return redirect(url_for("settings.index"))
+
+    try:
+        hasil = hapus_data_pengguna(user["id"], hapus_akun=True)
+    except Exception:
+        flash(MSG.SETTINGS_DELETE_FAILED, "danger")
+        return redirect(url_for("settings.index"))
+    if not hasil["success"]:
+        flash(MSG.SETTINGS_DELETE_FAILED, "danger")
+        return redirect(url_for("settings.index"))
+
+    hapus_berkas_terenkripsi(hasil["encrypted_files"])
+    hapus_berkas_stego(hasil["stego_files"])
+    try:
+        add_block(user["id"], "ACCOUNT_DELETE", "account:user",
+                  content_hash(f"delete:{user['id']}".encode("utf-8")))
+    except Exception:
+        pass
+
+    usb_mod.hapus_token_dongle(hasil["usb_token_id"])
+    usb_mod.lupakan_cache(user["id"])
+    session_keys.drop(session.get("session_id", ""))
+    session.clear()
+    flash(MSG.SETTINGS_DELETE_DONE, "success")
     return redirect(url_for("auth.login"))
 
 

@@ -1,31 +1,15 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>{{ title }} — KOSYAK</title>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" />
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
-</head>
-<body class="auth-page">
-  <div class="auth-container">
-    <div class="auth-card">
-      <div class="auth-logo">
-        <span class="logo-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 2 4 5v6c0 5 3.5 8.5 8 11 4.5-2.5 8-6 8-11V5z" />
-            <circle cx="12" cy="11" r="2.4" />
-            <path d="M12 13.4V16" />
-          </svg>
-        </span>
-        <span>KOSYAK</span>
-      </div>
-      <h1 class="auth-title">{{ code }} — {{ title }}</h1>
-      <p class="auth-link">{{ description }}</p>
-      <div class="auth-link" style="margin-top: 24px;">
-        <a href="{{ url_for('auth.login') }}" class="btn btn-primary btn-full">Kembali ke Halaman Masuk</a>
-      </div>
-    </div>
-  </div>
-</body>
-</html>
+{% extends "auth_base.html" %}
+{% from "_ikon.html" import ikon %}
+{% block title %}{{ code }} — {{ title }} — KOSYAK{% endblock %}
+{% block auth_title %}{{ code }} — {{ title }}{% endblock %}
+
+{% block auth_content %}
+<div class="kx-empty authx-error-page">
+  {{ ikon('alert-triangle', 30) }}
+  <p class="kx-empty-title">{{ title }}</p>
+  <p class="authx-help">{{ description }}</p>
+  <a href="{{ url_for('auth.login') }}" class="kx-btn kx-btn-primary">
+    {{ MSG.AUTH_ERROR_BACK }}
+  </a>
+</div>
+{% endblock %}

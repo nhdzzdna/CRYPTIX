@@ -1,64 +1,75 @@
 {% extends "auth_base.html" %}
-{% block title %}Penyiapan Keamanan — KOSYAK{% endblock %}
-{% block card_class %}style="max-width:560px;"{% endblock %}
-{% block auth_title %}Penyiapan Keamanan{% endblock %}
+{% from "_ikon.html" import ikon %}
+{% block title %}{{ MSG.AUTH_SETUP_TITLE }} — KOSYAK{% endblock %}
+{% block card_class %}{% endblock %}
+{% block auth_title %}{{ MSG.AUTH_SETUP_TITLE }}{% endblock %}
 
 {% block auth_content %}
-<p class="form-hint">
-  Daftarkan <strong>minimal satu biometrik</strong> (wajah atau WebAuthn)
-  untuk menyelesaikan penyiapan. Sampai selesai, hanya halaman ini yang dapat
-  diakses.
-</p>
-
-<!-- Face Registration -->
-<div class="card mb-3" id="setup-face-panel"
-     data-msg-detected="{{ MSG.SETUP_FACE_DETECTED }}"
-     data-msg-not-detected="{{ MSG.SETUP_FACE_NOT_DETECTED }}"
-     data-msg-multiple="{{ MSG.SETUP_FACE_MULTIPLE }}"
-     data-msg-detect-off="{{ MSG.SETUP_FACE_DETECT_OFF }}"
-     data-msg-preparing="{{ MSG.SETUP_FACE_PREPARING }}"
-     data-msg-capturing="{{ MSG.SETUP_FACE_CAPTURING }}"
-     data-msg-sending="{{ MSG.SETUP_FACE_SENDING }}"
-     data-msg-camera-failed="{{ MSG.SETUP_FACE_CAMERA_FAILED }}"
-     data-msg-failed="{{ MSG.SETUP_FACE_FAILED }}">
-  <div class="card-header">
-    <span class="card-header-icon" aria-hidden="true">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V5a2 2 0 0 1 2-2h3"/><path d="M16 3h3a2 2 0 0 1 2 2v3"/><path d="M20 16v3a2 2 0 0 1-2 2h-3"/><path d="M8 21H5a2 2 0 0 1-2-2v-3"/><circle cx="12" cy="10" r="3"/><path d="M7 19c.8-2.2 2.6-3.5 5-3.5s4.2 1.3 5 3.5"/></svg>
-    </span>
-    Pendaftaran Wajah
-  </div>
-  <div class="card-body">
-    <p class="form-hint">{{ MSG.SETUP_FACE_GUIDE }}</p>
-    <p class="form-hint">{{ MSG.SETUP_FACE_PRIVACY }}</p>
-    <video id="setup-video" autoplay playsinline style="display:none;width:100%;border-radius:8px;"></video>
-    <canvas id="setup-canvas" style="display:none;"></canvas>
-    <div class="webcam-buttons">
-      <button type="button" class="btn btn-primary btn-sm" id="btn-setup-face">
-        {{ MSG.SETUP_FACE_BUTTON }}
-      </button>
+<div class="kx-stepper authx-stepper">
+  <div class="kx-step is-done">
+    <span class="kx-step-marker" aria-hidden="true">{{ ikon('check', 15) }}</span>
+    <div class="kx-step-body">
+      <p class="kx-step-title">{{ MSG.AUTH_SETUP_STEP_KEY }}</p>
+      <p class="authx-help">{{ MSG.AUTH_SETUP_KEY_DONE }}</p>
     </div>
-    <p id="setup-face-live" class="form-hint face-live" role="status" aria-live="polite"></p>
-    <progress id="setup-face-progress" class="face-progress" max="30" value="0"></progress>
-    <p id="setup-face-progress-text" class="form-hint"></p>
-    <p id="setup-face-status" class="form-hint" role="status" aria-live="polite"></p>
   </div>
-</div>
 
-<!-- WebAuthn Registration -->
-<div class="card mb-3">
-  <div class="card-header">
-    <span class="card-header-icon" aria-hidden="true">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/><circle cx="12" cy="15" r="1.2"/></svg>
-    </span>
-    Pendaftaran WebAuthn
+  <div class="kx-step">
+    <span class="kx-step-marker" aria-hidden="true">2</span>
+    <div class="kx-step-body">
+      <p class="kx-step-title">{{ MSG.AUTH_SETUP_STEP_BIOMETRIC }}</p>
+
+      <div class="kx-card authx-setup-card" id="setup-face-panel"
+           data-msg-detected="{{ MSG.SETUP_FACE_DETECTED }}"
+           data-msg-not-detected="{{ MSG.SETUP_FACE_NOT_DETECTED }}"
+           data-msg-multiple="{{ MSG.SETUP_FACE_MULTIPLE }}"
+           data-msg-detect-off="{{ MSG.SETUP_FACE_DETECT_OFF }}"
+           data-msg-preparing="{{ MSG.SETUP_FACE_PREPARING }}"
+           data-msg-capturing="{{ MSG.SETUP_FACE_CAPTURING }}"
+           data-msg-sending="{{ MSG.SETUP_FACE_SENDING }}"
+           data-msg-camera-failed="{{ MSG.SETUP_FACE_CAMERA_FAILED }}"
+           data-msg-failed="{{ MSG.SETUP_FACE_FAILED }}">
+        <div class="kx-card-head">
+          <h2 class="kx-card-title">{{ MSG.AUTH_SETUP_FACE_TITLE }}</h2>
+          <span aria-hidden="true">{{ ikon('scan-face', 18) }}</span>
+        </div>
+        <div class="kx-card-body authx-setup-body">
+          <p class="authx-help">{{ MSG.SETUP_FACE_GUIDE }}</p>
+          <p class="authx-help">{{ MSG.SETUP_FACE_PRIVACY }}</p>
+          <video id="setup-video" class="authx-video" autoplay playsinline></video>
+          <canvas id="setup-canvas" class="authx-canvas"></canvas>
+          <button type="button" class="kx-btn kx-btn-primary kx-btn-sm" id="btn-setup-face">
+            {{ MSG.SETUP_FACE_BUTTON }}
+          </button>
+          <p id="setup-face-live" class="authx-help" role="status" aria-live="polite"></p>
+          <progress id="setup-face-progress" class="authx-progress" max="30" value="0"></progress>
+          <p id="setup-face-progress-text" class="authx-help"></p>
+          <p id="setup-face-status" class="authx-help" role="status" aria-live="polite"></p>
+        </div>
+      </div>
+
+      <div class="kx-card authx-setup-card">
+        <div class="kx-card-head">
+          <h2 class="kx-card-title">{{ MSG.AUTH_SETUP_WEBAUTHN_TITLE }}</h2>
+          <span aria-hidden="true">{{ ikon('fingerprint', 18) }}</span>
+        </div>
+        <div class="kx-card-body authx-setup-body">
+          <p class="authx-help">{{ MSG.AUTH_SETUP_WEBAUTHN_HINT }}</p>
+          <button type="button" class="kx-btn kx-btn-secondary kx-btn-sm" id="btn-setup-webauthn">
+            {{ MSG.AUTH_SETUP_WEBAUTHN_TITLE }}
+          </button>
+          <p id="setup-webauthn-status" class="authx-help"></p>
+        </div>
+      </div>
+    </div>
   </div>
-  <div class="card-body">
-    <p class="form-hint">
-      Daftarkan autentikator platform perangkat ini (sidik jari terintegrasi
-      atau Windows Hello) sebagai metode verifikasi tahap kedua.
-    </p>
-    <button type="button" class="btn btn-primary btn-sm" id="btn-setup-webauthn">Daftarkan WebAuthn</button>
-    <p id="setup-webauthn-status" class="form-hint"></p>
+
+  <div class="kx-step">
+    <span class="kx-step-marker" aria-hidden="true">3</span>
+    <div class="kx-step-body">
+      <p class="kx-step-title">{{ MSG.AUTH_SETUP_STEP_DONE }}</p>
+      <p class="authx-help">{{ MSG.AUTH_SETUP_DONE_HINT }}</p>
+    </div>
   </div>
 </div>
 {% endblock %}

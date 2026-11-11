@@ -54,6 +54,7 @@ SCOPES = frozenset({
     "trash.purge",
     "settings.change",
     "biometric.manage",
+    "account.danger",
 })
 
 MEDIA_STREAM_SCOPE = "media.stream"
