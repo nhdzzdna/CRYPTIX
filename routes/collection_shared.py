@@ -38,15 +38,23 @@ def extension(filename: str) -> str:
     return os.path.splitext(filename or "")[1].lower().lstrip(".")
 
 
+def _nama_penyimpanan(row) -> str:
+    """Nama cadangan ringkas dari ``stored_name`` bila nama asli gagal dibuka."""
+    stored = str(row["stored_name"] or "").strip()
+    if not stored:
+        return "[Nama tidak terbaca]"
+    return f"[Berkas {stored[:8]}]"
+
+
 def display_name(row, db_key: bytes) -> str:
-    """Buka nama asli berkas; token gagal ditandai aman."""
+    """Buka nama asli berkas; token gagal memakai nama penyimpanan ringkas."""
     try:
         return decrypt_field(
             row["original_name"], db_key,
             field_aad(row["user_id"], "vault_files", "original_name"),
         )
     except ValueError:
-        return "[Nama tidak terbaca]"
+        return _nama_penyimpanan(row)
 
 
 def collection_name(row, db_key: bytes) -> str:
