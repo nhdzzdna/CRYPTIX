@@ -84,7 +84,7 @@ def _baris() -> dict:
 def test_halaman_pemulihan_dan_tautan_login(app, client):
     halaman = client.get("/account-recovery")
     assert halaman.status_code == 200
-    assert "Kunci Pemulihan" in halaman.get_data(as_text=True)
+    assert "Kunci pemulihan" in halaman.get_data(as_text=True)
 
     masuk = client.get("/login").get_data(as_text=True)
     assert 'href="/account-recovery"' in masuk

@@ -133,6 +133,9 @@
   color: var(--kx-text-2);
   font-size: var(--kx-fs-help);
 }
+.authx-dongle[hidden] {
+  display: none !important;
+}
 
 .authx-dongle .kx-icon { color: currentColor; }
 .authx-dongle.is-ok {

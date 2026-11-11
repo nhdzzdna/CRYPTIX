@@ -172,7 +172,7 @@ def _baris(tabel: str, item_id: int) -> dict | None:
     return dict(row) if row else None
 
 
-def _hitung_dashboard(client, kelas="dash-stat-value") -> list[str]:
+def _hitung_dashboard(client, kelas="kx-dash-value") -> list[str]:
     body = client.get("/dashboard").get_data(as_text=True)
     return re.findall(rf'class="{kelas}">\s*(\d+)\s*<', body)
 
