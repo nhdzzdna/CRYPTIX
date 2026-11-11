@@ -3,12 +3,21 @@
 (function () {
   'use strict';
 
+  function filterVigenereKey() {
+    if (cipherSelect.value !== 'vigenere' || !keyInput) { return; }
+    const cleaned = keyInput.value.replace(/[^A-Za-z]/g, '');
+    if (cleaned !== keyInput.value) {
+      keyInput.value = cleaned;
+    }
+  }
+
   function updateForm() {
     const c = document.getElementById('cipher-select').value;
     const a = document.getElementById('action-select').value;
     document.getElementById('key-field').style.display = c === 'super' ? 'none' : 'block';
     document.getElementById('passphrase-field').style.display = c === 'super' ? 'block' : 'none';
     document.getElementById('steps-field').style.display = (c === 'super' && a === 'encrypt') ? 'block' : 'none';
+    filterVigenereKey();
     syncTabs(c);
   }
 
@@ -50,6 +59,7 @@
   const form = document.getElementById('crypto-form');
   const cipherSelect = document.getElementById('cipher-select');
   const actionSelect = document.getElementById('action-select');
+  const keyInput = document.getElementById('key-input');
   const copyBtn = document.getElementById('copy-result-btn');
   const tabs = Array.prototype.slice.call(document.querySelectorAll('.crypto-tab'));
 
@@ -85,6 +95,9 @@
 
   cipherSelect.addEventListener('change', updateForm);
   actionSelect.addEventListener('change', updateForm);
+  if (keyInput) {
+    keyInput.addEventListener('input', filterVigenereKey);
+  }
   if (copyBtn) {
     copyBtn.addEventListener('click', copyResult);
   }
