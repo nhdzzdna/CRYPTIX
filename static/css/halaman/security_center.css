@@ -1,0 +1,411 @@
+/* static/css/halaman/security_center.css — Security Center (kx-sc-*) */
+
+.kx-sc-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kx-space-4);
+  max-width: var(--kx-content-max);
+}
+
+/* ── Header kartu dan form aksi ─────────────────────────────────────────── */
+.kx-sc-card-chain .kx-card-head,
+.kx-sc-card-log .kx-card-head,
+.kx-sc-card-assets .kx-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--kx-space-3);
+  flex-wrap: wrap;
+}
+
+.kx-sc-card-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: var(--kx-space-2);
+}
+
+.kx-sc-verify-form {
+  margin: 0;
+  display: inline-flex;
+}
+
+/* ── Banner Hasil Verifikasi ────────────────────────────────────────────── */
+.kx-sc-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  margin-bottom: var(--kx-space-3);
+  border-radius: var(--kx-radius-input);
+  background: var(--kx-surface-2);
+  border: 1px solid var(--kx-border);
+}
+
+.kx-sc-banner-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.kx-sc-banner-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.kx-sc-banner-title {
+  margin: 0;
+  font-size: var(--kx-fs-body);
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.kx-sc-banner-desc {
+  margin: 4px 0 0;
+  font-size: var(--kx-fs-help);
+  color: var(--kx-text-2);
+  line-height: 1.4;
+}
+
+.kx-sc-banner.is-valid {
+  background: var(--kx-ok-soft);
+  border-color: rgba(34, 197, 94, .35);
+  color: #86efac;
+}
+.kx-sc-banner.is-valid .kx-sc-banner-icon {
+  color: var(--kx-ok);
+}
+.kx-sc-banner.is-valid .kx-sc-banner-title {
+  color: #bbf7d0;
+}
+.kx-sc-banner.is-valid .kx-sc-banner-desc {
+  color: #86efac;
+}
+
+.kx-sc-banner.is-invalid {
+  background: var(--kx-danger-soft);
+  border-color: rgba(239, 68, 68, .4);
+  color: #fca5a5;
+}
+.kx-sc-banner.is-invalid .kx-sc-banner-icon {
+  color: var(--kx-danger);
+}
+.kx-sc-banner.is-invalid .kx-sc-banner-title {
+  color: #fecaca;
+}
+.kx-sc-banner.is-invalid .kx-sc-banner-desc {
+  color: #fca5a5;
+}
+
+.kx-sc-banner.is-info {
+  background: var(--kx-info-soft);
+  border-color: rgba(96, 165, 250, .35);
+}
+.kx-sc-banner.is-info .kx-sc-banner-icon {
+  color: var(--kx-info);
+}
+.kx-sc-banner.is-info .kx-sc-banner-title {
+  color: var(--kx-text);
+}
+.kx-sc-banner.is-info .kx-sc-banner-desc {
+  color: var(--kx-text-2);
+}
+
+/* ── 4 Stat Kotak ────────────────────────────────────────────────────────── */
+.kx-sc-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--kx-space-3);
+  margin-bottom: var(--kx-space-4);
+}
+
+.kx-sc-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 16px;
+  border-radius: var(--kx-radius-input);
+  background: var(--kx-surface-2);
+  border: 1px solid var(--kx-border-soft);
+}
+
+.kx-sc-stat-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.kx-sc-stat-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--kx-text-2);
+}
+
+.kx-sc-stat-label {
+  color: var(--kx-text-2);
+  font-size: var(--kx-fs-caption);
+  font-weight: 600;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+}
+
+.kx-sc-stat-value {
+  color: #fff;
+  font-family: var(--kx-font-display);
+  font-size: var(--kx-fs-subtitle);
+  font-weight: 600;
+  line-height: 1.2;
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.kx-sc-stat-value.mono {
+  font-family: var(--kx-font-mono);
+  font-size: 0.95rem;
+}
+
+.kx-sc-stat-hint {
+  color: var(--kx-text-3);
+  font-size: var(--kx-fs-caption);
+  line-height: 1.3;
+}
+
+/* ── Visual Rantai Horizontal ───────────────────────────────────────────── */
+.kx-sc-chain-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kx-space-2);
+  padding: var(--kx-space-3);
+  border-radius: var(--kx-radius-input);
+  background: var(--kx-surface-2);
+  border: 1px solid var(--kx-border-soft);
+  margin-bottom: var(--kx-space-3);
+}
+
+.kx-sc-chain-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--kx-space-2);
+}
+
+.kx-sc-chain-title {
+  font-size: var(--kx-fs-caption);
+  font-weight: 600;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+  color: var(--kx-text-2);
+}
+
+.kx-sc-chain-track {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 8px 4px;
+  scrollbar-width: thin;
+}
+
+.kx-sc-chain-node {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 48px;
+  height: 38px;
+  padding: 0 10px;
+  border-radius: var(--kx-radius-input);
+  font-family: var(--kx-font-mono);
+  font-size: var(--kx-fs-caption);
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: transform var(--kx-transition), border-color var(--kx-transition);
+}
+.kx-sc-chain-node:hover {
+  transform: translateY(-1px);
+}
+
+.kx-sc-chain-node.is-valid {
+  background: var(--kx-ok-soft);
+  border: 1px solid var(--kx-ok);
+  color: #86efac;
+}
+
+.kx-sc-chain-node.is-tampered {
+  background: var(--kx-danger-soft);
+  border: 1px solid var(--kx-danger);
+  color: #fca5a5;
+}
+
+.kx-sc-chain-node.is-latest {
+  background: var(--kx-accent-soft);
+  border: 1px solid var(--kx-accent);
+  color: var(--kx-accent);
+}
+
+.kx-sc-chain-node.is-unverified {
+  background: var(--kx-surface);
+  border: 1px solid var(--kx-border);
+  color: var(--kx-text-2);
+}
+
+.kx-sc-chain-arrow {
+  color: var(--kx-text-3);
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.kx-sc-chain-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: center;
+  margin-top: 4px;
+  padding-top: 6px;
+  border-top: 1px solid var(--kx-border-soft);
+  font-size: var(--kx-fs-caption);
+  color: var(--kx-text-2);
+}
+
+.kx-sc-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.kx-sc-legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.kx-sc-legend-dot.is-valid { background: var(--kx-ok); }
+.kx-sc-legend-dot.is-tampered { background: var(--kx-danger); }
+.kx-sc-legend-dot.is-latest { background: var(--kx-accent); }
+.kx-sc-legend-dot.is-unverified { background: var(--kx-text-3); }
+
+/* ── Jangkar Head Kode Box ───────────────────────────────────────────────── */
+.kx-sc-anchor-box {
+  margin-top: var(--kx-space-2);
+}
+
+.kx-sc-anchor-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--kx-space-2);
+  margin-bottom: 6px;
+}
+
+.kx-sc-anchor-label {
+  font-size: var(--kx-fs-caption);
+  font-weight: 600;
+  color: var(--kx-text-2);
+}
+
+/* ── Kartu Aset ─────────────────────────────────────────────────────────── */
+.kx-sc-card-assets .kx-table td {
+  vertical-align: middle;
+}
+
+.kx-sc-asset-type {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+}
+
+.kx-sc-asset-ref {
+  font-family: var(--kx-font-mono);
+  font-size: var(--kx-fs-caption);
+  color: var(--kx-text);
+}
+
+.kx-sc-asset-desc {
+  font-size: var(--kx-fs-caption);
+  color: var(--kx-text-2);
+}
+
+/* ── Kartu Log Aktivitas ─────────────────────────────────────────────────── */
+.kx-sc-chips {
+  margin-bottom: var(--kx-space-3);
+}
+
+.kx-sc-table th,
+.kx-sc-table td {
+  vertical-align: middle;
+}
+
+.kx-sc-col-idx,
+.kx-sc-cell-idx {
+  width: 80px;
+}
+
+.kx-sc-col-time,
+.kx-sc-cell-time {
+  width: 180px;
+}
+
+.kx-sc-col-act,
+.kx-sc-cell-act {
+  width: 170px;
+}
+
+.kx-sc-cell-act {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.kx-sc-col-hash,
+.kx-sc-cell-hash {
+  min-width: 200px;
+}
+
+.kx-sc-log-row.is-tampered {
+  background: rgba(239, 68, 68, .08);
+}
+.kx-sc-log-row.is-tampered:hover {
+  background: rgba(239, 68, 68, .14);
+}
+
+.kx-sc-filter-empty {
+  padding: var(--kx-space-4);
+  text-align: center;
+  color: var(--kx-text-2);
+  font-size: var(--kx-fs-body);
+}
+
+/* ── Responsif 3 Lebar ─────────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .kx-sc-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .kx-sc-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .kx-sc-card-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .kx-sc-verify-form,
+  .kx-sc-verify-form .kx-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .kx-sc-chain-legend {
+    gap: 10px;
+  }
+}
