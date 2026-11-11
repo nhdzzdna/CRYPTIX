@@ -1,8 +1,12 @@
-﻿# CRYPTIX — .gitignore
+# CRYPTIX — .gitignore
 # ─────────────────────────────────────────────────────────────────────────────
 
 # Database
 database/*.db
+
+# USB Dongle Token
+.cryptix_token
+*.cryptix_token
 
 # Instance directory (secret keys, chain keys)
 instance/

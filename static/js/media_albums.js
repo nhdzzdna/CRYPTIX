@@ -174,7 +174,8 @@
     if (terkunci) {
       var lOverlay = document.createElement('span');
       lOverlay.className = 'kx-media-lock-overlay item-lock-overlay';
-      lOverlay.textContent = '🔒';
+      lOverlay.setAttribute('aria-hidden', 'true');
+      lOverlay.innerHTML = '<svg class="kx-icon" width="16" height="16" aria-hidden="true" focusable="false"><use href="/static/icons/sprite.svg#lock"></use></svg>';
       tombolBuka.appendChild(lOverlay);
     }
     kartu.appendChild(tombolBuka);
