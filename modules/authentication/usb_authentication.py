@@ -268,6 +268,36 @@ def verify_usb_token(stored_verifier: str, stored_serial: str,
     return False, None
 
 
+def hapus_token_dongle(token_id: str) -> bool:
+    """
+    Hapus berkas token milik ``token_id`` dari dongle yang terpasang.
+
+    Dipakai saat akun dihapus agar dongle dapat didaftarkan ulang oleh akun
+    lain. Penghapusan bersifat upaya terbaik: kegagalan menulis atau berkas
+    yang tidak ditemukan tidak menggagalkan penghapusan akun.
+    """
+    if not token_id:
+        return False
+
+    dihapus = False
+    for mountpoint in _kandidat_drive():
+        path = _token_file_path(mountpoint)
+        try:
+            with open(path, "r", encoding="utf-8") as handle:
+                data = json.load(handle)
+        except (OSError, ValueError):
+            continue
+        if isinstance(data, dict) and data.get("token_id") == token_id:
+            try:
+                os.remove(path)
+                dihapus = True
+            except OSError:
+                continue
+    if dihapus:
+        lupakan_cache()
+    return dihapus
+
+
 def dongle_pengguna_terpasang(user_id: int) -> bool:
     """
     Cek dongle milik ``user_id``; hasil di-cache maksimal 2 detik.

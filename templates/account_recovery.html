@@ -64,4 +64,50 @@
     <a href="{{ url_for('auth.login') }}">{{ MSG.AUTH_BACK_LOGIN }}</a>
   </p>
 </form>
+
+<div class="auth-note auth-note-warning" role="note">
+  <details id="recovery-reset">
+    <summary>{{ MSG.RECOVERY_RESET_LINK }}</summary>
+    <p>{{ MSG.RECOVERY_RESET_LIMITATION }}</p>
+    <form method="POST" action="{{ url_for('auth.recovery_reset_account') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+
+      <div class="form-group">
+        <label for="reset-username">Username</label>
+        <input type="text" id="reset-username" name="username" class="form-control"
+               placeholder="Username akun Anda" required autocomplete="username" />
+      </div>
+
+      <div class="form-group">
+        <label for="reset-confirm-username">Ketik Ulang Username</label>
+        <input type="text" id="reset-confirm-username" name="confirm_username"
+               class="form-control" placeholder="Ulangi username persis" required
+               autocomplete="off" />
+      </div>
+
+      <div class="form-group">
+        <label for="reset-password">Kata Sandi Saat Ini</label>
+        <input type="password" id="reset-password" name="password" class="form-control"
+               required autocomplete="current-password" />
+      </div>
+
+      <div class="form-group">
+        <label for="reset-dongle">Dongle Akun</label>
+        <select id="reset-dongle" name="dongle" class="form-control" disabled>
+          {% for d in drives %}
+            <option value="{{ d.mountpoint }}">{{ d.mountpoint }}</option>
+          {% else %}
+            <option value="" disabled selected>Tidak ada dongle terdeteksi</option>
+          {% endfor %}
+        </select>
+        <small class="form-hint">Dongle akun harus terpasang; pilihan ini hanya
+          penanda, verifikasi dilakukan dari berkas token pada dongle.</small>
+      </div>
+
+      <button type="submit" class="btn btn-outline-danger btn-full">
+        {{ MSG.RECOVERY_RESET_TITLE }}
+      </button>
+    </form>
+  </details>
+</div>
 {% endblock %}

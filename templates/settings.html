@@ -103,6 +103,10 @@
           <span class="settings-nav-icon" aria-hidden="true">{{ icon_biometrics() }}</span>
           <span class="settings-nav-label">Autentikasi Biometrik</span>
         </a>
+        <a class="settings-nav-item" href="#settings-danger" data-settings-nav="settings-danger">
+          <span class="settings-nav-icon" aria-hidden="true">{{ icon_alert() }}</span>
+          <span class="settings-nav-label">Zona Berbahaya</span>
+        </a>
       </nav>
     </aside>
 
@@ -144,6 +148,35 @@
                 <span class="settings-meta-value mono">{{ user.last_login[:16] if user.last_login else '—' }}</span>
               </div>
             </div>
+          </div>
+
+          <div class="settings-block">
+            <div class="settings-block-head">
+              <div>
+                <h4 class="settings-block-title">Ubah Email</h4>
+                <p class="settings-block-sub">Username tetap; hanya surel yang dapat diubah.</p>
+              </div>
+              <span class="settings-block-icon" aria-hidden="true">{{ icon_user() }}</span>
+            </div>
+            <form method="POST" action="{{ url_for('settings.change_email') }}" class="settings-form">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+              <div class="form-group">
+                <label for="settings-email">Email</label>
+                <input type="email" id="settings-email" name="email" class="form-control"
+                       value="{{ user.email }}" required autocomplete="email" />
+                <small class="form-hint">{{ MSG.SETTINGS_USERNAME_READONLY }}</small>
+              </div>
+              <div class="form-group">
+                <label for="email-current-password">Password Saat Ini</label>
+                <input type="password" id="email-current-password" name="current_password"
+                       class="form-control" required autocomplete="current-password" />
+              </div>
+              <div class="settings-actions">
+                <button type="submit" class="btn btn-secondary btn-sm" data-reauth="settings.change">
+                  Simpan Email
+                </button>
+              </div>
+            </form>
           </div>
 
           <div class="settings-block">
@@ -423,6 +456,77 @@
               Memakai autentikator platform perangkat ini (sidik jari atau Windows
               Hello). Minimal satu biometrik harus tetap terdaftar.
             </p>
+          </div>
+
+        </div>
+      </section>
+
+      <section class="settings-panel" id="settings-danger" aria-labelledby="settings-danger-title">
+        <header class="settings-panel-head">
+          <span class="settings-panel-icon" aria-hidden="true">{{ icon_alert() }}</span>
+          <div class="settings-panel-heading">
+            <h2 class="settings-panel-title" id="settings-danger-title">Zona Berbahaya</h2>
+            <p class="settings-panel-sub">Tindakan permanen yang memerlukan autentikasi ulang.</p>
+          </div>
+        </header>
+        <div class="settings-panel-body">
+
+          <div class="settings-block">
+            <div class="settings-block-head">
+              <div>
+                <h4 class="settings-block-title">Reset Data Akun</h4>
+                <p class="settings-block-sub">Hapus berkas, media, kredensial, catatan, koleksi, dan gambar stego. Akun, kunci, dongle, dan biometrik tetap tersimpan.</p>
+              </div>
+            </div>
+            <form method="POST" action="{{ url_for('settings.reset_data') }}" class="settings-form">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+              <div class="form-group">
+                <label for="reset-current-password">Password Saat Ini</label>
+                <input type="password" id="reset-current-password" name="current_password"
+                       class="form-control" required autocomplete="current-password" />
+              </div>
+              <div class="form-group">
+                <label for="reset-confirm-username">Ketik Ulang Username</label>
+                <input type="text" id="reset-confirm-username" name="confirm_username"
+                       class="form-control" required autocomplete="off"
+                       placeholder="{{ user.username }}" />
+                <small class="form-hint">Ketik <strong>{{ user.username }}</strong> persis untuk mengonfirmasi.</small>
+              </div>
+              <div class="settings-actions">
+                <button type="submit" class="btn btn-outline-danger" data-reauth="account.danger">
+                  Reset Data Akun
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <div class="settings-block">
+            <div class="settings-block-head">
+              <div>
+                <h4 class="settings-block-title">Hapus Akun</h4>
+                <p class="settings-block-sub">Hapus akun beserta seluruh data, biometrik, kunci pemulihan, dan sesi. Dongle dibebaskan untuk didaftarkan ulang.</p>
+              </div>
+            </div>
+            <form method="POST" action="{{ url_for('settings.delete_account') }}" class="settings-form">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+              <div class="form-group">
+                <label for="delete-current-password">Password Saat Ini</label>
+                <input type="password" id="delete-current-password" name="current_password"
+                       class="form-control" required autocomplete="current-password" />
+              </div>
+              <div class="form-group">
+                <label for="delete-confirm-username">Ketik Ulang Username</label>
+                <input type="text" id="delete-confirm-username" name="confirm_username"
+                       class="form-control" required autocomplete="off"
+                       placeholder="{{ user.username }}" />
+                <small class="form-hint">Ketik <strong>{{ user.username }}</strong> persis untuk mengonfirmasi.</small>
+              </div>
+              <div class="settings-actions">
+                <button type="submit" class="btn btn-outline-danger" data-reauth="account.danger">
+                  Hapus Akun Permanen
+                </button>
+              </div>
+            </form>
           </div>
 
         </div>
