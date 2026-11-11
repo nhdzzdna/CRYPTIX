@@ -16,8 +16,13 @@
       .then(d => {
         select.innerHTML = '';
         if (!d.drives.length) {
-          select.innerHTML = '<option value="" disabled selected>Tidak ada dongle terdeteksi</option>';
-          status.textContent = 'Tidak ada dongle terdeteksi. Colokkan lalu muat ulang.';
+          const opt = document.createElement('option');
+          opt.value = '';
+          opt.disabled = true;
+          opt.selected = true;
+          opt.textContent = status.dataset.msgNone;
+          select.appendChild(opt);
+          status.textContent = status.dataset.msgNoneHint;
           status.classList.add('is-warning');
           return;
         }
@@ -31,7 +36,7 @@
         status.classList.remove('is-warning');
       })
       .catch(() => {
-        status.textContent = 'Gagal memuat daftar dongle.';
+        status.textContent = status.dataset.msgFailed;
         status.classList.add('is-warning');
       })
       .finally(() => {

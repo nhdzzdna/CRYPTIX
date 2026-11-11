@@ -213,6 +213,7 @@ def create_app() -> Flask:
     # ── Navigasi bersama dan badge sesi ───────────────────────────────────────
     from modules.navigation import nav_context
     app.context_processor(nav_context)
+    app.context_processor(lambda: {"MSG": MSG})
 
     # ── Root redirect ─────────────────────────────────────────────────────────
     @app.route("/")

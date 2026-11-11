@@ -1,116 +1,73 @@
 {% extends "auth_base.html" %}
-{% block title %}Daftar — KOSYAK{% endblock %}
-{% block auth_title %}Buat akun baru{% endblock %}
-{% block auth_subtitle %}Satu akun, satu dongle — brankas pribadi terenkripsi.{% endblock %}
+{% from "_ikon.html" import ikon %}
+{% block title %}{{ MSG.AUTH_REGISTER_TITLE }} — KOSYAK{% endblock %}
+{% block auth_title %}{{ MSG.AUTH_REGISTER_TITLE }}{% endblock %}
 
 {% block auth_content %}
-<form method="POST" id="register-form">
+<form method="POST" id="register-form" class="authx-form">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
 
-  <div class="form-group">
-    <label for="username">Username</label>
-    <input type="text" id="username" name="username" class="form-control"
-           placeholder="Pilih username, 3–32 karakter" required autofocus
-           autocomplete="username" minlength="3" maxlength="32" />
+  <div class="kx-field">
+    <label class="kx-label" for="username">{{ MSG.AUTH_USERNAME_LABEL }}</label>
+    <input class="kx-input" type="text" id="username" name="username"
+           required autofocus autocomplete="username" minlength="3" maxlength="32" />
   </div>
 
-  <div class="form-group">
-    <label for="email">Email</label>
-    <input type="email" id="email" name="email" class="form-control"
-           placeholder="nama@contoh.com" required autocomplete="email" />
+  <div class="kx-field">
+    <label class="kx-label" for="email">{{ MSG.AUTH_EMAIL_LABEL }}</label>
+    <input class="kx-input" type="email" id="email" name="email"
+           required autocomplete="email" />
   </div>
 
-  <div class="form-group">
-    <label for="password">Password</label>
-    <div class="auth-input-wrap">
-      <input type="password" id="password" name="password" class="form-control"
-             placeholder="Minimal 12 karakter" required minlength="12"
-             autocomplete="new-password" />
-      <button type="button" class="auth-pw-toggle" data-toggle-password="password"
-              aria-label="Tampilkan password" aria-pressed="false">
-        <svg class="auth-icon-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" />
-          <circle cx="12" cy="12" r="3" />
-        </svg>
-        <svg class="auth-icon-eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" hidden>
-          <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
-          <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
-          <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" />
-          <path d="m2 2 20 20" />
-        </svg>
-      </button>
+  <div class="kx-field">
+    <label class="kx-label" for="password">{{ MSG.AUTH_PASSWORD_LABEL }}</label>
+    <div class="kx-sandi" data-kx-sandi>
+      <input class="kx-input" type="password" id="password" name="password"
+             required minlength="12" autocomplete="new-password" />
     </div>
-    <div class="auth-pw-meter" data-strength-for="password" aria-live="polite">
-      <div class="auth-pw-meter-bar" aria-hidden="true">
-        <span class="auth-pw-seg"></span>
-        <span class="auth-pw-seg"></span>
-        <span class="auth-pw-seg"></span>
-        <span class="auth-pw-seg"></span>
-      </div>
-      <p class="auth-pw-meter-label">&nbsp;</p>
-    </div>
-    <small class="form-hint">Minimal 12 karakter, memuat 3 dari 4 jenis karakter
-      (huruf kecil, huruf besar, angka, simbol), tanpa nama pengguna.</small>
+    <div class="kx-meter" data-kx-meter data-kx-meter-input="#password"></div>
+    <p class="authx-help">{{ MSG.AUTH_PASSWORD_HINT }}</p>
   </div>
 
-  <div class="form-group">
-    <label for="confirm_password">Konfirmasi Password</label>
-    <div class="auth-input-wrap">
-      <input type="password" id="confirm_password" name="confirm_password"
-             class="form-control" placeholder="Ulangi password" required
-             autocomplete="new-password" />
-      <button type="button" class="auth-pw-toggle" data-toggle-password="confirm_password"
-              aria-label="Tampilkan password" aria-pressed="false">
-        <svg class="auth-icon-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" />
-          <circle cx="12" cy="12" r="3" />
-        </svg>
-        <svg class="auth-icon-eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" hidden>
-          <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
-          <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
-          <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" />
-          <path d="m2 2 20 20" />
-        </svg>
-      </button>
+  <div class="kx-field">
+    <label class="kx-label" for="confirm_password">{{ MSG.AUTH_CONFIRM_LABEL }}</label>
+    <div class="kx-sandi" data-kx-sandi>
+      <input class="kx-input" type="password" id="confirm_password"
+             name="confirm_password" required autocomplete="new-password" />
     </div>
   </div>
 
-  <!-- Pemilihan dongle (butir 2.3a) -->
-  <div class="form-group">
-    <label for="dongle">Dongle USB</label>
-    <div class="auth-dongle-row">
-      <select id="dongle" name="dongle" class="form-control" required>
+  <div class="kx-field">
+    <label class="kx-label" for="dongle">{{ MSG.AUTH_DONGLE_LABEL }}</label>
+    <div class="authx-dongle-row">
+      <select id="dongle" name="dongle" class="kx-select" required>
         {% for d in drives %}
           <option value="{{ d.mountpoint }}">{{ d.mountpoint }}</option>
         {% else %}
-          <option value="" disabled selected>Tidak ada dongle terdeteksi</option>
+          <option value="" disabled selected>{{ MSG.AUTH_DONGLE_NONE }}</option>
         {% endfor %}
       </select>
-      <button type="button" class="btn btn-secondary" id="reload-dongle-btn">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M21 12a9 9 0 1 1-2.64-6.36" />
-          <path d="M21 3v6h-6" />
-        </svg>
-        Muat ulang daftar dongle
+      <button type="button" class="kx-btn kx-btn-secondary kx-btn-sm"
+              id="reload-dongle-btn">
+        {{ ikon('rotate-ccw', 15) }}
+        <span>{{ MSG.AUTH_DONGLE_RELOAD }}</span>
       </button>
     </div>
-    <small class="form-hint">Token keamanan akan ditulis ke dongle terpilih dan menjadi
-      kunci fisik untuk membuka brankas. Pendaftaran ditolak bila tidak ada dongle
-      yang terpasang.</small>
-    <p id="dongle-status" class="auth-dongle-status" role="status"></p>
+    <p class="authx-help">{{ MSG.AUTH_DONGLE_REGISTER_HINT }}</p>
+    <p id="dongle-status" class="authx-help authx-status" role="status"
+       data-msg-none="{{ MSG.AUTH_DONGLE_NONE }}"
+       data-msg-none-hint="{{ MSG.AUTH_DONGLE_OFF_HINT }}"
+       data-msg-failed="{{ MSG.AUTH_REQUEST_FAILED }}"></p>
   </div>
 
-  <button type="submit" class="btn btn-primary btn-full">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-      <path d="M12 5v14M5 12h14" />
-    </svg>
-    Daftar
+  <button type="submit" class="kx-btn kx-btn-primary kx-btn-lg kx-btn-block">
+    {{ MSG.AUTH_REGISTER_SUBMIT }}
   </button>
-  <p class="auth-link">Sudah punya akun? <a href="{{ url_for('auth.login') }}">Masuk</a></p>
+  <p class="authx-links">{{ MSG.AUTH_HAVE_ACCOUNT }}
+    <a href="{{ url_for('auth.login') }}">{{ MSG.AUTH_LOGIN_LINK }}</a></p>
 </form>
 {% endblock %}
 
 {% block scripts %}
-<script src="{{ url_for('static', filename='js/auth_forms.js') }}"></script>
 <script src="{{ url_for('static', filename='js/register.js') }}"></script>
 {% endblock %}

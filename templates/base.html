@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}" />
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}" />
+  {% block styles %}{% endblock %}
 </head>
 <body class="layout-with-sidebar">
 {% from "_ikon.html" import ikon %}
