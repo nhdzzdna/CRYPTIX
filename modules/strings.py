@@ -205,7 +205,7 @@ class MSG:
     STEGO_FILE_EXTRACTED     = "Berkas berhasil diekstrak dari gambar."
 
     # â”€â”€ Crypto Tools â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-    CRYPTO_PASSPHRASE_REQUIRED = "Isi frasa sandi untuk Super Encryption."
+    CRYPTO_PASSPHRASE_REQUIRED = "Isi kata sandi untuk Super Encryption."
     CRYPTO_VIGENERE_KEY_INVALID = "Kunci Vigenere hanya boleh huruf A-Z"
     CRYPTO_KEY_HINT = (
         "Vigenere: kunci hanya huruf A-Z. Untuk cipher modern, teks diturunkan "
