@@ -1,7 +1,7 @@
-# KOSYAK (CRYPTIX) — Platform Arsip Digital Terenkripsi
+# KOSYAK — Platform Arsip Digital Terenkripsi
 
 ## Deskripsi
-**KOSYAK** (pada repositori **CRYPTIX**) adalah aplikasi web arsip digital pribadi berbasis Python/Flask dan SQLite yang mengamankan berkas, dokumen, audio, media visual, catatan rahasia, serta kredensial akun menggunakan kombinasi teknik kriptografi modern, steganografi, dan rantai blok integritas data.
+**KOSYAK** adalah aplikasi web arsip digital pribadi berbasis Python/Flask dan SQLite yang mengamankan berkas, dokumen, audio, media visual, catatan rahasia, serta kredensial akun menggunakan kombinasi teknik kriptografi modern, steganografi, dan rantai blok integritas data.
 
 Aplikasi ini dirancang dengan model keamanan berlapis: autentikasi multi-faktor fisik (USB dongle token), login dua tahap dengan biometrik (WebAuthn dan pengenalan wajah), hierarki kunci kriptografi (DEK/KEK), serta isolasi hak akses sementara (*reauth grant token*).
 
