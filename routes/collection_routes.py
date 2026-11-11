@@ -2,7 +2,7 @@
 routes/collection_routes.py
 ───────────────────────────
 Koleksi dan album Media Vault: buat, ganti nama, hapus, kunci, pindahkan
-berkas, ubah status item, dan ganti nama berkas.
+berkas, kunci/lepas kunci item, dan ganti nama berkas.
 
 Semua operasi memakai user_id pemilik sesi. Nama koleksi disimpan
 terenkripsi mengikuti pola vault_files.original_name
@@ -14,6 +14,7 @@ import os
 
 from flask import (
     Blueprint, jsonify, request, session, abort, url_for, render_template,
+    redirect,
 )
 
 from database.db import get_db
@@ -34,7 +35,7 @@ from modules.blockchain.blockchain import add_block, content_hash
 collection_bp = Blueprint("collection", __name__)
 
 KINDS = frozenset({"album", "musik", "dokumen"})
-STATES = frozenset({"normal", "locked", "hidden"})
+STATES = frozenset({"normal", "locked"})
 _NAMA_MAKS = 120
 
 
@@ -120,9 +121,9 @@ def _butuh_grant_koleksi(row) -> bool:
     return not _grant_sah("album.unlock", row["id"])
 
 
-# ── Halaman Musik ─────────────────────────────────────────────────────────────
+# ── Halaman Audio ─────────────────────────────────────────────────────────────
 
-@collection_bp.route("/musik")
+@collection_bp.route("/audio")
 @login_required
 def musik():
     """Daftar audio dalam folder kind='musik' dan pemutar HTML5."""
@@ -136,6 +137,7 @@ def musik():
         "musik.html",
         folders=data["folders"],
         unfiled=data["unfiled"],
+        semua=data["semua"],
         winamp_available=is_winamp_available(),
         msg={
             "title": MSG.MUSIC_TITLE,
@@ -161,19 +163,25 @@ def musik():
             "folder_delete": MSG.FOLDER_DELETE_BUTTON,
             "folder_lock_toggle": MSG.FOLDER_LOCK_TOGGLE,
             "folder_unlock_toggle": MSG.FOLDER_UNLOCK_TOGGLE,
-            "hidden_button": MSG.FOLDER_HIDDEN_BUTTON,
             "count": MSG.FOLDER_COUNT,
             "locked_suffix": MSG.FOLDER_LOCKED_SUFFIX,
             "move_none": MSG.FOLDER_MOVE_TARGET_NONE,
             "move_button": MSG.FOLDER_MOVE_BUTTON,
             "lock_items": MSG.COLLECTION_LOCK_ITEMS,
-            "hide_items": MSG.COLLECTION_HIDE_ITEMS,
+            "unlock_items": MSG.COLLECTION_UNLOCK_ITEMS,
             "move": MSG.COLLECTION_MOVED,
             "state": MSG.COLLECTION_STATE_CHANGED,
             "need_folder": MSG.FOLDER_PICK_NOTE,
             "error": MSG.COLLECTION_ACTION_DENIED,
         },
     )
+
+
+@collection_bp.route("/musik")
+@login_required
+def musik_lama():
+    """Alamat lama diarahkan permanen ke /audio."""
+    return redirect(url_for("collection.musik"), code=308)
 
 
 # ── Buat koleksi ──────────────────────────────────────────────────────────────
@@ -317,7 +325,8 @@ def move_items():
 
         dimiliki = {
             baris["id"] for baris in db.execute(
-                "SELECT id FROM vault_files WHERE user_id=? AND id IN (%s)"
+                "SELECT id FROM vault_files WHERE user_id=? AND deleted_at IS NULL "
+                "AND id IN (%s)"
                 % ",".join("?" for _ in file_ids),
                 (session["user_id"], *file_ids),
             )
@@ -350,8 +359,14 @@ def move_items():
 @collection_bp.route("/api/collections/<int:resource_id>/items/state",
                      methods=["POST"])
 @login_required
-@require_grant("album.unlock")
 def set_item_state(resource_id: int):
+    """
+    Kunci (state 'locked') atau lepas kunci (state 'normal') item koleksi.
+
+    Mengunci tidak memerlukan grant. Melepas kunci memerlukan grant sekali
+    pakai ``item.unlock`` untuk koleksi ini — dicek manual karena grant hanya
+    dibutuhkan saat state target 'normal'.
+    """
     data = _badan()
     state = str(data.get("state", "")).strip().lower()
     if state not in STATES:
@@ -359,6 +374,12 @@ def set_item_state(resource_id: int):
     file_ids = _daftar_id(data.get("file_ids"))
     if not file_ids:
         return _galat(MSG.COLLECTION_FILE_NOT_FOUND, "file_ids")
+
+    if state == "normal":
+        sah, alasan = _grant_alasan("item.unlock", resource_id)
+        if not sah:
+            status = 403 if alasan in {"scope", "resource"} else 401
+            return _galat(MSG.REAUTH_REQUIRED, alasan, status)
 
     with get_db() as db:
         row = _koleksi(db, resource_id, session["user_id"])
@@ -368,7 +389,8 @@ def set_item_state(resource_id: int):
             baris["file_id"] for baris in db.execute(
                 """SELECT ci.file_id FROM collection_items ci
                    JOIN vault_files vf ON vf.id = ci.file_id
-                   WHERE vf.user_id=? AND ci.collection_id=?
+                   WHERE vf.user_id=? AND vf.deleted_at IS NULL
+                     AND ci.collection_id=?
                      AND ci.file_id IN (%s)"""
                 % ",".join("?" for _ in file_ids),
                 (session["user_id"], resource_id, *file_ids),
@@ -382,14 +404,22 @@ def set_item_state(resource_id: int):
         )
         db.commit()
 
-    return jsonify({"success": True, "message": MSG.COLLECTION_STATE_CHANGED,
+    return jsonify({"success": True,
+                    "message": (MSG.ITEM_UNLOCKED if state == "normal"
+                                else MSG.COLLECTION_STATE_CHANGED),
                     "state": state, "count": len(file_ids)})
 
 
 # ── Daftar isi album untuk halaman bergaya galeri ─────────────────────────────
 
 def _file_json(row, db_key: bytes, state: str) -> dict:
-    """Data tampilan aman satu berkas; thumbnail dihilangkan bila terkunci."""
+    """
+    Data tampilan aman satu berkas.
+
+    Item terkunci tetap dikirim dengan state 'locked' agar penanda gembok
+    dapat ditampilkan; URL thumbnail tetap disertakan dan server menolaknya
+    dengan 403 JSON sampai grant ``item.view`` aktif.
+    """
     try:
         nama = decrypt_field(
             row["original_name"], db_key,
@@ -404,7 +434,6 @@ def _file_json(row, db_key: bytes, state: str) -> dict:
         ikon = "🎬"
     else:
         ikon = "🎵"
-    tampil_thumb = jenis == "image" and state == "normal"
     return {
         "id": row["id"],
         "name": nama,
@@ -413,14 +442,17 @@ def _file_json(row, db_key: bytes, state: str) -> dict:
         "state": state,
         "view_url": url_for("media.view", file_id=row["id"]),
         "thumb_url": (url_for("media.thumb", file_id=row["id"])
-                      if tampil_thumb else None),
+                      if jenis == "image" else None),
     }
 
 
 @collection_bp.route("/api/collections/<int:resource_id>/items")
 @login_required
 def list_items(resource_id: int):
-    """Isi album yang dapat dilihat; item tersembunyi dikecualikan."""
+    """
+    Isi album yang dapat dilihat; item terkunci tetap tercantum dengan
+    penanda state agar antarmuka dapat menampilkan gembok.
+    """
     db_key = _db_key()
     if db_key is None:
         return _galat(MSG.ERROR_UNAUTHORIZED, "session", 401)
@@ -437,53 +469,15 @@ def list_items(resource_id: int):
             """SELECT vf.*, ci.state AS item_state
                FROM collection_items ci
                JOIN vault_files vf ON vf.id = ci.file_id
-               WHERE ci.collection_id=? AND vf.user_id=?
+               WHERE ci.collection_id=? AND vf.user_id=? AND vf.deleted_at IS NULL
                ORDER BY ci.added_at, ci.file_id""",
             (resource_id, session["user_id"]),
         ).fetchall()
-        tersembunyi = db.execute(
-            """SELECT COUNT(*) AS n FROM collection_items
-               WHERE collection_id=? AND state='hidden'""",
-            (resource_id,),
-        ).fetchone()["n"]
 
-    terlihat = [
-        _file_json(r, db_key, r["item_state"])
-        for r in baris if r["item_state"] != "hidden"
-    ]
     return jsonify({
         "success": True,
         "collection": {"id": row["id"], "name": nama_koleksi(row, db_key),
                        "kind": row["kind"], "locked": bool(row["locked"])},
-        "items": terlihat,
-        "hidden_count": int(tersembunyi),
-    })
-
-
-@collection_bp.route("/api/collections/<int:resource_id>/hidden")
-@login_required
-@require_grant("album.unlock")
-def list_hidden(resource_id: int):
-    """Item tersembunyi; hanya setelah grant album.unlock untuk album ini."""
-    db_key = _db_key()
-    if db_key is None:
-        return _galat(MSG.ERROR_UNAUTHORIZED, "session", 401)
-
-    with get_db() as db:
-        row = _koleksi(db, resource_id, session["user_id"])
-        if row is None:
-            return _galat(MSG.COLLECTION_NOT_FOUND, "not_found", 404)
-        baris = db.execute(
-            """SELECT vf.*, ci.state AS item_state
-               FROM collection_items ci
-               JOIN vault_files vf ON vf.id = ci.file_id
-               WHERE ci.collection_id=? AND vf.user_id=? AND ci.state='hidden'
-               ORDER BY ci.added_at, ci.file_id""",
-            (resource_id, session["user_id"]),
-        ).fetchall()
-
-    return jsonify({
-        "success": True,
         "items": [_file_json(r, db_key, r["item_state"]) for r in baris],
     })
 
@@ -507,7 +501,8 @@ def rename_file(file_id: int):
 
     with get_db() as db:
         row = db.execute(
-            "SELECT * FROM vault_files WHERE id=? AND user_id=?",
+            "SELECT * FROM vault_files WHERE id=? AND user_id=? "
+            "AND deleted_at IS NULL",
             (file_id, session["user_id"]),
         ).fetchone()
         if row is None:

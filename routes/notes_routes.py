@@ -19,6 +19,7 @@ from modules.cryptography.key_management import purpose_key
 from modules.cryptography.database_encryption import decrypt_record, encrypt_record
 from modules.cryptography.super_encryption import super_decrypt, super_encrypt
 from modules.blockchain.blockchain import add_block, content_hash
+from modules import trash
 
 notes_bp = Blueprint("notes", __name__)
 
@@ -42,7 +43,8 @@ def index():
     with get_db() as db:
         rows = db.execute(
             """SELECT id, title_enc, updated_at FROM secure_notes
-               WHERE user_id=? ORDER BY updated_at DESC""",
+               WHERE user_id=? AND deleted_at IS NULL
+               ORDER BY updated_at DESC""",
             (session["user_id"],),
         ).fetchall()
 
@@ -103,7 +105,8 @@ def add():
 def open_note(resource_id: int):
     with get_db() as db:
         row = db.execute(
-            "SELECT * FROM secure_notes WHERE id=? AND user_id=?",
+            "SELECT * FROM secure_notes WHERE id=? AND user_id=? "
+            "AND deleted_at IS NULL",
             (resource_id, session["user_id"]),
         ).fetchone()
     if not row:
@@ -140,7 +143,8 @@ def edit(resource_id: int):
     )
     with get_db() as db:
         row = db.execute(
-            "SELECT id FROM secure_notes WHERE id=? AND user_id=?",
+            "SELECT id FROM secure_notes WHERE id=? AND user_id=? "
+            "AND deleted_at IS NULL",
             (resource_id, session["user_id"]),
         ).fetchone()
         if not row:
@@ -163,20 +167,14 @@ def edit(resource_id: int):
 @notes_bp.route("/secure-notes/delete/<int:resource_id>", methods=["POST"])
 @limiter.limit(REVEAL_LIMIT, key_func=user_or_ip_key)
 @login_required
-@require_grant("item.delete")
 def delete(resource_id: int):
+    """Pindahkan catatan ke Sampah (soft delete); purge dilakukan di /sampah."""
     with get_db() as db:
-        row = db.execute(
-            "SELECT id FROM secure_notes WHERE id=? AND user_id=?",
-            (resource_id, session["user_id"]),
-        ).fetchone()
-        if not row:
-            abort(404)
-        db.execute("DELETE FROM secure_notes WHERE id=? AND user_id=?",
-                   (resource_id, session["user_id"]))
-        db.commit()
+        row = trash.pindah_ke_sampah(db, "note", resource_id, session["user_id"])
+    if row is None:
+        abort(404)
 
-    add_block(session["user_id"], "DELETE", f"note:{resource_id}",
-              content_hash(str(resource_id).encode("utf-8")))
-    flash(MSG.NOTES_DELETED, "info")
+    add_block(session["user_id"], "TRASH_MOVE", f"note:{resource_id}",
+              trash.hash_aset("note", row))
+    flash(MSG.TRASH_MOVED_NOTE, "info")
     return redirect(url_for("notes.index"))

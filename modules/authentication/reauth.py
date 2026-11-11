@@ -8,9 +8,11 @@ Alur:
     atau ``webauthn``, scope, dan resource id.
   • Grant adalah token acak yang disimpan hanya di memori sisi server,
     dikunci thread, dan terikat pada session id + scope + resource id.
-  • Grant sekali pakai berlaku 120 detik. Scope ``media.stream`` dapat
-    dipakai berulang untuk satu resource selama 15 menit agar permintaan
-    HTTP Range tidak menghabiskan grant pada byte pertama.
+  • Grant sekali pakai berlaku 120 detik. Scope ``media.stream``,
+    ``album.unlock``, ``item.view``, dan ``doc.preview`` dapat dipakai
+    berulang untuk satu resource selama 15 menit agar permintaan HTTP
+    Range serta elemen ``<img>``/``<iframe>`` yang tidak dapat membawa
+    header tidak menghabiskan grant pada permintaan pertama.
   • Metode verifikasi berada pada registri yang dapat ditambah. WebAuthn
     memakai tantangan khusus step-up (webauthn.kunci_reauth) yang diterbitkan
     lewat POST /api/reauth/webauthn/options.
@@ -46,6 +48,10 @@ SCOPES = frozenset({
     "stego.extract",
     "stego.download",
     "item.delete",
+    "item.view",
+    "item.unlock",
+    "doc.preview",
+    "trash.purge",
     "settings.change",
     "biometric.manage",
     "account.danger",
@@ -53,11 +59,16 @@ SCOPES = frozenset({
 
 MEDIA_STREAM_SCOPE = "media.stream"
 ALBUM_UNLOCK_SCOPE = "album.unlock"
+ITEM_VIEW_SCOPE = "item.view"
+ITEM_UNLOCK_SCOPE = "item.unlock"
+DOC_PREVIEW_SCOPE = "doc.preview"
 GRANT_TTL_SECONDS = 120
 MEDIA_STREAM_TTL_SECONDS = 15 * 60
 REUSABLE_TTL = {
     MEDIA_STREAM_SCOPE: MEDIA_STREAM_TTL_SECONDS,
     ALBUM_UNLOCK_SCOPE: MEDIA_STREAM_TTL_SECONDS,
+    ITEM_VIEW_SCOPE: MEDIA_STREAM_TTL_SECONDS,
+    DOC_PREVIEW_SCOPE: MEDIA_STREAM_TTL_SECONDS,
 }
 
 _GRANT_HEADER = "X-Reauth-Grant"

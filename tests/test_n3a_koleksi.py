@@ -3,8 +3,8 @@ tests/test_n3a_koleksi.py
 ─────────────────────────
 Uji koleksi/album Media Vault: CRUD, IDOR antar pengguna, nama terenkripsi,
 pemindahan banyak berkas, ganti nama berkas, album terkunci, grant
-album.unlock berulang dan kedaluwarsa, HTTP Range pratinjau, item
-tersembunyi, serta init_db pada basis data lama.
+album.unlock berulang dan kedaluwarsa, HTTP Range pratinjau, serta init_db
+pada basis data lama.
 """
 
 import io
@@ -270,6 +270,8 @@ class TestAlbumTerkunci:
         fid = _buat_media(1, "foto.png", _png())
         assert _pindah(client, cid, [fid],
                        _grant(client, "album.unlock", cid)).status_code == 200
+        # Grant berulang hangus: album kembali terkunci penuh.
+        reauth.clear()
 
         body = client.get("/media-vault").get_data(as_text=True)
         assert f"/media-vault/thumb/{fid}" not in body
@@ -284,7 +286,9 @@ class TestAlbumTerkunci:
         assert client.get(f"/api/collections/{cid}/items").status_code == 401
         assert client.get(f"/media-vault/view/{fid}").status_code == 403
         assert client.get(f"/media-vault/thumb/{fid}").status_code == 403
-        assert _ubah_state(client, cid, [fid], "hidden").status_code == 401
+        # Mengunci item tidak memerlukan grant; melepas kunci butuh item.unlock.
+        assert _ubah_state(client, cid, [fid], "locked").status_code == 200
+        assert _ubah_state(client, cid, [fid], "normal").status_code == 401
         assert client.post(f"/api/collections/{cid}/lock", json={"locked": 0},
                            headers={"X-CSRFToken": _csrf(client)}).status_code == 401
 
@@ -339,32 +343,32 @@ class TestPratinjauRange:
         assert salah.headers["Content-Range"] == f"bytes */{len(ISI_AUDIO)}"
 
 
-class TestTersembunyi:
-    def test_hidden_tidak_muncul_di_daftar_biasa(self, client):
+class TestItemTerkunci:
+    def test_locked_tetap_tampil_tapi_butuh_grant(self, client):
         cid = _buat_koleksi(client, "Album")
-        fid = _buat_media(1, "lagu.mp3")
+        fid = _buat_media(1, "foto.png", _png())
         _pindah(client, cid, [fid])
-        grant = _grant(client, "album.unlock", cid)
-        assert _ubah_state(client, cid, [fid], "hidden", grant).status_code == 200
+        # Mengunci tidak memerlukan grant.
+        assert _ubah_state(client, cid, [fid], "locked").status_code == 200
 
+        # Item terkunci tetap tampil di bagian "Semua" dengan penanda.
         body = client.get("/media-vault").get_data(as_text=True)
-        assert f'data-file-id="{fid}"' not in body
+        assert f'data-file-id="{fid}"' in body
+        assert 'data-locked="1"' in body
 
         data = client.get(f"/api/collections/{cid}/items").get_json()
-        assert data["items"] == []
-        assert data["hidden_count"] == 1
+        assert data["items"][0]["id"] == fid
+        assert data["items"][0]["state"] == "locked"
 
         reauth.clear()
-        assert client.get(f"/media-vault/view/{fid}").status_code == 403
-        grant = _grant(client, "album.unlock", cid)
-        tersembunyi = client.get(
-            f"/api/collections/{cid}/hidden",
-            headers={"X-Reauth-Grant": grant},
-        )
-        assert tersembunyi.status_code == 200
-        assert tersembunyi.get_json()["items"][0]["id"] == fid
+        terkunci = client.get(f"/media-vault/view/{fid}")
+        assert terkunci.status_code == 403
+        assert terkunci.get_json()["reason"] == "terkunci"
+        grant = _grant(client, "item.view", fid)
         assert client.get(f"/media-vault/view/{fid}",
                           headers={"X-Reauth-Grant": grant}).status_code == 200
+        # Grant berulang: permintaan tanpa header tetap lolos.
+        assert client.get(f"/media-vault/view/{fid}").status_code == 200
 
 
 class TestDatabaseLama:

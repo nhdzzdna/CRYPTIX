@@ -248,7 +248,7 @@ window.CryptixBiometrik = window.CryptixBiometrik || { penangan: {} };
         : (err && err.message
           ? err.message
           : teksPanel(panel, "msgFailed", "Pendaftaran wajah gagal."));
-      setStatus(statusEl, "\u274c " + pesan, "#ef4444");
+      setStatus(statusEl, pesan, "#ef4444");
       throw err;
     } finally {
       if (pemantau) {
@@ -280,3 +280,4 @@ window.CryptixBiometrik = window.CryptixBiometrik || { penangan: {} };
     }
   };
 })();
+

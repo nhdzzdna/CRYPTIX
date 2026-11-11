@@ -1,68 +1,47 @@
 {% extends "auth_base.html" %}
-{% block title %}{{ MSG.RECOVERY_PAGE_TITLE }} — CRYPTIX{% endblock %}
+{% from "_ikon.html" import ikon %}
+{% block title %}{{ MSG.RECOVERY_PAGE_TITLE }} — KOSYAK{% endblock %}
 {% block auth_title %}{{ MSG.RECOVERY_PAGE_TITLE }}{% endblock %}
-{% block auth_subtitle %}Kunci ini hanya ditampilkan sekali pada sesi ini.{% endblock %}
 
 {% block auth_content %}
-<div id="recovery-panel"
+<div id="recovery-panel" class="authx-form"
      data-msg-copy-ok="{{ MSG.RECOVERY_COPY_OK }}"
      data-msg-copy-failed="{{ MSG.RECOVERY_COPY_FAILED }}"
      data-msg-download-ok="{{ MSG.RECOVERY_DOWNLOAD_OK }}"
      data-filename="{{ MSG.RECOVERY_FILENAME }}"
      data-file-header="{{ MSG.RECOVERY_FILE_HEADER }}"
      data-file-hint="{{ MSG.RECOVERY_FILE_HINT }}">
-  <p class="form-hint">{{ MSG.RECOVERY_KEY_EXPLAIN }}</p>
-
-  <div class="auth-note auth-note-warning" role="alert">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-      <path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
-      <path d="M12 9v4" />
-      <path d="M12 17h.01" />
-    </svg>
+  <div class="kx-infobox kx-infobox-warn" role="alert">
+    {{ ikon('alert-triangle', 16) }}
     <p>{{ MSG.RECOVERY_ONCE_HINT }}</p>
   </div>
 
-  <div class="recovery-key-box">
-    <span class="recovery-key-head" aria-hidden="true">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="7.5" cy="15.5" r="4.5" />
-        <path d="m21 2-9.6 9.6" />
-        <path d="m15.5 7.5 3 3L22 7l-3-3" />
-      </svg>
-    </span>
-    <code id="recovery-key" class="recovery-key-text">{{ recovery_key }}</code>
+  <div class="authx-key-wrap">
+    <code id="recovery-key" class="kx-code authx-key">{{ recovery_key }}</code>
+    <button type="button" class="kx-btn kx-btn-secondary kx-btn-sm authx-key-copy"
+            id="btn-copy-recovery">
+      {{ ikon('copy', 15) }}
+      <span>{{ MSG.RECOVERY_COPY_LABEL }}</span>
+    </button>
   </div>
 
-  <div class="recovery-key-actions">
-    <button type="button" class="btn btn-secondary" id="btn-copy-recovery">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <rect x="9" y="9" width="13" height="13" rx="2" />
-        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-      </svg>
-      {{ MSG.RECOVERY_COPY_LABEL }}
-    </button>
-    <button type="button" class="btn btn-secondary" id="btn-download-recovery">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-        <path d="m7 10 5 5 5-5" />
-        <path d="M12 15V3" />
-      </svg>
-      {{ MSG.RECOVERY_DOWNLOAD_LABEL }}
+  <div class="authx-key-actions">
+    <button type="button" class="kx-btn kx-btn-secondary" id="btn-download-recovery">
+      {{ ikon('download', 15) }}
+      <span>{{ MSG.RECOVERY_DOWNLOAD_LABEL }}</span>
     </button>
   </div>
-  <p id="recovery-status" class="form-hint" role="status" aria-live="polite"></p>
+  <p id="recovery-status" class="authx-help" role="status" aria-live="polite"></p>
 
   <form method="POST" action="{{ next_action or url_for('auth.recovery_confirm') }}"
-        id="recovery-form">
+        id="recovery-form" class="authx-form">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
     <input type="hidden" name="pending" value="{{ pending }}" />
-    <div class="form-group form-check">
-      <label>
-        <input type="checkbox" name="confirm_saved" id="confirm_saved" value="1" required />
-        {{ MSG.RECOVERY_CONFIRM_LABEL }}
-      </label>
-    </div>
-    <button type="submit" class="btn btn-primary btn-full"
+    <label class="kx-checkbox">
+      <input type="checkbox" name="confirm_saved" id="confirm_saved" value="1" required />
+      <span>{{ MSG.RECOVERY_CONFIRM_LABEL }}</span>
+    </label>
+    <button type="submit" class="kx-btn kx-btn-primary kx-btn-lg kx-btn-block"
             id="btn-recovery-continue" disabled>
       {{ next_label or MSG.RECOVERY_CONTINUE_LABEL }}
     </button>

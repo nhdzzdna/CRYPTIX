@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Secure Notes — CRYPTIX{% endblock %}
+{% block title %}Secure Notes — KOSYAK{% endblock %}
 {% block page_title %}Secure Notes{% endblock %}
 {% block page_subtitle %}
 <p class="page-subtitle">Simpan catatan pribadi dalam bentuk terenkripsi. Isi catatan hanya ditampilkan setelah verifikasi ulang.</p>
@@ -161,9 +161,7 @@
                 <form method="POST" action="{{ url_for('notes.delete', resource_id=note.id) }}"
                       class="notes-delete-form">
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-                  <button type="submit" class="btn btn-sm btn-danger notes-delete-btn"
-                          data-reauth="item.delete"
-                          data-reauth-resource="{{ note.id }}">
+                  <button type="submit" class="btn btn-sm btn-danger notes-delete-btn">
                     {{ icon_trash() }}<span>Hapus</span>
                   </button>
                 </form>

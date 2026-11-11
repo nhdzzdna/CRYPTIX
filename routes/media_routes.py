@@ -1,7 +1,9 @@
 """
 routes/media_routes.py
 ───────────────────────
-Media Vault: encrypted audio/video files with Winamp/HTML5 playback.
+Media Vault: encrypted audio/video files with Winamp/HTML5 playback,
+plus in-memory document preview (PDF, image, text) with magic-byte
+detection.
 """
 
 import io
@@ -16,9 +18,7 @@ from PIL import Image
 
 import config
 from modules.strings import MSG
-from modules.authentication.reauth import (
-    require_grant, consume_grant, find_active_grant,
-)
+from modules.authentication.reauth import require_grant
 from modules.rate_limit import limiter, REVEAL_LIMIT, user_or_ip_key
 from routes.auth_routes import login_required
 from database.db import get_db
@@ -33,7 +33,7 @@ from modules.media.winamp_integration import (
 )
 from modules.blockchain.blockchain import add_block
 from routes.collection_shared import (
-    halaman_koleksi, file_info as _berkas_info,
+    halaman_koleksi, file_info as _berkas_info, akses_item,
 )
 
 media_bp = Blueprint("media", __name__)
@@ -133,10 +133,10 @@ def index():
         "media_vault.html",
         albums=data["folders"],
         unfiled=data["unfiled"],
+        semua=data["semua"],
         winamp_available=is_winamp_available(),
         download_only_note=MSG.MEDIA_DOWNLOAD_ONLY,
         temp_warning=MSG.MEDIA_TEMP_WARNING,
-        hidden_note=MSG.COLLECTION_LOCKED_NOTE,
         empty_note=MSG.COLLECTION_EMPTY,
         msg={
             "move": MSG.COLLECTION_MOVED,
@@ -164,47 +164,13 @@ def _media_info(row, db_key: bytes) -> dict:
     return _berkas_info(row, db_key)
 
 
-def _item_context(file_id: int, user_id: int):
-    """Baris koleksi untuk sebuah berkas, atau None bila Tanpa album."""
-    with get_db() as db:
-        return db.execute(
-            """SELECT ci.state AS state, ci.collection_id AS collection_id,
-                      c.locked AS collection_locked
-               FROM collection_items ci
-               JOIN collections c ON c.id = ci.collection_id
-               WHERE ci.file_id=? AND c.user_id=?""",
-            (file_id, user_id),
-        ).fetchone()
-
-
-def _grant_sah(scope: str, resource_id) -> bool:
-    """Periksa grant lewat header atau grant aktif berulang."""
-    session_id = session.get("session_id", "")
-    token = request.headers.get("X-Reauth-Grant") or ""
-    if not token:
-        token = find_active_grant(session_id, scope, resource_id) or ""
-    sah, _ = consume_grant(token, session_id, scope, resource_id)
-    return sah
-
-
-def _akses_item(row, file_id: int):
-    """
-    Periksa aturan akses pratinjau berdasarkan state dan kunci koleksi.
-
-    Returns None bila boleh, atau (pesan, status) untuk penolakan.
-    """
-    item = _item_context(file_id, row["user_id"])
-    if item is None:
-        return None
-    state = item["state"]
-    if state == "locked":
-        if not _grant_sah("media.stream", file_id):
-            return MSG.REAUTH_REQUIRED, 401
-        return None
-    if state == "hidden" or item["collection_locked"]:
-        if not _grant_sah("album.unlock", item["collection_id"]):
-            return MSG.REAUTH_REQUIRED, 403
-    return None
+def _respons_terkunci(pesan: str, status: int):
+    """Penolakan JSON reason 'terkunci' untuk item/album yang terkunci."""
+    return jsonify({
+        "success": False,
+        "error": pesan,
+        "reason": "terkunci",
+    }), status
 
 
 def _parse_range_header(header: str, size: int):
@@ -265,18 +231,17 @@ def view(file_id: int):
     """
     with get_db() as db:
         row = db.execute(
-            "SELECT * FROM vault_files WHERE id=? AND user_id=?",
+            "SELECT * FROM vault_files WHERE id=? AND user_id=? "
+            "AND deleted_at IS NULL",
             (file_id, session["user_id"]),
         ).fetchone()
 
     if not row:
         abort(404)
 
-    ditolak = _akses_item(row, file_id)
+    ditolak = akses_item(row, file_id)
     if ditolak:
-        pesan, status = ditolak
-        return jsonify({"success": False, "error": pesan,
-                        "reason": "grant"}), status
+        return _respons_terkunci(*ditolak)
 
     try:
         original_name = decrypt_field(
@@ -331,18 +296,17 @@ def thumb(file_id: int):
     """Thumbnail gambar diperkecil di memori; video/audio tidak punya."""
     with get_db() as db:
         row = db.execute(
-            "SELECT * FROM vault_files WHERE id=? AND user_id=?",
+            "SELECT * FROM vault_files WHERE id=? AND user_id=? "
+            "AND deleted_at IS NULL",
             (file_id, session["user_id"]),
         ).fetchone()
 
     if not row or row["file_type"] != "image":
         abort(404)
 
-    ditolak = _akses_item(row, file_id)
+    ditolak = akses_item(row, file_id)
     if ditolak:
-        pesan, status = ditolak
-        return jsonify({"success": False, "error": pesan,
-                        "reason": "grant"}), status
+        return _respons_terkunci(*ditolak)
 
     try:
         path = os.path.join(config.ENCRYPTED_FILES_DIR, row["stored_name"])
@@ -382,12 +346,17 @@ def stream(file_id: int):
     """
     with get_db() as db:
         row = db.execute(
-            "SELECT * FROM vault_files WHERE id=? AND user_id=? AND file_type IN ('audio','video')",
+            "SELECT * FROM vault_files WHERE id=? AND user_id=? "
+            "AND deleted_at IS NULL AND file_type IN ('audio','video')",
             (file_id, session["user_id"]),
         ).fetchone()
 
     if not row:
         abort(404)
+
+    ditolak = akses_item(row, file_id)
+    if ditolak:
+        return _respons_terkunci(*ditolak)
 
     try:
         original_name = decrypt_field(
@@ -455,12 +424,17 @@ def play(file_id: int):
     """Buka audio di Winamp; pemutaran HTML5 memakai rute stream."""
     with get_db() as db:
         row = db.execute(
-            "SELECT * FROM vault_files WHERE id=? AND user_id=? AND file_type IN ('audio','video')",
+            "SELECT * FROM vault_files WHERE id=? AND user_id=? "
+            "AND deleted_at IS NULL AND file_type IN ('audio','video')",
             (file_id, session["user_id"]),
         ).fetchone()
 
     if not row:
         abort(404)
+
+    ditolak = akses_item(row, file_id)
+    if ditolak:
+        return _respons_terkunci(*ditolak)
 
     use_winamp = (
         request.form.get("player") == "winamp" and is_winamp_available()
@@ -514,12 +488,16 @@ def download(file_id: int):
     with get_db() as db:
         row = db.execute(
             "SELECT * FROM vault_files WHERE id=? AND user_id=? "
-            "AND file_type IN ('audio','video')",
+            "AND deleted_at IS NULL AND file_type IN ('audio','video')",
             (file_id, session["user_id"]),
         ).fetchone()
 
     if not row:
         abort(404)
+
+    ditolak = akses_item(row, file_id)
+    if ditolak:
+        return _respons_terkunci(*ditolak)
 
     try:
         original_name = decrypt_field(
@@ -545,3 +523,114 @@ def download(file_id: int):
         download_name=original_name,
         as_attachment=True,
     )
+
+
+# ── Pratinjau dokumen (UB) ────────────────────────────────────────────────────
+
+MAGIC_PDF = b"%PDF-"
+MAGIC_IMAGES = (
+    (b"\x89PNG\r\n\x1a\n", "image/png"),
+    (b"\xff\xd8\xff", "image/jpeg"),
+    (b"GIF87a", "image/gif"),
+    (b"GIF89a", "image/gif"),
+    (b"BM", "image/bmp"),
+)
+MAX_TEXT_BYTES = 1_000_000
+
+
+def _deteksi_jenis(data: bytes):
+    if data.startswith(b"%PDF-"):
+        return ("pdf", "application/pdf")
+    if data.startswith(bytes.fromhex("89504e470d0a1a0a")):
+        return ("image", "image/png")
+    if data.startswith(bytes.fromhex("ffd8ff")):
+        return ("image", "image/jpeg")
+    if data.startswith((b"GIF87a", b"GIF89a")):
+        return ("image", "image/gif")
+    if data.startswith(b"BM"):
+        return ("image", "image/bmp")
+    if len(data) >= 12 and data[:4] == b"RIFF" and data[8:12] == b"WEBP":
+        return ("image", "image/webp")
+    try:
+        teks = data.decode("utf-8")
+    except UnicodeDecodeError:
+        return None
+    if any(ord(ch) < 32 and ch not in "\t\n\r\f\b" for ch in teks):
+        return None
+    return ("text", "text/plain; charset=utf-8")
+
+
+@media_bp.route("/media-vault/preview/<int:file_id>")
+@login_required
+@require_grant("doc.preview")
+def preview(file_id: int):
+    """
+    Pratinjau dokumen dalam memori: PDF dan gambar disajikan inline,
+    teks dikirim sebagai JSON, jenis lain ditolak 415.
+
+    Dekripsi terjadi hanya di memori dan hash plaintext diverifikasi
+    seperti rute view. Untuk item terkunci, grant ``doc.preview`` berlaku
+    sebagai pengganti ``item.view`` karena keduanya adalah verifikasi
+    ulang per item; kunci koleksi tetap memerlukan ``album.unlock``.
+    """
+    with get_db() as db:
+        row = db.execute(
+            "SELECT * FROM vault_files WHERE id=? AND user_id=? "
+            "AND deleted_at IS NULL",
+            (file_id, session["user_id"]),
+        ).fetchone()
+
+    if not row:
+        abort(404)
+
+    ditolak = akses_item(row, file_id, scope_item="doc.preview")
+    if ditolak:
+        return _respons_terkunci(*ditolak)
+
+    try:
+        path = os.path.join(config.ENCRYPTED_FILES_DIR, row["stored_name"])
+        plaintext = decrypt_all(
+            path, _file_key(), file_aad(row["user_id"], row["stored_name"])
+        )
+        if hashlib.sha256(plaintext).hexdigest() != row["sha256_hash"]:
+            raise ValueError("SHA-256 plaintext tidak cocok dengan nilai tercatat.")
+        original_name = decrypt_field(
+            row["original_name"], _db_key(),
+            field_aad(row["user_id"], "vault_files", "original_name"),
+        )
+    except OSError:
+        abort(404)
+    except Exception:
+        add_block(session["user_id"], "TAMPER_DETECTED", f"file:{file_id}",
+                  row["sha256_ciphertext"])
+        abort(403)
+
+    jenis = _deteksi_jenis(plaintext)
+    if jenis is None:
+        return jsonify({
+            "success": False,
+            "error": MSG.DOC_PREVIEW_UNSUPPORTED,
+            "reason": "jenis",
+        }), 415
+    kategori, mime = jenis
+
+    if kategori == "text":
+        return jsonify({
+            "success": True,
+            "name": original_name,
+            "kind": "text",
+            "size": len(plaintext),
+            "truncated": len(plaintext) > MAX_TEXT_BYTES,
+            "text": plaintext.decode("utf-8", errors="replace")[:MAX_TEXT_BYTES],
+        })
+
+    response = Response(plaintext, status=200, mimetype=mime)
+    response.headers["Content-Disposition"] = "inline"
+    response.headers["Content-Length"] = str(len(plaintext))
+    response.headers["Cache-Control"] = "no-store"
+    response.headers["Pragma"] = "no-cache"
+    if kategori == "pdf":
+        # Hanya rute ini yang boleh di-frame sendiri (penampil PDF modal).
+        response.headers["X-Frame-Options"] = "SAMEORIGIN"
+        response.headers["Content-Security-Policy"] = "frame-ancestors 'self'"
+    return response

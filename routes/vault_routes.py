@@ -30,7 +30,8 @@ from modules.cryptography.file_encryption import (
     encrypt_stream, decrypt_all, generate_stored_name, file_aad,
 )
 from modules.blockchain.blockchain import add_block
-from routes.collection_shared import halaman_koleksi
+from routes.collection_shared import halaman_koleksi, akses_item
+from modules import trash
 
 vault_bp = Blueprint("vault", __name__)
 
@@ -102,6 +103,7 @@ def index():
         "vault.html",
         folders=data["folders"],
         unfiled=data["unfiled"],
+        semua=data["semua"],
         msg=_dokumen_msg(),
     )
 
@@ -128,16 +130,21 @@ def _dokumen_msg() -> dict:
         "folder_delete": MSG.FOLDER_DELETE_BUTTON,
         "folder_lock_toggle": MSG.FOLDER_LOCK_TOGGLE,
         "folder_unlock_toggle": MSG.FOLDER_UNLOCK_TOGGLE,
-        "hidden_button": MSG.FOLDER_HIDDEN_BUTTON,
         "count": MSG.FOLDER_COUNT,
         "locked_suffix": MSG.FOLDER_LOCKED_SUFFIX,
         "move_none": MSG.FOLDER_MOVE_TARGET_NONE,
         "move_button": MSG.FOLDER_MOVE_BUTTON,
         "lock_items": MSG.COLLECTION_LOCK_ITEMS,
-        "hide_items": MSG.COLLECTION_HIDE_ITEMS,
+        "unlock_items": MSG.COLLECTION_UNLOCK_ITEMS,
         "delete_confirm": MSG.DOCUMENT_DELETE_CONFIRM,
         "download": MSG.DOCUMENT_DOWNLOAD,
         "delete_file": MSG.DOCUMENT_DELETE,
+        "preview": MSG.DOC_PREVIEW_BUTTON,
+        "preview_title": MSG.DOC_PREVIEW_TITLE,
+        "preview_text_label": MSG.DOC_PREVIEW_TEXT_LABEL,
+        "preview_unsupported": MSG.DOC_PREVIEW_UNSUPPORTED,
+        "preview_failed": MSG.DOC_PREVIEW_FAILED,
+        "preview_close": MSG.DOC_PREVIEW_CLOSE,
         "move": MSG.COLLECTION_MOVED,
         "state": MSG.COLLECTION_STATE_CHANGED,
         "need_folder": MSG.FOLDER_PICK_NOTE,
@@ -222,12 +229,22 @@ def upload():
 def decrypt(resource_id: int):
     with get_db() as db:
         row = db.execute(
-            "SELECT * FROM vault_files WHERE id=? AND user_id=?",
+            "SELECT * FROM vault_files WHERE id=? AND user_id=? "
+            "AND deleted_at IS NULL",
             (resource_id, session["user_id"]),
         ).fetchone()
 
     if not row:
         abort(404)
+
+    ditolak = akses_item(row, resource_id)
+    if ditolak:
+        pesan, status = ditolak
+        return jsonify({
+            "success": False,
+            "error": pesan,
+            "reason": "terkunci",
+        }), status
 
     try:
         fkey = _get_file_key()
@@ -265,25 +282,14 @@ def decrypt(resource_id: int):
 @vault_bp.route("/vault/delete/<int:resource_id>", methods=["POST"])
 @limiter.limit(REVEAL_LIMIT, key_func=user_or_ip_key)
 @login_required
-@require_grant("item.delete")
 def delete(resource_id: int):
+    """Pindahkan berkas ke Sampah (soft delete); purge dilakukan di /sampah."""
     with get_db() as db:
-        row = db.execute(
-            "SELECT * FROM vault_files WHERE id=? AND user_id=?",
-            (resource_id, session["user_id"]),
-        ).fetchone()
-        if not row:
-            abort(404)
+        row = trash.pindah_ke_sampah(db, "file", resource_id, session["user_id"])
+    if row is None:
+        abort(404)
 
-        enc_path = os.path.join(config.ENCRYPTED_FILES_DIR, row["stored_name"])
-        if os.path.exists(enc_path):
-            os.remove(enc_path)
-
-        db.execute("DELETE FROM vault_files WHERE id=? AND user_id=?",
-                   (resource_id, session["user_id"]))
-        db.commit()
-
-    add_block(session["user_id"], "DELETE", f"file:{resource_id}",
-              row["sha256_ciphertext"])
-    flash(MSG.VAULT_FILE_DELETED, "info")
+    add_block(session["user_id"], "TRASH_MOVE", f"file:{resource_id}",
+              trash.hash_aset("file", row))
+    flash(MSG.TRASH_MOVED_FILE, "info")
     return redirect(url_for("vault.index"))

@@ -18,8 +18,9 @@ from database.db import get_db
 from modules.cryptography import session_keys
 from modules.cryptography.key_management import purpose_key
 from modules.cryptography.database_encryption import decrypt_record, encrypt_record
-from modules.blockchain.blockchain import add_block, account_hash, content_hash
+from modules.blockchain.blockchain import add_block, account_hash
 from modules.username_masking import samarkan_username
+from modules import trash
 
 account_bp = Blueprint("account", __name__)
 
@@ -39,7 +40,8 @@ def index():
         rows = db.execute(
             """SELECT id, site_name_enc, username_enc, updated_at
                FROM account_vault
-               WHERE user_id=? ORDER BY created_at DESC""",
+               WHERE user_id=? AND deleted_at IS NULL
+               ORDER BY created_at DESC""",
             (session["user_id"],),
         ).fetchall()
 
@@ -124,7 +126,8 @@ def add():
 def reveal(resource_id: int):
     with get_db() as db:
         row = db.execute(
-            "SELECT * FROM account_vault WHERE id=? AND user_id=?",
+            "SELECT * FROM account_vault WHERE id=? AND user_id=? "
+            "AND deleted_at IS NULL",
             (resource_id, session["user_id"]),
         ).fetchone()
     if not row:
@@ -185,7 +188,8 @@ def edit(resource_id: int):
     )
     with get_db() as db:
         row = db.execute(
-            "SELECT id FROM account_vault WHERE id=? AND user_id=?",
+            "SELECT id FROM account_vault WHERE id=? AND user_id=? "
+            "AND deleted_at IS NULL",
             (resource_id, session["user_id"]),
         ).fetchone()
         if not row:
@@ -214,19 +218,14 @@ def edit(resource_id: int):
 @account_bp.route("/account-vault/delete/<int:resource_id>", methods=["POST"])
 @limiter.limit(REVEAL_LIMIT, key_func=user_or_ip_key)
 @login_required
-@require_grant("item.delete")
 def delete(resource_id: int):
+    """Pindahkan kredensial ke Sampah (soft delete); purge di /sampah."""
     with get_db() as db:
-        row = db.execute(
-            "SELECT id FROM account_vault WHERE id=? AND user_id=?",
-            (resource_id, session["user_id"]),
-        ).fetchone()
-        if not row:
-            abort(404)
-        db.execute("DELETE FROM account_vault WHERE id=? AND user_id=?",
-                   (resource_id, session["user_id"]))
-        db.commit()
-    add_block(session["user_id"], "DELETE", f"cred:{resource_id}",
-              content_hash(str(resource_id).encode("utf-8")))
-    flash(MSG.ACCOUNT_DELETED, "info")
+        row = trash.pindah_ke_sampah(db, "cred", resource_id, session["user_id"])
+    if row is None:
+        abort(404)
+
+    add_block(session["user_id"], "TRASH_MOVE", f"cred:{resource_id}",
+              trash.hash_aset("cred", row))
+    flash(MSG.TRASH_MOVED_CRED, "info")
     return redirect(url_for("account.index"))

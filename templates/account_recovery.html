@@ -1,115 +1,68 @@
 {% extends "auth_base.html" %}
-{% block title %}Pemulihan Akun — CRYPTIX{% endblock %}
-{% block auth_title %}Pemulihan Akun{% endblock %}
-{% block auth_subtitle %}Pulihkan akses dengan kunci pemulihan dan dongle baru.{% endblock %}
+{% from "_ikon.html" import ikon %}
+{% block title %}{{ MSG.AUTH_RECOVERY_TITLE }} — KOSYAK{% endblock %}
+{% block auth_title %}{{ MSG.AUTH_RECOVERY_TITLE }}{% endblock %}
 
 {% block auth_content %}
-<div class="auth-note auth-note-info" role="note">
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-    <circle cx="12" cy="12" r="10" />
-    <path d="M12 16v-4" />
-    <path d="M12 8h.01" />
-  </svg>
-  <p>Gunakan kunci pemulihan yang Anda simpan saat mendaftar. Pemulihan
-    memerlukan dongle baru yang terpasang, lalu menghasilkan kata sandi dan
-    kunci pemulihan baru. Berkas dan data biometrik tetap dapat dibuka.</p>
+<div class="kx-infobox authx-infobox" role="note">
+  {{ ikon('info', 16) }}
+  <p>{{ MSG.AUTH_RECOVERY_INTRO }}</p>
 </div>
 
-<form method="POST" id="account-recovery-form">
+<form method="POST" id="account-recovery-form" class="authx-form">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
 
-  <div class="form-group">
-    <label for="username">Username</label>
-    <input type="text" id="username" name="username" class="form-control"
-           placeholder="Username akun Anda" required autofocus autocomplete="username" />
+  <div class="kx-field">
+    <label class="kx-label" for="username">{{ MSG.AUTH_USERNAME_LABEL }}</label>
+    <input class="kx-input" type="text" id="username" name="username"
+           required autofocus autocomplete="username" />
   </div>
 
-  <div class="form-group">
-    <label for="recovery_key">Kunci Pemulihan</label>
-    <textarea id="recovery_key" name="recovery_key" class="form-control auth-mono-input"
-              rows="3" required autocomplete="off" spellcheck="false"
+  <div class="kx-field">
+    <label class="kx-label" for="recovery_key">{{ MSG.AUTH_RECOVERY_KEY_LABEL }}</label>
+    <textarea id="recovery_key" name="recovery_key"
+              class="kx-textarea authx-mono" rows="3" required
+              autocomplete="off" spellcheck="false"
               placeholder="XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXX"></textarea>
-    <small class="form-hint">Salin kunci persis seperti saat ditampilkan,
-      termasuk tanda hubung.</small>
+    <p class="authx-help">{{ MSG.AUTH_RECOVERY_KEY_HINT }}</p>
   </div>
 
-  <div class="form-group">
-    <label for="password">Kata Sandi Baru</label>
-    <div class="auth-input-wrap">
-      <input type="password" id="password" name="password" class="form-control"
-             placeholder="Minimal 12 karakter" required minlength="12"
-             autocomplete="new-password" />
-      <button type="button" class="auth-pw-toggle" data-toggle-password="password"
-              aria-label="Tampilkan password" aria-pressed="false">
-        <svg class="auth-icon-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" />
-          <circle cx="12" cy="12" r="3" />
-        </svg>
-        <svg class="auth-icon-eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" hidden>
-          <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
-          <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
-          <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" />
-          <path d="m2 2 20 20" />
-        </svg>
-      </button>
+  <div class="kx-field">
+    <label class="kx-label" for="password">{{ MSG.AUTH_NEW_PASSWORD_LABEL }}</label>
+    <div class="kx-sandi" data-kx-sandi>
+      <input class="kx-input" type="password" id="password" name="password"
+             required minlength="12" autocomplete="new-password" />
     </div>
-    <div class="auth-pw-meter" data-strength-for="password" aria-live="polite">
-      <div class="auth-pw-meter-bar" aria-hidden="true">
-        <span class="auth-pw-seg"></span>
-        <span class="auth-pw-seg"></span>
-        <span class="auth-pw-seg"></span>
-        <span class="auth-pw-seg"></span>
-      </div>
-      <p class="auth-pw-meter-label">&nbsp;</p>
-    </div>
-    <small class="form-hint">Minimal 12 karakter, memuat 3 dari 4 jenis karakter
-      (huruf kecil, huruf besar, angka, simbol), tanpa nama pengguna.</small>
+    <div class="kx-meter" data-kx-meter data-kx-meter-input="#password"></div>
+    <p class="authx-help">{{ MSG.AUTH_PASSWORD_HINT }}</p>
   </div>
 
-  <div class="form-group">
-    <label for="confirm_password">Konfirmasi Kata Sandi Baru</label>
-    <div class="auth-input-wrap">
-      <input type="password" id="confirm_password" name="confirm_password"
-             class="form-control" placeholder="Ulangi kata sandi baru" required
-             autocomplete="new-password" />
-      <button type="button" class="auth-pw-toggle" data-toggle-password="confirm_password"
-              aria-label="Tampilkan password" aria-pressed="false">
-        <svg class="auth-icon-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" />
-          <circle cx="12" cy="12" r="3" />
-        </svg>
-        <svg class="auth-icon-eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" hidden>
-          <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
-          <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
-          <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" />
-          <path d="m2 2 20 20" />
-        </svg>
-      </button>
+  <div class="kx-field">
+    <label class="kx-label" for="confirm_password">{{ MSG.AUTH_CONFIRM_NEW_LABEL }}</label>
+    <div class="kx-sandi" data-kx-sandi>
+      <input class="kx-input" type="password" id="confirm_password"
+             name="confirm_password" required autocomplete="new-password" />
     </div>
   </div>
 
-  <div class="form-group">
-    <label for="dongle">Dongle Baru</label>
-    <select id="dongle" name="dongle" class="form-control" required>
+  <div class="kx-field">
+    <label class="kx-label" for="dongle">{{ MSG.AUTH_NEW_DONGLE_LABEL }}</label>
+    <select id="dongle" name="dongle" class="kx-select" required>
       {% for d in drives %}
         <option value="{{ d.mountpoint }}">{{ d.mountpoint }}</option>
       {% else %}
-        <option value="" disabled selected>Tidak ada dongle terdeteksi</option>
+        <option value="" disabled selected>{{ MSG.AUTH_DONGLE_NONE }}</option>
       {% endfor %}
     </select>
-    <small class="form-hint">Colokkan dongle baru, lalu muat ulang halaman ini
-      bila daftar belum muncul.</small>
+    <p class="authx-help">{{ MSG.AUTH_RECOVERY_DONGLE_HINT }}</p>
   </div>
 
-  <button type="submit" class="btn btn-primary btn-full">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-      <circle cx="7.5" cy="15.5" r="4.5" />
-      <path d="m21 2-9.6 9.6" />
-      <path d="m15.5 7.5 3 3L22 7l-3-3" />
-    </svg>
-    Pulihkan Akun
+  <button type="submit" class="kx-btn kx-btn-primary kx-btn-lg kx-btn-block">
+    {{ MSG.AUTH_RECOVERY_SUBMIT }}
   </button>
-  <p class="auth-link"><a href="{{ url_for('auth.login') }}">Kembali ke halaman masuk</a></p>
+  <p class="authx-links">
+    <a href="{{ url_for('auth.login') }}">{{ MSG.AUTH_BACK_LOGIN }}</a>
+  </p>
 </form>
 
 <div class="auth-note auth-note-warning" role="note">
@@ -157,8 +110,4 @@
     </form>
   </details>
 </div>
-{% endblock %}
-
-{% block scripts %}
-<script src="{{ url_for('static', filename='js/auth_forms.js') }}"></script>
 {% endblock %}

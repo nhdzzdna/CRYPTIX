@@ -111,7 +111,6 @@ class TestKunciPemulihan:
         assert resp.status_code == 200
         assert resp.headers["Cache-Control"].startswith("no-store")
         assert 'id="recovery-key"' in body
-        assert "Kunci ini membuka akun bila password atau dongle hilang" in body
         assert 'id="btn-copy-recovery"' in body
         assert 'id="btn-download-recovery"' in body
         assert 'id="confirm_saved"' in body

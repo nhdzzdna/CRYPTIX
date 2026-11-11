@@ -1,6 +1,6 @@
-"""
+﻿"""
 modules/strings.py
-───────────────────
+â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 Centralised user-facing string constants for CRYPTIX.
 All messages are written in formal Indonesian (Bahasa Indonesia formal).
 
@@ -15,13 +15,13 @@ from __future__ import annotations
 
 
 class MSG:
-    """Static string constants — do NOT add f-strings here."""
+    """Static string constants â€” do NOT add f-strings here."""
 
-    # ── Authentication ────────────────────────────────────────────────────────
+    # â”€â”€ Authentication â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     LOGIN_REQUIRED          = "Silakan masuk terlebih dahulu untuk mengakses halaman ini."
     REGISTER_FIELDS_REQUIRED = "Semua kolom harus diisi."
     REGISTER_PASSWORD_MISMATCH = "Kata sandi tidak cocok."
-    REGISTER_USERNAME_INVALID = "Nama pengguna harus 3–32 karakter dan hanya boleh memuat huruf, angka, garis bawah, atau titik."
+    REGISTER_USERNAME_INVALID = "Nama pengguna harus 3â€“32 karakter dan hanya boleh memuat huruf, angka, garis bawah, atau titik."
     REGISTER_EMAIL_INVALID  = "Format surel tidak valid."
     REGISTER_PASSWORD_TOO_SHORT = "Kata sandi minimal 12 karakter."
     REGISTER_PASSWORD_USERNAME = "Kata sandi tidak boleh memuat nama pengguna."
@@ -32,7 +32,101 @@ class MSG:
     RECOVERY_CHECK_REQUIRED = "Centang konfirmasi bahwa kunci pemulihan sudah disimpan untuk melanjutkan."
     RECOVERY_ONLY_ONCE      = "Kunci pemulihan hanya ditampilkan satu kali dan tidak dapat dilihat kembali."
     SETUP_BIOMETRIC_REQUIRED = "Daftarkan setidaknya satu biometrik (wajah atau sidik jari) untuk menyelesaikan penyiapan."
-    SETUP_COMPLETE          = "Penyiapan keamanan selesai. Anda dapat mulai menggunakan CRYPTIX."
+    SETUP_COMPLETE          = "Penyiapan keamanan selesai. Anda dapat mulai menggunakan KOSYAK."
+
+    # ── Antarmuka autentikasi dan Dashboard ───────────────────────────────
+    AUTH_BRAND_NAME          = "KOSYAK"
+    AUTH_USERNAME_LABEL      = "Username"
+    AUTH_PASSWORD_LABEL      = "Kata sandi"
+    AUTH_CONFIRM_LABEL       = "Konfirmasi kata sandi"
+    AUTH_EMAIL_LABEL         = "Email"
+    AUTH_DONGLE_LABEL        = "Dongle USB"
+    AUTH_LOGIN_TITLE         = "Masuk ke akun Anda"
+    AUTH_LOGIN_SUBMIT        = "Masuk"
+    AUTH_NO_ACCOUNT          = "Belum punya akun?"
+    AUTH_REGISTER_LINK       = "Daftar"
+    AUTH_RECOVERY_QUESTION   = "Dongle hilang atau lupa kata sandi?"
+    AUTH_RECOVERY_LINK       = "Pulihkan akun"
+    AUTH_DONGLE_CHECKING     = "Memeriksa dongle..."
+    AUTH_DONGLE_OK           = "Dongle terdeteksi"
+    AUTH_DONGLE_OFF          = "Dongle tidak terdeteksi"
+    AUTH_DONGLE_OFF_HINT     = "Colokkan dongle lalu muat ulang halaman."
+    AUTH_LOGIN_ERROR_DEFAULT = "Login gagal."
+    AUTH_REQUEST_FAILED      = "Permintaan gagal dikirim. Coba lagi."
+    AUTH_BIOMETRIC_TITLE     = "Verifikasi biometrik"
+    AUTH_BIOMETRIC_RESTART   = "Mulai dari awal"
+    AUTH_METHOD_FACE         = "Wajah"
+    AUTH_METHOD_WEBAUTHN     = "Sidik jari / WebAuthn"
+    AUTH_REGISTER_TITLE      = "Buat akun baru"
+    AUTH_REGISTER_SUBMIT     = "Daftar"
+    AUTH_HAVE_ACCOUNT        = "Sudah punya akun?"
+    AUTH_LOGIN_LINK          = "Masuk"
+    AUTH_PASSWORD_HINT       = (
+        "Minimal 12 karakter, memuat 3 dari 4 jenis karakter "
+        "(huruf kecil, huruf besar, angka, simbol), tanpa nama pengguna."
+    )
+    AUTH_DONGLE_RELOAD       = "Muat ulang daftar dongle"
+    AUTH_DONGLE_NONE         = "Tidak ada dongle terdeteksi"
+    AUTH_DONGLE_REGISTER_HINT = (
+        "Token keamanan ditulis ke dongle terpilih dan menjadi kunci fisik "
+        "untuk membuka brankas. Pendaftaran ditolak bila tidak ada dongle "
+        "yang terpasang."
+    )
+    AUTH_RECOVERY_TITLE      = "Pemulihan akun"
+    AUTH_RECOVERY_INTRO      = (
+        "Gunakan kunci pemulihan bila dongle hilang atau rusak, atau bila lupa "
+        "kata sandi. Kunci pemulihan tidak dapat dipulihkan jika hilang."
+    )
+    AUTH_RECOVERY_KEY_LABEL  = "Kunci pemulihan"
+    AUTH_NEW_PASSWORD_LABEL  = "Kata sandi baru"
+    AUTH_CONFIRM_NEW_LABEL   = "Konfirmasi kata sandi baru"
+    AUTH_NEW_DONGLE_LABEL    = "Dongle baru"
+    AUTH_RECOVERY_SUBMIT     = "Pulihkan akun"
+    AUTH_BACK_LOGIN          = "Kembali ke halaman masuk"
+    AUTH_RECOVERY_KEY_HINT   = (
+        "Salin kunci persis seperti saat ditampilkan, termasuk tanda hubung."
+    )
+    AUTH_RECOVERY_DONGLE_HINT = (
+        "Colokkan dongle baru, lalu muat ulang halaman ini bila daftar belum muncul."
+    )
+    AUTH_SETUP_TITLE         = "Penyiapan Keamanan"
+    AUTH_SETUP_STEP_KEY      = "Kunci pemulihan tersimpan"
+    AUTH_SETUP_STEP_BIOMETRIC = "Pendaftaran biometrik"
+    AUTH_SETUP_STEP_DONE     = "Selesai"
+    AUTH_SETUP_KEY_DONE      = "Kunci pemulihan sudah dikonfirmasi pada langkah sebelumnya."
+    AUTH_SETUP_DONE_HINT     = "Penyiapan selesai setelah satu metode biometrik terdaftar."
+    AUTH_SETUP_FACE_TITLE    = "Pendaftaran wajah"
+    AUTH_SETUP_WEBAUTHN_TITLE = "WebAuthn"
+    AUTH_SETUP_WEBAUTHN_HINT = (
+        "Daftarkan autentikator platform perangkat ini, seperti sidik jari "
+        "terintegrasi atau Windows Hello."
+    )
+    AUTH_ERROR_BACK          = "Kembali ke halaman masuk"
+
+    DASH_TOTAL_FILES         = "Total file"
+    DASH_CREDENTIALS         = "Kredensial"
+    DASH_NOTES               = "Catatan"
+    DASH_STEGO               = "Stego image"
+    DASH_STORAGE_TITLE       = "Storage terpakai"
+    DASH_STORAGE_EMPTY       = "Rincian ukuran per jenis belum tersedia."
+    DASH_DOCUMENTS           = "Dokumen"
+    DASH_MEDIA               = "Media"
+    DASH_AUDIO               = "Audio"
+    DASH_STEGO_LEGEND        = "Stego"
+    DASH_BLOCKCHAIN          = "Blockchain"
+    DASH_ANCHOR              = "Jangkar"
+    DASH_ACTIVITY            = "Aktivitas terbaru"
+    DASH_VIEW_ALL            = "Lihat semua"
+    DASH_ACTIVITY_EMPTY      = "Belum ada aktivitas"
+    DASH_ACTIVITY_EMPTY_TEXT = (
+        "Setiap unggahan dan peristiwa keamanan akan tercatat di sini."
+    )
+    DASH_CHAIN_VALID         = "Rantai Utuh"
+    DASH_CHAIN_BROKEN        = "Rantai Rusak"
+    DASH_CHAIN_UNVERIFIED    = "Belum Diverifikasi"
+    DASH_BLOCKS_UNIT         = "blok"
+    DASH_ANCHOR_NONE         = "Jangkar belum tersedia"
+    DASH_BLOCK_LAST          = "Terbaru"
 
     LOGIN_FAILED            = "{error}"   # error string comes from auth module
     LOGIN_SUCCESS           = "Selamat datang, {username}!"
@@ -40,7 +134,7 @@ class MSG:
     SESSION_EXPIRED         = "Sesi Anda telah berakhir. Silakan masuk kembali."
     CSRF_INVALID            = "Token keamanan tidak valid atau telah kedaluwarsa. Muat ulang halaman lalu coba kembali."
 
-    # ── Authentication module errors ──────────────────────────────────────────
+    # â”€â”€ Authentication module errors â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     AUTH_INVALID_CREDENTIALS = "Nama pengguna atau kata sandi tidak valid."
     AUTH_USB_NOT_REGISTERED  = "Akun ini belum memiliki token USB yang terdaftar."
     AUTH_USB_INVALID         = "Token USB tidak terdeteksi atau tidak valid."
@@ -49,7 +143,7 @@ class MSG:
     AUTH_REGISTER_CONFLICT   = "Nama pengguna atau surel sudah digunakan."
     AUTH_REGISTER_ERROR      = "Pendaftaran gagal karena kesalahan sistem."
 
-    # ── Biometrics ────────────────────────────────────────────────────────────
+    # â”€â”€ Biometrics â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     FACE_NO_FRAMES               = "Tidak ada bingkai yang diterima."
     FACE_MODEL_SAVED             = "Model wajah berhasil disimpan."
     FACE_NOT_ENOUGH_SAMPLES      = "Tidak cukup sampel wajah yang terdeteksi."
@@ -61,26 +155,26 @@ class MSG:
     USB_STARTUP_UNREGISTERED     = "Aplikasi berhenti karena belum ada dongle terdaftar bagi akun yang ada. Colokkan dongle lalu daftarkan ulang akun, atau reset basis data dengan perintah python -m database.reset_db."
 
 
-    # ── Vault (file) ──────────────────────────────────────────────────────────
+    # â”€â”€ Vault (file) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     VAULT_NO_FILE_SELECTED   = "Tidak ada file yang dipilih."
     VAULT_FILE_TYPE_DENIED   = "Jenis file tidak diizinkan."
     VAULT_FILE_TOO_LARGE     = "Ukuran file melebihi batas maksimum."
     VAULT_UPLOAD_SUCCESS     = 'File "{filename}" berhasil dienkripsi dan diunggah.'
-    VAULT_DECRYPT_FAILED     = "Dekripsi gagal — file mungkin rusak atau kunci tidak valid."
+    VAULT_DECRYPT_FAILED     = "Dekripsi gagal â€” file mungkin rusak atau kunci tidak valid."
     VAULT_FILE_DELETED       = "File berhasil dihapus."
 
-    # ── Secure Notes ──────────────────────────────────────────────────────────
+    # â”€â”€ Secure Notes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     NOTES_FIELDS_REQUIRED    = "Judul dan isi catatan harus diisi."
     NOTES_SAVED              = "Catatan berhasil disimpan."
     NOTES_UPDATED            = "Catatan berhasil diperbarui."
     NOTES_DELETED            = "Catatan berhasil dihapus."
 
-    # ── Account Vault (credentials) ───────────────────────────────────────────
+    # â”€â”€ Account Vault (credentials) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     ACCOUNT_FIELDS_REQUIRED  = "Nama situs, nama pengguna, dan kata sandi harus diisi."
     ACCOUNT_ADDED            = "Kredensial berhasil ditambahkan."
     ACCOUNT_DELETED          = "Kredensial berhasil dihapus."
 
-    # ── Steganography ─────────────────────────────────────────────────────────
+    # â”€â”€ Steganography â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     STEGO_NO_CARRIER         = "Silakan unggah gambar pembawa (carrier image)."
     STEGO_EMPTY_MESSAGE      = "Pesan tidak boleh kosong."
     STEGO_INVALID_CARRIER    = "Format gambar pembawa harus PNG/JPG/BMP."
@@ -103,7 +197,7 @@ class MSG:
     STEGO_PNG_WARNING        = "Gambar hasil disimpan sebagai PNG; menyimpan ulang sebagai JPEG akan merusak muatan."
     STEGO_FILE_EXTRACTED     = "Berkas berhasil diekstrak dari gambar."
 
-    # ── Crypto Tools ───────────────────────────────────────────────────────────
+    # â”€â”€ Crypto Tools â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     CRYPTO_PASSPHRASE_REQUIRED = "Isi frasa sandi untuk Super Encryption."
     CRYPTO_VIGENERE_KEY_INVALID = "Kunci Vigenere hanya boleh huruf A-Z"
     CRYPTO_KEY_HINT = (
@@ -113,14 +207,14 @@ class MSG:
     CRYPTO_UNKNOWN_CIPHER      = "Algoritma tidak dikenal."
     CRYPTO_OPERATION_FAILED    = "Operasi kriptografi gagal; periksa kembali input Anda."
 
-    # ── Media Vault ───────────────────────────────────────────────────────────
+    # â”€â”€ Media Vault â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     MEDIA_DECRYPT_FAILED     = "Dekripsi file media gagal."
     MEDIA_WINAMP_OPENED      = "File dibuka di Winamp. Berkas sementara akan dihapus otomatis."
     MEDIA_WINAMP_ERROR       = "Kesalahan Winamp: {error}"
     WINAMP_NOT_FOUND         = "Winamp tidak ditemukan pada lokasi yang dikonfigurasi."
     WINAMP_START_FAILED      = "Winamp tidak dapat dijalankan."
 
-    # ── Settings ──────────────────────────────────────────────────────────────
+    # â”€â”€ Settings â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     SETTINGS_WRONG_PASSWORD  = "Kata sandi lama tidak valid."
     SETTINGS_PASSWORD_MISMATCH = "Kata sandi baru tidak cocok."
     SETTINGS_PASSWORD_CHANGED  = "Kata sandi berhasil diubah. Silakan masuk kembali."
@@ -160,7 +254,7 @@ class MSG:
     # ── Assistant ────────────────────────────────────────────────────────────
     ASSISTANT_EMPTY_MESSAGE  = "Pesan tidak boleh kosong."
 
-    # ── Sesi F: login dua tahap (butir 2.4) ──────────────────────────────────
+    # â”€â”€ Sesi F: login dua tahap (butir 2.4) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     LOGIN_STAGE1_FAILED   = "Login gagal. Periksa kredensial Anda dan pastikan dongle terpasang"
     LOGIN_STAGE_ORDER     = "Permintaan tidak sesuai urutan tahap login. Muat ulang halaman lalu coba kembali."
     LOGIN_PENDING_EXPIRED = "Proses masuk kedaluwarsa. Silakan mulai kembali dari awal."
@@ -175,7 +269,7 @@ class MSG:
     WEBAUTHN_CHALLENGE_EXPIRED = "Tantangan WebAuthn kedaluwarsa. Muat ulang halaman lalu coba lagi."
     WEBAUTHN_NO_CREDENTIAL = "Kredensial WebAuthn tidak ditemukan untuk akun ini."
     WEBAUTHN_FAILED       = "Verifikasi WebAuthn gagal. Coba sekali lagi."
-    # ── Sesi H: autentikasi ulang / step-up ───────────────────────────────────
+    # â”€â”€ Sesi H: autentikasi ulang / step-up â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     REAUTH_REQUIRED           = "Autentikasi ulang diperlukan untuk melanjutkan."
     REAUTH_INVALID            = "Grant autentikasi ulang tidak valid atau sudah kedaluwarsa."
     REAUTH_SESSION_MISMATCH   = "Grant autentikasi ulang ini milik sesi lain."
@@ -186,15 +280,15 @@ class MSG:
     REAUTH_PASSWORD_REQUIRED  = "Kata sandi wajib diisi."
     REAUTH_FAILED             = "Kata sandi tidak valid."
     REAUTH_SCOPE_UNKNOWN      = "Scope autentikasi ulang tidak dikenal."
-    # ── Sesi J1: Media Vault dan Steganography ────────────────────────────────
+    # â”€â”€ Sesi J1: Media Vault dan Steganography â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     MEDIA_STREAM_UNSUPPORTED = "Format ini hanya tersedia untuk unduhan dan tidak diputar di browser."
-    MEDIA_DOWNLOAD_ONLY      = "Hanya unduh — format ini mungkin tidak dapat diputar di browser."
+    MEDIA_DOWNLOAD_ONLY      = "Hanya unduh â€” format ini mungkin tidak dapat diputar di browser."
     MEDIA_TEMP_WARNING       = "Winamp memerlukan berkas plaintext sementara di disk. Berkas dihapus otomatis setelah 60 detik dengan penimpaan nol sebagai upaya terbaik; penghapusan permanen tidak dapat dijamin pada SSD atau media penyimpanan modern."
     MEDIA_RANGE_INVALID      = "Rentang byte tidak valid."
     STEGO_PASSPHRASE_REQUIRED = "Passphrase wajib diisi bila memilih kunci passphrase."
     STEGO_EXTRACT_TEXT_SUCCESS = "Pesan berhasil diekstrak."
     STEGO_EXTRACT_FILE_SUCCESS = "Berkas berhasil diekstrak."
-    # ── Sesi G: autentikasi ulang WebAuthn ────────────────────────────────────
+    # â”€â”€ Sesi G: autentikasi ulang WebAuthn â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     REAUTH_WEBAUTHN_FAILED    = "Verifikasi WebAuthn gagal. Coba sekali lagi."
     REAUTH_WEBAUTHN_NONE      = "Belum ada kredensial WebAuthn terdaftar untuk akun ini."
     FACE_NO_SESSION_KEY       = "Kunci sesi tidak tersedia. Muat ulang halaman lalu coba kembali."
@@ -202,10 +296,10 @@ class MSG:
     ACCOUNT_RECOVERY_FAILED   = "Nama pengguna atau kunci pemulihan tidak valid."
     ACCOUNT_RECOVERY_USB_REQUIRED = "Pilih dongle baru yang terpasang untuk memulihkan akun."
     ACCOUNT_RECOVERY_DONE     = "Pemulihan akun berhasil. Simpan kunci pemulihan baru, lalu masuk kembali."
-    # ── Sesi I: Account Vault, Secure Notes, My Vault ─────────────────────────
+    # â”€â”€ Sesi I: Account Vault, Secure Notes, My Vault â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     ACCOUNT_UPDATED           = "Kredensial berhasil diperbarui."
     VAULT_FILE_CONTENT_INVALID = "Isi file tidak sesuai dengan jenisnya."
-    # ── GL: pembatas laju, galat JSON, dan detektor wajah ─────────────────────
+    # â”€â”€ GL: pembatas laju, galat JSON, dan detektor wajah â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     RATE_LIMITED              = "Anda terlalu sering mengirim permintaan. Silakan tunggu beberapa saat lalu coba kembali."
     ERROR_BAD_REQUEST         = "Permintaan Anda tidak dapat diproses. Periksa kembali input yang dikirim."
     ERROR_UNAUTHORIZED        = "Silakan masuk terlebih dahulu untuk mengakses sumber daya ini."
@@ -216,324 +310,7 @@ class MSG:
     ERROR_INTERNAL            = "Terjadi kesalahan internal. Silakan coba kembali beberapa saat lagi."
     FACE_DETECTOR_UNAVAILABLE = "Detektor wajah tidak tersedia. Periksa pemasangan OpenCV."
 
-    # ── Security Assistant: basis pengetahuan fitur ───────────────────────────
-    ASSISTANT_KB_DAFTAR_AKUN = (
-        "Buka halaman **Daftar**, isi nama pengguna, email, dan kata sandi, lalu "
-        "pilih **Dongle USB** yang terpasang sebelum menekan **Daftar**.\n"
-        "• Kata sandi minimal 12 karakter dan harus memuat minimal 3 dari 4 jenis "
-        "karakter: huruf kecil, huruf besar, angka, dan simbol.\n"
-        "• Kata sandi tidak boleh memuat nama pengguna atau termasuk daftar kata "
-        "sandi umum.\n"
-        "• Setelah pendaftaran, kunci pemulihan ditampilkan satu kali. Simpan "
-        "kunci itu di tempat aman.\n"
-        "• Pendaftaran memerlukan dongle, kecuali mode pengembangan memakai folder "
-        "dongle simulasi."
-    )
-    ASSISTANT_KB_LOGIN_DUA_TAHAP = (
-        "Login berlangsung dalam dua tahap.\n"
-        "• **Tahap 1**: isi nama pengguna dan kata sandi, pastikan dongle "
-        "terpasang, lalu klik **Masuk**.\n"
-        "• **Tahap 2**: selesaikan verifikasi biometrik memakai WebAuthn atau "
-        "wajah melalui tombol **Verifikasi**.\n"
-        "• Kunci sesi sementara di server hanya berlaku sekitar 3 menit. Bila "
-        "kedaluwarsa, mulai lagi dari tahap 1."
-    )
-    ASSISTANT_KB_DONGLE_USB = (
-        "Dongle adalah lapisan autentikasi tambahan berupa flashdisk.\n"
-        "• Saat didaftarkan, CRYPTIX menulis berkas `.cryptix_token` berisi token "
-        "dan rahasia acak ke dongle.\n"
-        "• Server hanya menyimpan ID token, verifier HMAC-SHA256, dan serial "
-        "volume; rahasia dongle tidak disimpan sebagai plaintext.\n"
-        "• Setiap permintaan sesi memeriksa keberadaan dan kecocokan dongle. Bila "
-        "dongle dicabut, sesi diakhiri.\n"
-        "• Daftar ulang lewat **Settings → 🔐 Perangkat & Sesi → USB Token / "
-        "Dongle → 🔌 Daftar Ulang Dongle**."
-    )
-    ASSISTANT_KB_SETUP_AWAL = (
-        "Setelah akun dibuat, halaman **/setup** meminta Anda mendaftarkan minimal "
-        "satu biometrik sebelum menu lain dapat dibuka.\n"
-        "• Pilih **Daftarkan Wajah (30 frame / 3 detik)** atau **Daftarkan "
-        "WebAuthn**.\n"
-        "• Tidak ada tombol lewati; penyiapan ini wajib agar login dua tahap dapat "
-        "diselesaikan.\n"
-        "• Pendaftaran wajah memerlukan kamera dan detektor wajah OpenCV yang "
-        "tersedia."
-    )
-    ASSISTANT_KB_WAJAH = (
-        "Buka **Settings → 🧬 Autentikasi Biometrik → 📷 Daftar Ulang Wajah** atau "
-        "halaman setup.\n"
-        "• Pendaftaran memerlukan minimal 30 frame dan sekitar 3 detik.\n"
-        "• Sistem menyimpan 25–60 sampel ROI dan menolak bila kurang dari 5 sampel "
-        "yang berbeda.\n"
-        "• Yang disimpan hanya templat ROI terenkripsi AES-256-GCM dengan format "
-        "`FG1 + nonce + ciphertext`, bukan foto wajah.\n"
-        "• Pendaftaran gagal bila detektor wajah OpenCV tidak tersedia."
-    )
-    ASSISTANT_KB_VERIFIKASI_WAJAH = (
-        "Saat login tahap 2, pilih verifikasi wajah dan hadapkan wajah ke kamera.\n"
-        "• Sistem memerlukan minimal 5 frame, menolak rangkaian frame yang identik, "
-        "dan menerima bila minimal 3 frame lolos.\n"
-        "• Median keyakinan harus berada pada ambang yang ditetapkan; nilai default "
-        "adalah 70.\n"
-        "• Tidak ada deteksi liveness atau anti-spoof. Pastikan hanya Anda yang "
-        "berada di depan kamera."
-    )
-    ASSISTANT_KB_WEBAUTHN = (
-        "WebAuthn memakai authenticator platform seperti Windows Hello, sidik jari "
-        "perangkat, atau kunci keamanan, dengan user verification wajib.\n"
-        "• Daftarkan lewat **Settings → 🧬 Autentikasi Biometrik → WebAuthn → 🔐 "
-        "Tambah WebAuthn** atau halaman setup.\n"
-        "• Tantangan berlaku 300 detik dan hanya dapat dipakai sekali.\n"
-        "• Kredensial disimpan di database dan dapat dihapus dari halaman yang "
-        "sama."
-    )
-    ASSISTANT_KB_BIOMETRIK = (
-        "CRYPTIX mendukung dua metode biometrik: **WebAuthn** dan **wajah**.\n"
-        "• WebAuthn memakai authenticator platform atau kunci keamanan.\n"
-        "• Wajah diverifikasi melalui kamera dengan templat ROI terenkripsi.\n"
-        "• Kebijakan default `all_enrolled`: semua metode yang terdaftar harus "
-        "lolos saat login tahap 2.\n"
-        "• Anda tidak dapat menghapus satu-satunya metode biometrik; daftarkan "
-        "metode lain terlebih dahulu."
-    )
-    ASSISTANT_KB_KUNCI_PEMULIHAN = (
-        "Kunci pemulihan dibuat saat pendaftaran dan ditampilkan satu kali.\n"
-        "• Kunci ini membungkus DEK secara terpisah dari kata sandi dan dongle, "
-        "sehingga akses dapat dipulihkan bila kata sandi atau dongle hilang.\n"
-        "• Simpan kunci di tempat aman dan jangan membagikannya.\n"
-        "• Tidak ada escrow di server. Bila kunci pemulihan hilang, data "
-        "terenkripsi tidak dapat dipulihkan."
-    )
-    ASSISTANT_KB_PEMULIHAN_AKUN = (
-        "Buka halaman **/account-recovery**, lalu isi nama pengguna, kunci "
-        "pemulihan, kata sandi baru, dan pilih dongle baru yang terpasang. Klik "
-        "**Pulihkan Akun**.\n"
-        "• CRYPTIX membuka DEK lama dengan kunci pemulihan, membungkus ulang DEK "
-        "dengan kata sandi dan dongle baru, lalu menampilkan kunci pemulihan baru.\n"
-        "• DEK tidak berubah, sehingga berkas dan templat wajah lama tetap valid.\n"
-        "• Tanpa kunci pemulihan, pemulihan tidak mungkin dilakukan."
-    )
-    ASSISTANT_KB_GANTI_PASSWORD = (
-        "Buka **Settings → Ganti Password**, isi kata sandi lama, kata sandi baru, "
-        "dan konfirmasi, lalu klik **Ganti Password**.\n"
-        "• Kata sandi baru harus memenuhi kebijakan: minimal 12 karakter, minimal "
-        "3 dari 4 jenis karakter, bukan kata sandi umum, dan tidak memuat nama "
-        "pengguna.\n"
-        "• CRYPTIX membungkus ulang DEK dengan kata sandi baru, mereset hitungan "
-        "gagal login, lalu mengakhiri sesi.\n"
-        "• Dongle harus terpasang selama proses ini."
-    )
-    ASSISTANT_KB_REVEAL_AKUN = (
-        "Di **Account Vault**, klik **👁 Tampilkan** pada kredensial yang ingin "
-        "dilihat.\n"
-        "• CRYPTIX meminta autentikasi ulang lewat modal **Verifikasi** atau "
-        "**Biometrik**.\n"
-        "• Setelah berhasil, grant sekali pakai berlaku 120 detik untuk scope "
-        "`account.reveal`.\n"
-        "• Username dan kata sandi hanya didekripsi untuk tampilan sementara; "
-        "setiap reveal baru memerlukan grant baru.\n"
-        "• Edit memakai scope `account.reveal`, hapus memakai `item.delete`, dan "
-        "aksi ini dibatasi 20 permintaan per menit."
-    )
-    ASSISTANT_KB_ACCOUNT_VAULT = (
-        "**Account Vault** menyimpan kredensial situs: nama situs, username, kata "
-        "sandi, URL, dan catatan.\n"
-        "• Setiap field dienkripsi terpisah dengan AES-256-GCM dalam format "
-        "`v1:<nonce>:<ciphertext>`.\n"
-        "• AAD mengikat `user_id`, nama tabel, dan nama kolom.\n"
-        "• Tambah lewat **Tambah Kredensial → 🔒 Simpan Terenkripsi**.\n"
-        "• Username ditampilkan tersamar sampai grant reveal dipakai."
-    )
-    ASSISTANT_KB_CATATAN_AMAN = (
-        "**Secure Notes** menyimpan judul dan isi catatan rahasia.\n"
-        "• Isi catatan di-Super-Encrypt lebih dahulu, lalu seluruh field dienkripsi "
-        "AES-256-GCM sebelum masuk database.\n"
-        "• Tambah lewat **Tambah Catatan → 🔒 Simpan Terenkripsi**.\n"
-        "• Untuk membaca, klik **📖 Buka**.\n"
-        "• Buka, edit, dan hapus memerlukan grant autentikasi ulang serta dibatasi "
-        "20 permintaan per menit."
-    )
-    ASSISTANT_KB_UNGGAH_BERKAS = (
-        "Buka **My Vault**, pilih berkas lewat **Upload File Baru**, lalu klik "
-        "**🔒 Enkripsi & Upload**.\n"
-        "• Berkas dienkripsi AES-256-GCM per potongan 1 MiB dengan header "
-        "`CRYPTIX1`, salt acak, dan AAD yang mengikat pengguna serta metadata.\n"
-        "• Unduh lewat **⬇ Unduh**; aksi ini memerlukan grant `file.download` dan "
-        "SHA-256 plaintext diperiksa setelah dekripsi.\n"
-        "• Batas unggah 64 MB dan hanya ekstensi yang diizinkan.\n"
-        "• Halaman **Documents** hanya menampilkan berkas bertipe dokumen dari "
-        "My Vault; unggah dan hapus tetap dilakukan di My Vault."
-    )
-    ASSISTANT_KB_MEDIA_VAULT = (
-        "**Media Vault** menyimpan audio dan video terenkripsi.\n"
-        "• Unggah lewat **Upload Media → 🔒 Enkripsi & Upload**, lalu putar dengan "
-        "**▶ Putar**.\n"
-        "• Streaming memakai HTTP Range sehingga plaintext tidak ditulis ke disk.\n"
-        "• Format yang dapat diputar: mp4, webm, mp3, wav, ogg, m4a, dan flac. AVI, "
-        "MKV, dan MOV hanya dapat diunduh.\n"
-        "• Tombol **🎵 Winamp** mendekripsi ke berkas sementara, membukanya di "
-        "Winamp, lalu menghapusnya setelah 60 detik dengan upaya penimpaan nol. "
-        "Fitur ini memerlukan `WINAMP_PATH` yang valid."
-    )
-    ASSISTANT_KB_STEGANOGRAFI = (
-        "Buka **Steganography**, pilih gambar carrier PNG/JPG/BMP dengan ukuran "
-        "maksimal 4000×4000, tentukan muatan **Teks** atau **Berkas**, isi "
-        "passphrase bila perlu, lalu klik **🖼 Sisipkan**.\n"
-        "• Muatan teks di-Super-Encrypt secara default; muatan berkas selalu "
-        "dienkripsi AES-256-GCM.\n"
-        "• Kapasitas sekitar `(lebar × tinggi × 3 − 112) / 8` byte.\n"
-        "• Hasil selalu PNG; menyimpan ulang sebagai JPEG akan merusak muatan.\n"
-        "• Ekstrak lewat **Ekstrak dari Gambar Unggahan → 🔍 Ekstrak**."
-    )
-    ASSISTANT_KB_VERIFIKASI_INTEGRITAS = (
-        "Buka **Security Center** lalu klik **🔍 Verifikasi Integritas**.\n"
-        "• CRYPTIX menghitung ulang hash setiap blok, proof-of-work ringan, dan "
-        "tanda tangan HMAC-SHA256.\n"
-        "• Head hash dibandingkan dengan jangkar di `instance/chain_head.json` dan "
-        "berkas dongle bila tersedia.\n"
-        "• Status aset Anda: **OK**, **DIUBAH**, **HILANG**, atau **TANPA "
-        "CATATAN**.\n"
-        "• Ini rantai lokal single-node, sehingga bersifat tamper-evident, bukan "
-        "tamper-proof."
-    )
-    ASSISTANT_KB_SECURITY_CENTER = (
-        "**Security Center** menampilkan statistik rantai, blok aktivitas milik "
-        "Anda, dan status aset.\n"
-        "• Tombol **🔍 Verifikasi Integritas** memeriksa seluruh rantai dan aset "
-        "Anda.\n"
-        "• Status aset yang ditampilkan: OK, DIUBAH, HILANG, atau TANPA CATATAN.\n"
-        "• Ringkasan verifikasi terakhir disimpan di memori proses dan hilang saat "
-        "server restart.\n"
-        "• Gunakan halaman ini untuk menindaklanjuti blok yang ditandai rusak."
-    )
-    ASSISTANT_KB_BATAS_SESI = (
-        "Batas diam sesi default 10 menit dan batas absolut 60 menit.\n"
-        "• Ubah batas diam lewat **Settings → 🔐 Perangkat & Sesi → Batas Diam "
-        "Sesi → Simpan Batas Sesi**.\n"
-        "• Cookie hanya memuat ID sesi acak; kunci enkripsi sesi disimpan di memori "
-        "server.\n"
-        "• Saat batas tercapai, sesi berakhir dan Anda harus login ulang.\n"
-        "• Karena penyimpanan di memori, restart server juga mengakhiri semua sesi."
-    )
-    ASSISTANT_KB_AKUN_TERKUNCI = (
-        "Akun terkunci sementara setelah percobaan login gagal berulang.\n"
-        "• 5 kali gagal → 60 detik; 10 kali → 5 menit; 15 kali → 15 menit; 20 kali "
-        "atau lebih → 30 menit.\n"
-        "• Hitungan mencakup kata sandi salah, dongle tidak cocok atau tidak "
-        "terpasang, dan kegagalan membuka kunci.\n"
-        "• Login yang berhasil mereset hitungan.\n"
-        "• Tidak ada pembukaan manual; tunggu hingga masa kunci berakhir lalu coba "
-        "lagi."
-    )
-    ASSISTANT_KB_SUPER_ENCRYPTION = (
-        "**Super Encryption** menggabungkan empat lapisan secara berurutan: "
-        "Vigenère → Playfair → ChaCha20 → Blowfish-CBC.\n"
-        "• Setiap pesan memakai salt acak 16 byte dan kunci turunan HKDF.\n"
-        "• Hasil diakhiri HMAC-SHA256 (encrypt-then-MAC) dengan format "
-        "`CXSE2.<salt>.<token>.<mac>`.\n"
-        "• Gunakan di **Crypto Tools** dengan memilih **Super Encryption (Semua "
-        "Layer)** dan mengisi passphrase.\n"
-        "• Ini komposisi edukatif, bukan skema AEAD standar."
-    )
-    ASSISTANT_KB_AES_GCM = (
-        "CRYPTIX memakai **AES-256-GCM** untuk berkas, kredensial, catatan, "
-        "templat wajah, dan muatan steganografi.\n"
-        "• Berkas memakai format `CRYPTIX1` dengan salt acak 16 byte, nonce per "
-        "potongan, dan AAD yang mengikat pengguna serta metadata.\n"
-        "• Kunci diturunkan dari DEK sesi melalui HKDF dengan label berbeda per "
-        "tujuan.\n"
-        "• GCM memberi kerahasiaan sekaligus deteksi perubahan melalui tag "
-        "autentikasi."
-    )
-    ASSISTANT_KB_ENKRIPSI_DATABASE = (
-        "Berkas SQLite tidak dienkripsi seluruhnya; yang dienkripsi adalah field "
-        "sensitif.\n"
-        "• Kredensial dan catatan disimpan sebagai `v1:<nonce>:<ciphertext>` "
-        "dengan AES-256-GCM.\n"
-        "• AAD mengikat `user_id`, nama tabel, dan nama kolom.\n"
-        "• Kunci berasal dari DEK sesi melalui HKDF dengan label khusus database, "
-        "terpisah dari kunci berkas.\n"
-        "• Salinan berkas database tetap memuat metadata, tetapi bukan plaintext "
-        "field sensitif."
-    )
-    ASSISTANT_KB_MODE_PENGEMBANGAN = (
-        "Mode pengembangan diaktifkan dengan `CRYPTIX_DEV_MODE=True`.\n"
-        "• CRYPTIX memakai folder simulasi sebagai dongle bila tidak ada "
-        "flashdisk.\n"
-        "• Endpoint verifikasi wajah ikut mengembalikan keyakinan per frame dan "
-        "median.\n"
-        "• Mode ini melemahkan asumsi keamanan perangkat keras, sehingga hanya "
-        "untuk pengembangan, bukan penggunaan sehari-hari."
-    )
-    ASSISTANT_KB_CRYPTO_TOOLS = (
-        "**Crypto Tools** menguji algoritma secara mandiri.\n"
-        "• **Vigenère**: substitusi klasik pada ASCII 32–126.\n"
-        "• **Playfair**: digram 5×5 dengan J digabung ke I.\n"
-        "• **ChaCha20**: stream cipher dengan nonce acak 16 byte.\n"
-        "• **Blowfish-CBC**: block cipher dengan PKCS#7 dan IV acak 8 byte.\n"
-        "• **Super Encryption**: empat lapisan ditambah HMAC-SHA256.\n"
-        "• Pilih algoritma dan operasi Enkripsi/Dekripsi, lalu klik **⚙ Proses**. "
-        "Hasil tidak disimpan."
-    )
-    ASSISTANT_KB_DASHBOARD = (
-        "**Dashboard** merangkum kondisi akun Anda.\n"
-        "• Jumlah berkas, kredensial, catatan, dan gambar stego.\n"
-        "• Kapasitas penyimpanan terpakai.\n"
-        "• Status dongle terpasang dan metode biometrik terdaftar (WebAuthn dan "
-        "wajah).\n"
-        "• Hasil verifikasi rantai terakhir beserta jangkar kepala.\n"
-        "• Lima aktivitas terbaru milik Anda dari log audit."
-    )
-    ASSISTANT_KB_REAUTH = (
-        "Autentikasi ulang atau step-up diminta saat membuka data sensitif atau "
-        "mengubah pengaturan.\n"
-        "• CRYPTIX menampilkan modal **Verifikasi** untuk kata sandi atau "
-        "**Biometrik** untuk WebAuthn/wajah.\n"
-        "• Grant umumnya berlaku sekali pakai selama 120 detik dan terikat pada "
-        "sesi, scope, serta resource. Khusus `media.stream`, grant dapat dipakai "
-        "ulang selama 15 menit.\n"
-        "• Grant dikirim lewat header `X-Reauth-Grant` atau field `reauth_grant`, "
-        "tidak lewat URL.\n"
-        "• Grant disimpan di memori dan hilang saat server restart."
-    )
-    ASSISTANT_KB_CSRF = (
-        "Semua permintaan pengubah data wajib menyertakan token CSRF.\n"
-        "• Halaman menyediakan token pada meta `csrf-token`.\n"
-        "• Form menyertakan token sebagai field tersembunyi, sedangkan JavaScript "
-        "mengirimnya lewat header `X-CSRFToken`.\n"
-        "• Tanpa token yang cocok, server menolak permintaan.\n"
-        "• Jangan membuka CRYPTIX lewat situs lain atau membagikan token Anda."
-    )
-    ASSISTANT_KB_RATE_LIMIT = (
-        "CRYPTIX membatasi laju permintaan untuk mencegah penyalahgunaan.\n"
-        "• Login 15/menit, verifikasi wajah 20/menit, dan autentikasi ulang "
-        "20/menit.\n"
-        "• Pemulihan akun 10/menit.\n"
-        "• Reveal, edit, dan hapus data sensitif 20/menit.\n"
-        "• Batas dihitung per sesi pengguna dengan cadangan alamat IP. Bila terkena "
-        "batas, tunggu sebentar lalu coba lagi."
-    )
-    ASSISTANT_KB_LOGOUT = (
-        "Sesi login memakai cookie yang hanya berisi ID sesi acak; DEK dan kunci "
-        "turunannya disimpan di memori server.\n"
-        "• **Logout** tersedia lewat tombol POST di sidebar.\n"
-        "• CRYPTIX menulis blok LOGOUT, menghapus kunci sesi server, dan "
-        "membersihkan cookie.\n"
-        "• Tidak ada fitur logout semua perangkat.\n"
-        "• Restart server juga mengakhiri semua sesi."
-    )
-    ASSISTANT_KB_ASSISTANT = (
-        "**Security Assistant** berbasis aturan: tanpa model bahasa dan tanpa "
-        "panggilan jaringan.\n"
-        "• Ia dapat menjelaskan status keamanan akun, merekomendasikan enkripsi, "
-        "memeriksa kekuatan kata sandi, merangkum log aktivitas, dan menjawab "
-        "panduan fitur.\n"
-        "• Riwayat disimpan di server, maksimal 40 entri per sesi, dan tidak masuk "
-        "cookie.\n"
-        "• Kolom password terpisah hanya diproses di memori; riwayat mencatat "
-        "`[password diperiksa]`."
-    )
-    # ── N1: kunci pemulihan, pendaftaran wajah, username tersamar ─────────────
+    # â”€â”€ N1: kunci pemulihan, pendaftaran wajah, username tersamar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     RECOVERY_PAGE_TITLE       = "Simpan Kunci Pemulihan"
     RECOVERY_KEY_EXPLAIN      = "Kunci ini membuka akun bila password atau dongle hilang. Tidak dapat ditampilkan lagi."
     RECOVERY_ONCE_HINT        = "Kunci ditampilkan satu kali saja. Simpan di tempat aman sebelum melanjutkan."
@@ -546,7 +323,7 @@ class MSG:
     RECOVERY_COPY_FAILED      = "Gagal menyalin. Pilih teks kunci lalu salin secara manual."
     RECOVERY_DOWNLOAD_OK      = "Berkas kunci pemulihan diunduh."
     RECOVERY_FILENAME         = "cryptix-kunci-pemulihan.txt"
-    RECOVERY_FILE_HEADER      = "CRYPTIX - Kunci Pemulihan"
+    RECOVERY_FILE_HEADER      = "KOSYAK - Kunci Pemulihan"
     RECOVERY_FILE_HINT        = "Simpan berkas ini di tempat aman. Kunci tidak dapat ditampilkan lagi."
     SETUP_FACE_BUTTON         = "Daftarkan Wajah (30 frame / 3 detik)"
     SETUP_FACE_GUIDE          = "Hadapkan wajah ke kamera, lalu gerakkan kepala pelan selama pengambilan gambar."
@@ -579,19 +356,18 @@ class MSG:
     COLLECTION_STATE_INVALID   = "Status berkas tidak dikenal."
     COLLECTION_ALBUM_SECTION   = "Album"
     COLLECTION_UNFILED         = "Tanpa album"
-    COLLECTION_HIDDEN_SECTION  = "Tersembunyi"
+    COLLECTION_ALL_SECTION     = "Semua"
     COLLECTION_AUDIO_SECTION   = "Audio"
     COLLECTION_EMPTY           = "Belum ada album."
     COLLECTION_LOCKED_NOTE     = "Album terkunci. Buka dengan autentikasi ulang."
+    ITEM_LOCKED                = "Item terkunci. Buka dengan autentikasi ulang."
+    ITEM_UNLOCKED              = "Kunci item dilepas."
     FILE_RENAMED               = "Nama berkas diperbarui."
     FILE_NAME_REQUIRED         = "Nama berkas wajib diisi."
     FILE_THUMB_UNAVAILABLE     = "Pratinjau tidak tersedia untuk berkas ini."
     COLLECTION_PICK_ONE        = "Pilih berkas dari satu album untuk mengubah status."
     COLLECTION_ACTION_DENIED   = "Tindakan ditolak oleh server."
     COLLECTION_DELETE_CONFIRM  = "Hapus album ini? Berkas tetap tersimpan di Tanpa album."
-    # --- N2B: pencocokan topik Security Assistant -----------------------------------------
-    ASSISTANT_TOPIC_FALLBACK    = "Saya belum punya jawaban untuk itu."
-    ASSISTANT_TOPIC_SUGGESTIONS = "Mungkin Anda ingin bertanya tentang topik berikut:"
     # --- N3b: halaman Musik dan Dokumen ---------------------------------------------------
     FOLDER_CREATE_PLACEHOLDER = "Nama folder"
     FOLDER_CREATE_BUTTON      = "Buat folder"
@@ -603,7 +379,6 @@ class MSG:
     FOLDER_DELETE_CONFIRM     = "Hapus folder ini? Berkas tetap tersimpan di Tanpa folder."
     FOLDER_MOVE_BUTTON        = "Pindahkan ke folder"
     FOLDER_MOVE_TARGET_NONE   = "Tanpa folder"
-    FOLDER_HIDDEN_BUTTON      = "Tampilkan Tersembunyi"
     FOLDER_EMPTY              = "Belum ada folder."
     FOLDER_UNFILED_EMPTY      = "Tidak ada berkas di luar folder."
     FOLDER_LOCKED_NOTE        = "Folder terkunci. Buka dengan autentikasi ulang."
@@ -643,5 +418,44 @@ class MSG:
     DOCUMENT_DELETE           = "Hapus"
     COLLECTION_MOVE_LABEL     = "Pindahkan"
     COLLECTION_LOCK_ITEMS     = "Kunci"
-    COLLECTION_HIDE_ITEMS     = "Sembunyikan"
+    COLLECTION_UNLOCK_ITEMS   = "Lepas kunci"
+    ITEM_VIEW_ONCE            = "Lihat sekali"
+    ITEM_LOCK_CANCEL          = "Batal"
     MEDIA_MENU                = "Media"
+    # --- UB: pratinjau dokumen ------------------------------------------------
+    DOC_PREVIEW_TITLE         = "Pratinjau"
+    DOC_PREVIEW_BUTTON        = "Pratinjau"
+    DOC_PREVIEW_TEXT_LABEL    = "Isi teks"
+    DOC_PREVIEW_UNSUPPORTED   = "Jenis berkas ini tidak dapat dipratinjau."
+    DOC_PREVIEW_FAILED        = "Pratinjau gagal dimuat."
+    DOC_PREVIEW_CLOSE         = "Tutup"
+    # --- UB: sampah (soft delete), pulihkan, hapus permanen ------------------
+    TRASH_TITLE               = "Sampah"
+    TRASH_PAGE_SUBTITLE       = "Item yang dihapus disimpan di sini sebelum dihapus permanen."
+    TRASH_RETENTION_NOTE      = "Item dipertahankan selama {days} hari, lalu dihapus permanen secara otomatis."
+    TRASH_EMPTY               = "Sampah kosong"
+    TRASH_KIND_FILE           = "Berkas"
+    TRASH_KIND_NOTE           = "Catatan"
+    TRASH_KIND_CRED           = "Kredensial"
+    TRASH_KIND_STEGO          = "Gambar Stego"
+    TRASH_COL_SELECT          = "Pilih"
+    TRASH_COL_NAME            = "Nama"
+    TRASH_COL_KIND            = "Jenis"
+    TRASH_COL_DELETED         = "Tanggal dihapus"
+    TRASH_COL_REMAINING       = "Sisa hari"
+    TRASH_RESTORE_BUTTON      = "Pulihkan"
+    TRASH_PURGE_BUTTON        = "Hapus permanen"
+    TRASH_EMPTY_BUTTON        = "Kosongkan sampah"
+    TRASH_PURGE_CONFIRM       = "Hapus permanen item terpilih? Tindakan ini tidak dapat dibatalkan."
+    TRASH_EMPTY_CONFIRM       = "Kosongkan seluruh sampah? Tindakan ini tidak dapat dibatalkan."
+    TRASH_SELECT_REQUIRED     = "Pilih minimal satu item."
+    TRASH_MOVED_FILE          = "File dipindahkan ke Sampah."
+    TRASH_MOVED_NOTE          = "Catatan dipindahkan ke Sampah."
+    TRASH_MOVED_CRED          = "Kredensial dipindahkan ke Sampah."
+    TRASH_MOVED_STEGO         = "Gambar stego dipindahkan ke Sampah."
+    TRASH_RESTORED            = "{count} item dipulihkan dari Sampah."
+    TRASH_PURGED              = "{count} item dihapus permanen."
+    TRASH_EMPTIED             = "Sampah dikosongkan."
+    TRASH_ITEM_NOT_FOUND      = "Item tidak ditemukan di Sampah."
+    TRASH_ITEMS_INVALID       = "Daftar item tidak valid."
+    TRASH_AUTO_PURGED         = "{count} item kedaluwarsa dihapus permanen dari Sampah."

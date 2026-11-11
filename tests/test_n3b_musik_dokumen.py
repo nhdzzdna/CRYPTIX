@@ -1,10 +1,10 @@
-"""
+﻿"""
 tests/test_n3b_musik_dokumen.py
-───────────────────────────────
+â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 Uji halaman Musik dan Dokumen yang memakai mekanisme koleksi N3a:
 CRUD folder, IDOR antar pengguna, pemisahan audio/dokumen antarahalaman,
-folder terkunci tanpa grant, pemindahan banyak berkas, item tersembunyi,
-serta penanda pencarian dan pengurutan.
+folder terkunci tanpa grant, pemindahan banyak berkas, bagian "Semua"
+yang memuat isi folder terbuka, serta penanda pencarian dan pengurutan.
 """
 
 import io
@@ -93,7 +93,7 @@ def client2(app):
     return _client(app, 2, "lainn3b")
 
 
-def _csrf(client, halaman: str = "/musik") -> str:
+def _csrf(client, halaman: str = "/audio") -> str:
     page = client.get(halaman)
     assert page.status_code == 200
     match = re.search(r'name="csrf_token" value="([^"]+)"',
@@ -193,7 +193,9 @@ class TestFolderCrud:
         assert _pindah(client, cid, [fid]).status_code == 200
         body = client.get("/vault").get_data(as_text=True)
         assert "Arsip" in body
-        assert "laporan.pdf" not in body
+        # Isi folder terbuka kini tampil di bagian "Semua" (UB).
+        assert f'data-file-id="{fid}"' in body
+        assert 'data-name="laporan.pdf"' in body
 
         data = client.get(f"/api/collections/{cid}/items").get_json()
         assert [i["name"] for i in data["items"]] == ["laporan.pdf"]
@@ -203,7 +205,7 @@ class TestIdor:
     def test_pengguna_lain_tidak_dapat_mengubah(self, client, client2):
         cid = _buat_koleksi(client, "Musik Pribadi", "musik")
         fid = _buat_berkas(1, "lagu.mp3", ISI_AUDIO)
-        token2 = _csrf(client2, "/musik")
+        token2 = _csrf(client2, "/audio")
 
         for url, body in (
             (f"/api/collections/{cid}/rename", {"name": "Bajakan"}),
@@ -232,7 +234,7 @@ class TestPemisahanHalaman:
         dokumen = _buat_berkas(1, "surat-n3b.pdf", ISI_DOKUMEN)
         foto = _buat_berkas(1, "foto-n3b.png", _png())
 
-        musik = client.get("/musik").get_data(as_text=True)
+        musik = client.get("/audio").get_data(as_text=True)
         media = client.get("/media-vault").get_data(as_text=True)
         vault = client.get("/vault").get_data(as_text=True)
         documents = client.get("/documents").get_data(as_text=True)
@@ -268,7 +270,7 @@ class TestFolderTerkunci:
                        _grant(client, "album.unlock", cid)).status_code == 200
         reauth.clear()
 
-        body = client.get("/musik").get_data(as_text=True)
+        body = client.get("/audio").get_data(as_text=True)
         assert "Rahasia" in body
         assert "rahasia.mp3" not in body
         assert f"/media-vault/view/{fid}" not in body
@@ -295,7 +297,7 @@ class TestFolderTerkunci:
         assert client.get(f"/api/collections/{cid}/items").status_code == 401
 
 
-class TestPindahDanTersembunyi:
+class TestPindahDanKunci:
     def test_pindah_banyak_berkas(self, client):
         cid = _buat_koleksi(client, "Album Musik", "musik")
         a = _buat_berkas(1, "satu.mp3", ISI_AUDIO)
@@ -313,37 +315,38 @@ class TestPindahDanTersembunyi:
                 "SELECT COUNT(*) AS n FROM collection_items WHERE file_id=?",
                 (a,)).fetchone()["n"] == 0
 
-    def test_hidden_tidak_muncul_di_daftar_biasa(self, client):
+    def test_locked_tetap_tampil_tapi_butuh_grant(self, client):
         cid = _buat_koleksi(client, "Musik", "musik")
-        fid = _buat_berkas(1, "tersembunyi.mp3", ISI_AUDIO)
+        fid = _buat_berkas(1, "terkunci.mp3", ISI_AUDIO)
         _pindah(client, cid, [fid])
-        grant = _grant(client, "album.unlock", cid)
-        assert _ubah_state(client, cid, [fid], "hidden", grant).status_code == 200
+        # Mengunci tidak memerlukan grant.
+        assert _ubah_state(client, cid, [fid], "locked").status_code == 200
 
-        body = client.get("/musik").get_data(as_text=True)
-        assert "tersembunyi.mp3" not in body
+        # Item terkunci tetap tampil di bagian "Semua" dengan penanda.
+        body = client.get("/audio").get_data(as_text=True)
+        assert "terkunci.mp3" in body
+        assert 'data-locked="1"' in body
         data = client.get(f"/api/collections/{cid}/items").get_json()
-        assert data["items"] == []
-        assert data["hidden_count"] == 1
+        assert data["items"][0]["state"] == "locked"
 
-        tersembunyi = client.get(
-            f"/api/collections/{cid}/hidden",
-            headers={"X-Reauth-Grant": _grant(client, "album.unlock", cid)},
-        )
-        assert tersembunyi.status_code == 200
-        assert tersembunyi.get_json()["items"][0]["id"] == fid
+        terkunci = client.get(f"/media-vault/view/{fid}")
+        assert terkunci.status_code == 403
+        assert terkunci.get_json()["reason"] == "terkunci"
+        grant = _grant(client, "item.view", fid)
+        assert client.get(f"/media-vault/view/{fid}",
+                          headers={"X-Reauth-Grant": grant}).status_code == 200
 
 
 class TestUnggahMusik:
     def test_unggah_audio_dari_musik(self, client):
-        token = _csrf(client, "/musik")
+        token = _csrf(client, "/audio")
         resp = client.post("/vault/upload", data={
             "csrf_token": token,
             "kategori": "musik",
             "file": (io.BytesIO(ISI_AUDIO), "unggah-n3b.mp3"),
         }, content_type="multipart/form-data")
         assert resp.status_code == 302
-        assert resp.headers["Location"].endswith("/musik")
+        assert resp.headers["Location"].endswith("/audio")
         with get_db() as db:
             row = db.execute(
                 "SELECT * FROM vault_files WHERE user_id=1 ORDER BY id DESC"
@@ -351,16 +354,16 @@ class TestUnggahMusik:
         assert row["file_type"] == "audio"
 
     def test_unggah_non_audio_dari_musik_ditolak(self, client):
-        before = client.get("/musik").get_data(as_text=True)
+        before = client.get("/audio").get_data(as_text=True)
         assert "bukan-audio.pdf" not in before
-        token = _csrf(client, "/musik")
+        token = _csrf(client, "/audio")
         resp = client.post("/vault/upload", data={
             "csrf_token": token,
             "kategori": "musik",
             "file": (io.BytesIO(ISI_DOKUMEN), "bukan-audio.pdf"),
         }, content_type="multipart/form-data")
         assert resp.status_code == 302
-        assert resp.headers["Location"].endswith("/musik")
+        assert resp.headers["Location"].endswith("/audio")
         with get_db() as db:
             assert db.execute(
                 "SELECT COUNT(*) AS n FROM vault_files WHERE user_id=1"

@@ -1,100 +1,71 @@
 {% extends "auth_base.html" %}
-{% block title %}Masuk — CRYPTIX{% endblock %}
-{% block auth_title %}Masuk ke akun Anda{% endblock %}
-{% block auth_subtitle %}Gunakan username, password, dan dongle Anda untuk membuka brankas.{% endblock %}
+{% from "_ikon.html" import ikon %}
+{% block title %}{{ MSG.AUTH_LOGIN_TITLE }} — KOSYAK{% endblock %}
+{% block auth_title %}{{ MSG.AUTH_LOGIN_TITLE }}{% endblock %}
 
 {% block auth_content %}
-<form method="POST" id="login-form">
+<form method="POST" id="login-form" class="authx-form">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
 
-  <div class="form-group">
-    <label for="username">Username</label>
-    <input type="text" id="username" name="username" class="form-control"
-           placeholder="Masukkan username" required autofocus autocomplete="username" />
+  <div class="kx-field">
+    <label class="kx-label" for="username">{{ MSG.AUTH_USERNAME_LABEL }}</label>
+    <input class="kx-input" type="text" id="username" name="username"
+           required autofocus autocomplete="username" />
   </div>
 
-  <div class="form-group">
-    <label for="password">Password</label>
-    <div class="auth-input-wrap">
-      <input type="password" id="password" name="password" class="form-control"
-             placeholder="Masukkan password" required autocomplete="current-password" />
-      <button type="button" class="auth-pw-toggle" data-toggle-password="password"
-              aria-label="Tampilkan password" aria-pressed="false">
-        <svg class="auth-icon-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" />
-          <circle cx="12" cy="12" r="3" />
-        </svg>
-        <svg class="auth-icon-eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" hidden>
-          <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
-          <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
-          <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" />
-          <path d="m2 2 20 20" />
-        </svg>
-      </button>
+  <div class="kx-field">
+    <label class="kx-label" for="password">{{ MSG.AUTH_PASSWORD_LABEL }}</label>
+    <div class="kx-sandi" data-kx-sandi>
+      <input class="kx-input" type="password" id="password" name="password"
+             required autocomplete="current-password" />
     </div>
+    <div id="login-error" class="authx-error" role="alert"></div>
   </div>
 
-  <div id="dongle-status" class="auth-dongle-badge" role="status">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-      <rect x="8" y="2.5" width="8" height="6" rx="1.5" />
-      <path d="M10 8.5v3M14 8.5v3" />
-      <path d="M7 11.5h10l1.4 5.6A5 5 0 0 1 13.5 22h-3A5 5 0 0 1 5.6 17.1z" />
-      <path d="M10 5h1.5M12.5 5H14" stroke-width="1.4" />
-    </svg>
-    <span id="dongle-status-text">Memeriksa dongle…</span>
+  <div id="dongle-status" class="authx-dongle" role="status" hidden
+       data-msg-ok="{{ MSG.AUTH_DONGLE_OK }}"
+       data-msg-off="{{ MSG.AUTH_DONGLE_OFF }}"
+       data-msg-off-hint="{{ MSG.AUTH_DONGLE_OFF_HINT }}"
+       data-msg-unknown="{{ MSG.AUTH_DONGLE_CHECKING }}">
+    {{ ikon('usb', 16) }}
+    <span id="dongle-status-text">{{ MSG.AUTH_DONGLE_CHECKING }}</span>
   </div>
 
-  <div id="login-error" class="auth-field-error" role="alert"></div>
-
-  <button type="submit" class="btn btn-primary btn-full" id="btn-masuk">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-      <rect x="3" y="11" width="18" height="11" rx="2" />
-      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-    </svg>
-    Masuk
+  <button type="submit" class="kx-btn kx-btn-primary kx-btn-lg kx-btn-block" id="btn-masuk">
+    {{ MSG.AUTH_LOGIN_SUBMIT }}
   </button>
 
-  <div class="auth-alt-links">
-    <p class="auth-link">Belum punya akun? <a href="{{ url_for('auth.register') }}">Daftar</a></p>
-    <p class="auth-link">Dongle hilang atau lupa kata sandi?
-      <a href="{{ url_for('auth.account_recovery') }}">Pulihkan akun</a></p>
+  <div class="authx-links">
+    <p>{{ MSG.AUTH_NO_ACCOUNT }}
+      <a href="{{ url_for('auth.register') }}">{{ MSG.AUTH_REGISTER_LINK }}</a></p>
+    <p>{{ MSG.AUTH_RECOVERY_QUESTION }}
+      <a href="{{ url_for('auth.account_recovery') }}">{{ MSG.AUTH_RECOVERY_LINK }}</a></p>
   </div>
 </form>
 
-<section id="stage2" class="auth-stage" hidden
+<section id="stage2" class="authx-stage" hidden
          data-msg-choose="{{ MSG.LOGIN_BIOMETRIC_CHOOSE }}"
          data-msg-verifying="{{ MSG.LOGIN_BIOMETRIC_VERIFYING }}"
          data-msg-unsupported="{{ MSG.LOGIN_BIOMETRIC_UNSUPPORTED }}"
-         data-msg-none="{{ MSG.LOGIN_BIOMETRIC_NONE }}">
-  <div class="auth-stage-head">
-    <span class="auth-stage-icon" aria-hidden="true">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M12 10a2 2 0 0 0-2 2c0 1.02-.1 2.51-.26 4" />
-        <path d="M14 13.12c0 2.38 0 6.38-1 8.88" />
-        <path d="M17.29 21.02c.12-.6.43-2.3.5-3.02" />
-        <path d="M2 12a10 10 0 0 1 18-6" />
-        <path d="M2 16h.01" />
-        <path d="M21.8 16c.2-2 .131-5.354 0-6" />
-        <path d="M5 19.5C5.5 18 6 15 6 12a6 6 0 0 1 .34-2" />
-        <path d="M8.65 22c.21-.66.45-1.32.57-2" />
-        <path d="M9 6.8a6 6 0 0 1 9 5.2v2" />
-      </svg>
-    </span>
-    <div>
-      <h3 class="auth-stage-title">Verifikasi biometrik</h3>
-      <p class="form-hint" id="stage2-hint">{{ MSG.LOGIN_BIOMETRIC_CHOOSE }}</p>
-    </div>
+         data-msg-none="{{ MSG.LOGIN_BIOMETRIC_NONE }}"
+         data-msg-request-failed="{{ MSG.AUTH_REQUEST_FAILED }}"
+         data-msg-failed="{{ MSG.LOGIN_BIOMETRIC_FAILED }}"
+         data-label-face="{{ MSG.AUTH_METHOD_FACE }}"
+         data-label-webauthn="{{ MSG.AUTH_METHOD_WEBAUTHN }}">
+  <div class="authx-stage-head">
+    <span class="authx-stage-icon" aria-hidden="true">{{ ikon('scan-face', 22) }}</span>
+    <h2 class="authx-stage-title">{{ MSG.AUTH_BIOMETRIC_TITLE }}</h2>
   </div>
-  <div id="metode-list" class="auth-method-list"></div>
-  <p class="form-hint" id="stage2-status" role="status"></p>
-  <div id="stage2-error" class="auth-field-error" role="alert"></div>
-  <p class="auth-link"><a href="{{ url_for('auth.login') }}">Mulai dari awal</a></p>
+  <p class="authx-help" id="stage2-hint">{{ MSG.LOGIN_BIOMETRIC_CHOOSE }}</p>
+  <div id="metode-list" class="authx-method-list"></div>
+  <p class="authx-help" id="stage2-status" role="status"></p>
+  <div id="stage2-error" class="authx-error" role="alert"></div>
+  <p class="authx-links"><a href="{{ url_for('auth.login') }}">{{ MSG.AUTH_BIOMETRIC_RESTART }}</a></p>
 </section>
 {% endblock %}
 
 {% block scripts %}
 <script src="{{ url_for('static', filename='js/webauthn.js') }}"></script>
 <script src="{{ url_for('static', filename='js/face.js') }}"></script>
-<script src="{{ url_for('static', filename='js/auth_forms.js') }}"></script>
 <script src="{{ url_for('static', filename='js/login.js') }}"></script>
 {% endblock %}
