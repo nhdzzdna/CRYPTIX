@@ -140,6 +140,23 @@ class MSG:
     SETTINGS_SESSION_TIMEOUT_SAVED = "Batas diam sesi diperbarui."
     SETTINGS_RECOVERY_FAILED   = "Kunci pemulihan baru tidak dapat dibuat karena sesi atau dongle tidak tersedia."
 
+    # ── UC2 Bagian 3: profil dan akun ─────────────────────────────────────────
+    SETTINGS_EMAIL_TAKEN       = "Surel tersebut sudah digunakan oleh akun lain."
+    SETTINGS_EMAIL_UNCHANGED   = "Surel baru sama dengan surel saat ini."
+    SETTINGS_EMAIL_CHANGED     = "Surel berhasil diperbarui."
+    SETTINGS_USERNAME_READONLY = "Nama pengguna tidak dapat diubah."
+    SETTINGS_CONFIRM_USERNAME_MISMATCH = "Nama pengguna yang diketik tidak cocok."
+    SETTINGS_RESET_DONE        = "Seluruh data akun berhasil dihapus. Akun, kunci, dan biometrik tetap tersimpan."
+    SETTINGS_RESET_FAILED      = "Data akun gagal dihapus. Tidak ada perubahan yang disimpan."
+    SETTINGS_DELETE_DONE       = "Akun dan seluruh datanya berhasil dihapus."
+    SETTINGS_DELETE_FAILED     = "Akun gagal dihapus. Tidak ada perubahan yang disimpan."
+    RECOVERY_RESET_FAILED      = "Nama pengguna, kata sandi, atau dongle tidak valid."
+    RECOVERY_RESET_USB_REQUIRED = "Dongle akun harus terpasang untuk menghapus akun."
+    RECOVERY_RESET_DONE        = "Akun dan seluruh datanya berhasil dihapus."
+    RECOVERY_RESET_LIMITATION  = "Bila kata sandi dan dongle sama-sama hilang, akun tidak dapat dihapus dari halaman ini dan data terenkripsi tidak dapat dipulihkan."
+    RECOVERY_RESET_LINK        = "Hapus akun tanpa masuk"
+    RECOVERY_RESET_TITLE       = "Hapus Akun Tanpa Masuk"
+
     # ── Assistant ────────────────────────────────────────────────────────────
     ASSISTANT_EMPTY_MESSAGE  = "Pesan tidak boleh kosong."
 

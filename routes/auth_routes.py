@@ -20,7 +20,10 @@ from modules.authentication.auth import (
     verifikasi_tahap_satu, get_user_by_id,
     reregister_usb_token,
 )
-from modules.authentication.password_hash import hash_password
+from modules.authentication.password_hash import hash_password, verify_password
+from modules.authentication.account_cleanup import (
+    hapus_berkas_stego, hapus_berkas_terenkripsi, hapus_data_pengguna,
+)
 from modules.authentication import biometrics
 from modules.authentication import face_recognition as face_mod
 from modules.authentication import usb_authentication as usb_mod
@@ -275,6 +278,72 @@ def account_recovery_confirm():
         )
     _KUNCI_PULIH.pop(token, None)
     flash(MSG.ACCOUNT_RECOVERY_DONE, "success")
+    return redirect(url_for("auth.login"))
+
+
+@auth_bp.route("/recovery/reset-account", methods=["POST"])
+@limiter.limit(RECOVERY_LIMIT)
+def recovery_reset_account():
+    """
+    Hapus akun tanpa masuk.
+
+    Memerlukan dongle akun yang terpasang, nama pengguna yang diketik persis,
+    dan kata sandi saat ini. Bila kata sandi dan dongle sama-sama hilang,
+    akun tidak dapat dihapus dari jalur ini.
+    """
+    username = request.form.get("username", "").strip()
+    confirm_username = request.form.get("confirm_username", "").strip()
+    password = request.form.get("password", "")
+
+    def _ulang():
+        return redirect(url_for("auth.account_recovery"))
+
+    from database.db import get_db
+    with get_db() as db:
+        row = db.execute(
+            "SELECT * FROM users WHERE username=?", (username,)
+        ).fetchone()
+
+    if row is None or confirm_username != row["username"]:
+        flash(MSG.RECOVERY_RESET_FAILED, "danger")
+        return _ulang()
+    if not verify_password(password, row["password_hash"], row["salt"]):
+        flash(MSG.RECOVERY_RESET_FAILED, "danger")
+        return _ulang()
+
+    sah, _rahasia = usb_mod.verify_usb_token(
+        row["usb_verifier"], row["usb_volume_serial"], row["usb_token_id"]
+    )
+    if not sah:
+        flash(MSG.RECOVERY_RESET_USB_REQUIRED, "danger")
+        return _ulang()
+
+    try:
+        hasil = hapus_data_pengguna(row["id"], hapus_akun=True)
+    except Exception:
+        flash(MSG.RECOVERY_RESET_FAILED, "danger")
+        return _ulang()
+    if not hasil["success"]:
+        flash(MSG.RECOVERY_RESET_FAILED, "danger")
+        return _ulang()
+
+    hapus_berkas_terenkripsi(hasil["encrypted_files"])
+    hapus_berkas_stego(hasil["stego_files"])
+    try:
+        add_block(row["id"], "ACCOUNT_DELETE", "account:recovery",
+                  content_hash(f"recovery-delete:{row['id']}".encode("utf-8")))
+    except Exception:
+        # Jejak audit bersifat upaya terbaik; akun sudah terhapus.
+        pass
+
+    usb_mod.hapus_token_dongle(hasil["usb_token_id"])
+    usb_mod.lupakan_cache(row["id"])
+
+    if session.get("user_id") == row["id"]:
+        session_keys.drop(session.get("session_id", ""))
+        session.clear()
+
+    flash(MSG.RECOVERY_RESET_DONE, "success")
     return redirect(url_for("auth.login"))
 
 

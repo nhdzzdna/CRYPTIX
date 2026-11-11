@@ -48,6 +48,7 @@ SCOPES = frozenset({
     "item.delete",
     "settings.change",
     "biometric.manage",
+    "account.danger",
 })
 
 MEDIA_STREAM_SCOPE = "media.stream"
