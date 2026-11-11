@@ -168,6 +168,13 @@ class MSG:
     NOTES_SAVED              = "Catatan berhasil disimpan."
     NOTES_UPDATED            = "Catatan berhasil diperbarui."
     NOTES_DELETED            = "Catatan berhasil dihapus."
+    NOTES_OPEN_HINT          = "Isi catatan hanya tampil setelah verifikasi ulang."
+    NOTES_OPEN_LOADING       = "Membuka…"
+    NOTES_OPEN_FAILED        = "Catatan gagal dibuka. Muat ulang halaman lalu coba kembali."
+    NOTES_SEARCH_EMPTY       = "Tidak ada catatan yang cocok dengan pencarian."
+    NOTES_NEW_TITLE          = "Catatan baru"
+    NOTES_DELETE_TITLE       = "Hapus catatan?"
+    NOTES_DELETE_MESSAGE     = "{nama} akan dipindahkan ke Sampah. Anda masih dapat memulihkannya dari sana."
 
     # â”€â”€ Account Vault (credentials) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     ACCOUNT_FIELDS_REQUIRED  = "Nama situs, nama pengguna, dan kata sandi harus diisi."
@@ -206,6 +213,14 @@ class MSG:
     )
     CRYPTO_UNKNOWN_CIPHER      = "Algoritma tidak dikenal."
     CRYPTO_OPERATION_FAILED    = "Operasi kriptografi gagal; periksa kembali input Anda."
+    CRYPTO_PROCESSING          = "Memproses…"
+    CRYPTO_COPY_DONE           = "Hasil tersalin ke clipboard."
+    CRYPTO_COPY_FAILED         = "Gagal menyalin. Salin secara manual."
+    CRYPTO_VIGENERE_KEY_HINT   = "Kunci hanya boleh huruf A-Z."
+    CRYPTO_SUPER_KEY_HINT      = (
+        "Kunci turunan untuk keempat layer diturunkan dengan "
+        "PBKDF2-HMAC-SHA256 bersalt dari kunci rahasia ini."
+    )
 
     # â”€â”€ Media Vault â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     MEDIA_DECRYPT_FAILED     = "Dekripsi file media gagal."
@@ -285,9 +300,23 @@ class MSG:
     MEDIA_DOWNLOAD_ONLY      = "Hanya unduh â€” format ini mungkin tidak dapat diputar di browser."
     MEDIA_TEMP_WARNING       = "Winamp memerlukan berkas plaintext sementara di disk. Berkas dihapus otomatis setelah 60 detik dengan penimpaan nol sebagai upaya terbaik; penghapusan permanen tidak dapat dijamin pada SSD atau media penyimpanan modern."
     MEDIA_RANGE_INVALID      = "Rentang byte tidak valid."
-    STEGO_PASSPHRASE_REQUIRED = "Passphrase wajib diisi bila memilih kunci passphrase."
+    STEGO_PASSPHRASE_REQUIRED = "Kunci rahasia wajib diisi bila dipilih sebagai kunci muatan."
     STEGO_EXTRACT_TEXT_SUCCESS = "Pesan berhasil diekstrak."
     STEGO_EXTRACT_FILE_SUCCESS = "Berkas berhasil diekstrak."
+    # ── U3: antarmuka Steganography ─────────────────────────────────────
+    STEGO_ACCOUNT_KEY_NOTE   = "Memakai kunci akun Anda."
+    STEGO_KEY_NOT_STORED     = "Kunci rahasia tidak disimpan di sesi, cookie, atau log."
+    STEGO_CAPACITY_INITIAL   = "Pilih gambar pembawa untuk melihat kapasitas."
+    STEGO_CAPACITY_FMT       = "Terpakai {terpakai} dari {kapasitas}."
+    STEGO_CAPACITY_LEFT      = "Sisa {sisa}."
+    STEGO_CAPACITY_OVER      = "Melebihi kapasitas {lebih}."
+    STEGO_CAPACITY_ERROR     = "Kapasitas gambar tidak dapat dibaca."
+    STEGO_EXTRACT_PROCESSING = "Memproses ekstraksi…"
+    STEGO_EXTRACT_FAILED_JS  = "Ekstraksi gagal."
+    STEGO_FILE_DOWNLOADED    = "Berkas berhasil diekstrak: {nama}."
+    STEGO_TEXT_RESULT_TITLE  = "Pesan hasil ekstraksi"
+    STEGO_DELETE_TITLE       = "Hapus gambar stego?"
+    STEGO_DELETE_MESSAGE     = "Gambar stego {nama} akan dipindahkan ke Sampah. Anda masih dapat memulihkannya dari sana."
     # â”€â”€ Sesi G: autentikasi ulang WebAuthn â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     REAUTH_WEBAUTHN_FAILED    = "Verifikasi WebAuthn gagal. Coba sekali lagi."
     REAUTH_WEBAUTHN_NONE      = "Belum ada kredensial WebAuthn terdaftar untuk akun ini."
@@ -298,6 +327,14 @@ class MSG:
     ACCOUNT_RECOVERY_DONE     = "Pemulihan akun berhasil. Simpan kunci pemulihan baru, lalu masuk kembali."
     # â”€â”€ Sesi I: Account Vault, Secure Notes, My Vault â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     ACCOUNT_UPDATED           = "Kredensial berhasil diperbarui."
+    ACCOUNT_COPY_DONE         = "Tersalin. Clipboard dikosongkan otomatis setelah 30 detik."
+    ACCOUNT_COPY_FAILED       = "Gagal menyalin. Salin secara manual."
+    ACCOUNT_REVEAL_LOADING    = "Memuat…"
+    ACCOUNT_REVEAL_FAILED     = "Kredensial gagal ditampilkan. Muat ulang halaman lalu coba kembali."
+    ACCOUNT_REVEAL_HIDDEN     = "Tampilan kredensial disembunyikan otomatis."
+    ACCOUNT_REVEAL_COUNTDOWN  = "Disembunyikan otomatis dalam {detik} detik."
+    ACCOUNT_DELETE_TITLE      = "Hapus kredensial?"
+    ACCOUNT_DELETE_MESSAGE    = "{nama} akan dipindahkan ke Sampah. Anda masih dapat memulihkannya dari sana."
     VAULT_FILE_CONTENT_INVALID = "Isi file tidak sesuai dengan jenisnya."
     # â”€â”€ GL: pembatas laju, galat JSON, dan detektor wajah â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     RATE_LIMITED              = "Anda terlalu sering mengirim permintaan. Silakan tunggu beberapa saat lalu coba kembali."

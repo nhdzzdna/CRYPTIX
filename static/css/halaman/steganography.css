@@ -1,0 +1,336 @@
+/* static/css/halaman/steganography.css — halaman Steganography (kx-sg-*) */
+
+/* ── Dua kartu sejajar: Sisipkan dan Ekstrak ──────────────────────────── */
+.kx-sg-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--kx-space-4);
+  align-items: start;
+}
+
+.kx-sg-panel-ikon {
+  display: inline-flex;
+  color: var(--kx-text-3);
+}
+
+.kx-sg-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kx-space-3);
+}
+
+/* ── Dropzone dan pratinjau ──────────────────────────────────────────── */
+.kx-sg-dropzone {
+  min-height: 132px;
+  cursor: pointer;
+}
+.kx-sg-dropzone:focus-visible {
+  outline: none;
+  box-shadow: var(--kx-focus-ring);
+}
+.kx-sg-dropzone-ikon {
+  display: inline-flex;
+  color: var(--kx-text-3);
+}
+
+.kx-sg-pratinjau {
+  margin: 0;
+  border: 1px solid var(--kx-border);
+  border-radius: var(--kx-radius-input);
+  background: var(--kx-bg);
+  overflow: hidden;
+}
+.kx-sg-pratinjau img {
+  display: block;
+  width: 100%;
+  max-height: 180px;
+  object-fit: contain;
+}
+
+/* ── Kunci muatan ────────────────────────────────────────────────────── */
+.kx-sg-kunci-akun {
+  margin: calc(var(--kx-space-3) * -0.55) 0 0;
+  color: var(--kx-text-2);
+  font-size: var(--kx-fs-help);
+}
+.kx-sg-hint {
+  margin: 0;
+  color: var(--kx-text-3);
+  font-size: var(--kx-fs-caption);
+}
+
+/* ── Kapasitas ───────────────────────────────────────────────────────── */
+.kx-sg-kapasitas p {
+  margin: 0;
+}
+.kx-sg-kapasitas.is-warn {
+  border-color: rgba(234, 179, 8, .35);
+  background: var(--kx-warn-soft);
+}
+.kx-sg-kapasitas.is-warn .kx-icon {
+  color: var(--kx-warn);
+}
+
+.kx-sg-enkripsi {
+  margin-top: calc(var(--kx-space-3) * -0.55);
+}
+.kx-sg-sisip-btn {
+  align-self: flex-start;
+}
+.kx-sg-png-warn {
+  margin-top: var(--kx-space-3);
+}
+
+/* ── Hasil ekstraksi ─────────────────────────────────────────────────── */
+.kx-sg-hasil {
+  margin-top: var(--kx-space-3);
+}
+.kx-sg-hasil-isi {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kx-space-2);
+}
+.kx-sg-hasil-kepala {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--kx-space-2);
+}
+.kx-sg-hasil-label {
+  color: var(--kx-text-2);
+  font-size: var(--kx-fs-caption);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.kx-sg-hasil-teks {
+  max-height: 260px;
+  overflow-y: auto;
+}
+.kx-sg-hasil-muat {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kx-space-2);
+}
+.kx-sg-baris-muat {
+  width: 45%;
+  height: 14px;
+}
+.kx-sg-blok-muat {
+  width: 100%;
+  height: 96px;
+}
+
+/* Galat memakai varian bahaya dari infobox (komponen inti hanya punya
+   info dan warn; varian ini dibatasi pada halaman Steganography). */
+.kx-sg-page .kx-sg-infobox-danger {
+  border-color: rgba(239, 68, 68, .35);
+  background: var(--kx-danger-soft);
+}
+.kx-sg-page .kx-sg-infobox-danger .kx-icon {
+  color: var(--kx-danger);
+}
+.kx-sg-page .kx-sg-infobox-danger p {
+  margin: 0;
+  color: var(--kx-text);
+}
+
+/* ── Detail teknis ───────────────────────────────────────────────────── */
+.kx-sg-teknis {
+  margin-top: var(--kx-space-4);
+}
+.kx-sg-teknis summary {
+  font-size: var(--kx-fs-help);
+}
+.kx-sg-teknis summary .kx-icon {
+  flex: 0 0 auto;
+  color: var(--kx-text-2);
+  transition: transform var(--kx-transition);
+}
+.kx-sg-teknis[open] summary .kx-icon {
+  transform: rotate(180deg);
+}
+.kx-sg-teknis-list {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.kx-sg-teknis-list code {
+  font-family: var(--kx-font-mono);
+  color: var(--kx-text);
+}
+
+/* ── Tabel stego image tersimpan ─────────────────────────────────────── */
+.kx-sg-tersimpan {
+  margin-top: var(--kx-space-4);
+}
+.kx-sg-nama {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.kx-sg-nama-ikon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  color: var(--kx-text-3);
+}
+.kx-sg-nama-teks {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 320px;
+  color: var(--kx-text);
+  font-weight: 600;
+}
+.kx-sg-tanggal {
+  font-family: var(--kx-font-mono);
+  font-size: var(--kx-fs-help);
+  color: var(--kx-text-2);
+}
+
+/* ── Menu aksi per baris ─────────────────────────────────────────────── */
+.kx-sg-menu-wrap {
+  position: relative;
+}
+.kx-sg-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  min-width: 160px;
+  padding: 6px;
+  border: 1px solid var(--kx-border);
+  border-radius: var(--kx-radius-input);
+  background: var(--kx-surface);
+  box-shadow: var(--kx-shadow-lg);
+}
+.kx-sg-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: var(--kx-radius-sm);
+  background: transparent;
+  color: var(--kx-text);
+  font: inherit;
+  font-size: var(--kx-fs-help);
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+.kx-sg-menu-item .kx-icon {
+  flex: 0 0 auto;
+  color: var(--kx-text-2);
+}
+.kx-sg-menu-item:hover {
+  background: var(--kx-surface-2);
+}
+.kx-sg-menu-item:focus-visible {
+  outline: none;
+  box-shadow: var(--kx-focus-ring);
+}
+.kx-sg-menu-item-danger {
+  color: var(--kx-danger);
+}
+.kx-sg-menu-item-danger .kx-icon {
+  color: var(--kx-danger);
+}
+.kx-sg-menu-item-danger:hover {
+  background: var(--kx-danger-soft);
+}
+
+/* ── Modal ekstrak ───────────────────────────────────────────────────── */
+.kx-sg-modal-nama {
+  margin: 0 0 var(--kx-space-3);
+  color: var(--kx-text-2);
+  font-size: var(--kx-fs-help);
+  word-break: break-word;
+}
+
+/* Formulir hapus tersembunyi (aksinya diatur per baris oleh JS). */
+.kx-sg-form-diam {
+  display: none;
+}
+
+/* Teks khusus pembaca layar. */
+.kx-sg-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ── Responsif ───────────────────────────────────────────────────────── */
+@media (max-width: 1199px) {
+  .kx-sg-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 767px) {
+  .kx-sg-nama-teks {
+    max-width: 200px;
+  }
+  .kx-sg-sisip-btn {
+    align-self: stretch;
+    justify-content: center;
+  }
+  /* Tabel menjadi daftar kartu. */
+  .kx-sg-tabel table,
+  .kx-sg-tabel tbody,
+  .kx-sg-tabel tr,
+  .kx-sg-tabel td {
+    display: block;
+    width: 100%;
+  }
+  .kx-sg-tabel thead {
+    display: none;
+  }
+  .kx-sg-tabel tr {
+    padding: 10px 0;
+    border-bottom: 1px solid var(--kx-border);
+  }
+  .kx-sg-tabel tr:last-child {
+    border-bottom: 0;
+  }
+  .kx-sg-tabel td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--kx-space-2);
+    padding: 6px 16px;
+    border: 0;
+    text-align: right;
+  }
+  .kx-sg-tabel td::before {
+    content: attr(data-label);
+    color: var(--kx-text-2);
+    font-size: var(--kx-fs-caption);
+    text-align: left;
+  }
+  .kx-sg-tabel td[data-label] {
+    text-align: right;
+  }
+  .kx-sg-tabel .kx-cell-actions {
+    width: auto;
+    white-space: normal;
+  }
+  .kx-sg-nama-teks {
+    max-width: none;
+    white-space: normal;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kx-sg-page .kx-skeleton {
+    animation: none;
+  }
+}

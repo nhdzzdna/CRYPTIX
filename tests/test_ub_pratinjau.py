@@ -1,6 +1,13 @@
 """
 tests/test_ub_pratinjau.py
 ──────────────────────────
+Uji pratinjau dokumen (UB): deteksi jenis lewat magic bytes, PDF inline
+dengan header pembatas frame khusus, gambar inline, teks sebagai JSON
+(termasuk penanda terpotong), 415 untuk jenis lain, grant ``doc.preview``
+berulang, penolakan item terkunci dan album terkunci, serta interaksi
+dengan Sampah dan pengguna lain.
+"""
+
 Uji fitur pratinjau dokumen (UB):
 - Deteksi jenis berkas dari magic bytes (PDF, gambar, teks; bukan ekstensi).
 - Header inline, no-store, serta SAMEORIGIN dan frame-ancestors 'self' khusus PDF.
@@ -31,6 +38,22 @@ from modules.cryptography.file_encryption import (
 )
 from modules.cryptography.key_management import purpose_key
 from modules.strings import MSG
+from routes.media_routes import MAX_TEXT_BYTES, _deteksi_jenis
+
+DEK = bytes(range(32))
+
+ISI_PDF = b"%PDF-1.4\n1 0 obj\n<< /Type /Catalog >>\nendobj\ntrailer\n<< >>\n%%EOF"
+ISI_TEKS = "catatan uji pratinjau — baris kedahulu café naïve".encode("utf-8")
+ISI_BINER = b"\x00\x01\x02\x03\x04biner-tanpa-pratinjau"
+
+GAMBAR = (
+    ("berkas-png", b"\x89PNG\r\n\x1a\n" + b"IDAT-uji", "image/png"),
+    ("berkas-jpg", b"\xff\xd8\xff\xe0JFIF-uji", "image/jpeg"),
+    ("berkas-gif87", b"GIF87a" + b"uji", "image/gif"),
+    ("berkas-gif89", b"GIF89a" + b"uji", "image/gif"),
+    ("berkas-bmp", b"BM" + b"\x36\x00uji", "image/bmp"),
+    ("berkas-webp", b"RIFF\x24\x00\x00\x00WEBPVP8 uji", "image/webp"),
+)
 from routes.media_routes import _deteksi_jenis, MAX_TEXT_BYTES
 
 DEK = bytes(range(32))
@@ -121,6 +144,11 @@ def client2(app):
     return _client(app, 2, "lainubp")
 
 
+def _csrf(client, halaman="/vault") -> str:
+    import re
+    page = client.get(halaman)
+    assert page.status_code == 200
+    match = re.search(r'name="csrf_token" value="([^"]+)"',
 def _csrf(client) -> str:
     import re
     page = client.get("/media-vault")
@@ -137,6 +165,7 @@ def _grant(client, scope: str, resource_id=None) -> str:
     return reauth.issue_grant(sid, scope, resource_id)["token"]
 
 
+def _buat_berkas(user_id: int, nama: str, data: bytes) -> int:
 def _buat_media(user_id: int, nama: str, data: bytes) -> int:
     stored_name = generate_stored_name()
     path = os.path.join(config.ENCRYPTED_FILES_DIR, stored_name)
@@ -155,6 +184,7 @@ def _buat_media(user_id: int, nama: str, data: bytes) -> int:
                (user_id, original_name, stored_name, file_type, file_size,
                 sha256_hash, sha256_ciphertext)
                VALUES (?,?,?,?,?,?,?)""",
+            (user_id, token, stored_name, "document", len(data),
             (user_id, token, stored_name, _tipe_berkas(nama), len(data),
              hasil["sha256_plaintext"], hasil["sha256_ciphertext"]),
         )
@@ -162,6 +192,7 @@ def _buat_media(user_id: int, nama: str, data: bytes) -> int:
         return cursor.lastrowid
 
 
+def _buat_koleksi(client, nama: str, kind: str, locked: bool = False) -> int:
 def _buat_koleksi(client, nama: str, kind: str = "dokumen",
                   locked: bool = False) -> int:
     resp = client.post("/api/collections", json={
@@ -189,6 +220,109 @@ def _ubah_state(client, collection_id, file_ids, state, grant=None):
     }, headers=headers)
 
 
+# ── Deteksi jenis dari magic bytes ──────────────────────────────────────────
+
+
+class TestDeteksiJenis:
+    @pytest.mark.parametrize(
+        "isi,jenis",
+        [
+            (ISI_PDF, "pdf"),
+            *[(isi, "image") for _, isi, _ in GAMBAR],
+            (ISI_TEKS, "text"),
+        ],
+    )
+    def test_jenis_dikenali(self, isi, jenis):
+        assert _deteksi_jenis(isi)[0] == jenis
+
+    @pytest.mark.parametrize(
+        "isi",
+        [ISI_BINER, b"\xff\xfe\xfa"],
+    )
+    def test_jenis_tak_dikenal(self, isi):
+        assert _deteksi_jenis(isi) is None
+
+
+# ── Respons pratinjau per jenis ──────────────────────────────────────────────
+
+
+class TestPratinjau:
+    def test_tanpa_grant_ditolak(self, client):
+        fid = _buat_berkas(1, "laporan.pdf", ISI_PDF)
+        resp = client.get(f"/media-vault/preview/{fid}")
+        assert resp.status_code == 401
+        assert resp.get_json()["reason"] == "missing"
+
+    def test_salah_scope_ditolak(self, client):
+        fid = _buat_berkas(1, "laporan.pdf", ISI_PDF)
+        resp = client.get(
+            f"/media-vault/preview/{fid}",
+            headers={"X-Reauth-Grant": _grant(client, "item.view", fid)},
+        )
+        assert resp.status_code == 403
+        assert resp.get_json()["reason"] == "scope"
+
+    def test_pdf_inline_dengan_header_frame(self, client):
+        fid = _buat_berkas(1, "laporan.pdf", ISI_PDF)
+        resp = client.get(
+            f"/media-vault/preview/{fid}",
+            headers={"X-Reauth-Grant": _grant(client, "doc.preview", fid)},
+        )
+        assert resp.status_code == 200
+        assert resp.mimetype == "application/pdf"
+        assert resp.data == ISI_PDF
+        # Hanya rute ini yang boleh di-frame sendiri (penampil modal).
+        assert resp.headers["X-Frame-Options"] == "SAMEORIGIN"
+        assert resp.headers["Content-Security-Policy"] == "frame-ancestors 'self'"
+        assert resp.headers["Content-Disposition"] == "inline"
+        assert "no-store" in resp.headers["Cache-Control"]
+
+    @pytest.mark.parametrize("nama,isi,mime", GAMBAR)
+    def test_gambar_inline(self, client, nama, isi, mime):
+        fid = _buat_berkas(1, f"{nama}.dat", isi)
+        resp = client.get(
+            f"/media-vault/preview/{fid}",
+            headers={"X-Reauth-Grant": _grant(client, "doc.preview", fid)},
+        )
+        assert resp.status_code == 200
+        assert resp.mimetype == mime
+        assert resp.data == isi
+        assert resp.headers["Content-Disposition"] == "inline"
+
+    def test_teks_sebagai_json(self, client):
+        fid = _buat_berkas(1, "catatan.txt", ISI_TEKS)
+        resp = client.get(
+            f"/media-vault/preview/{fid}",
+            headers={"X-Reauth-Grant": _grant(client, "doc.preview", fid)},
+        )
+        assert resp.status_code == 200
+        assert resp.mimetype == "application/json"
+        data = resp.get_json()
+        assert data["success"] is True
+        assert data["name"] == "catatan.txt"
+        assert data["kind"] == "text"
+        assert data["size"] == len(ISI_TEKS)
+        assert data["truncated"] is False
+        assert data["text"] == ISI_TEKS.decode("utf-8")
+
+    def test_teks_panjang_dipotong(self, client):
+        isi = ("baris-uji " * 120_000).encode("utf-8")  # > 1 MB
+        fid = _buat_berkas(1, "besar.txt", isi)
+        resp = client.get(
+            f"/media-vault/preview/{fid}",
+            headers={"X-Reauth-Grant": _grant(client, "doc.preview", fid)},
+        )
+        assert resp.status_code == 200
+        data = resp.get_json()
+        assert data["size"] == len(isi)
+        assert data["truncated"] is True
+        assert len(data["text"]) == MAX_TEXT_BYTES
+
+    def test_jenis_lain_415(self, client):
+        fid = _buat_berkas(1, "arsip.zip", ISI_BINER)
+        resp = client.get(
+            f"/media-vault/preview/{fid}",
+            headers={"X-Reauth-Grant": _grant(client, "doc.preview", fid)},
 # ── 1. Deteksi Jenis (Magic Bytes) ───────────────────────────────────────────
 
 
@@ -459,6 +593,115 @@ class TestPratinjauKonten:
         assert data["reason"] == "jenis"
         assert data["error"] == MSG.DOC_PREVIEW_UNSUPPORTED
 
+    def test_doc_preview_reusable(self, client):
+        fid = _buat_berkas(1, "laporan.pdf", ISI_PDF)
+        assert client.get(
+            f"/media-vault/preview/{fid}",
+            headers={"X-Reauth-Grant": _grant(client, "doc.preview", fid)},
+        ).status_code == 200
+        # Permintaan kedua tanpa header tetap lolos: grant berulang aktif.
+        assert client.get(f"/media-vault/preview/{fid}").status_code == 200
+
+
+# ── Pratinjau vs item terkunci dan album terkunci ────────────────────────────
+
+
+class TestPratinjauTerkunci:
+    def test_item_terkunci_dibuka_doc_preview(self, client):
+        cid = _buat_koleksi(client, "Arsip", "dokumen")
+        fid = _buat_berkas(1, "rahasia.pdf", ISI_PDF)
+        assert _pindah(client, cid, [fid]).status_code == 200
+        assert _ubah_state(client, cid, [fid], "locked").status_code == 200
+
+        # Tanpa grant: ditolak autentikasi ulang, bukan isi dokumen.
+        resp = client.get(f"/media-vault/preview/{fid}")
+        assert resp.status_code == 401
+        assert resp.get_json()["reason"] == "missing"
+
+        # Grant item.view saja tidak cukup untuk pratinjau.
+        _grant(client, "item.view", fid)
+        assert client.get(f"/media-vault/preview/{fid}").status_code == 401
+
+        # doc.preview berlaku sebagai pengganti item.view untuk dokumen.
+        resp = client.get(
+            f"/media-vault/preview/{fid}",
+            headers={"X-Reauth-Grant": _grant(client, "doc.preview", fid)},
+        )
+        assert resp.status_code == 200
+        assert resp.data == ISI_PDF
+
+    def test_album_terkunci_butuh_album_unlock(self, client):
+        cid = _buat_koleksi(client, "Arsip Rahasia", "dokumen", locked=True)
+        fid = _buat_berkas(1, "rahasia.pdf", ISI_PDF)
+        assert _pindah(client, cid, [fid],
+                      _grant(client, "album.unlock", cid)).status_code == 200
+        reauth.clear()
+
+        # doc.preview untuk berkas lolos decorator, tetapi kunci koleksi
+        # tetap menolak dengan 403 JSON "terkunci".
+        resp = client.get(
+            f"/media-vault/preview/{fid}",
+            headers={"X-Reauth-Grant": _grant(client, "doc.preview", fid)},
+        )
+        assert resp.status_code == 403
+        assert resp.get_json()["reason"] == "terkunci"
+
+        # Grant album.unlock aktif di sesi (tanpa header) membuka pintu masuk
+        # walau header membawa token doc.preview.
+        _grant(client, "album.unlock", cid)
+        resp = client.get(
+            f"/media-vault/preview/{fid}",
+            headers={"X-Reauth-Grant": _grant(client, "doc.preview", fid)},
+        )
+        assert resp.status_code == 200
+        assert resp.data == ISI_PDF
+
+
+# ── Isolasi dan Sampah ───────────────────────────────────────────────────────
+
+
+class TestPratinjauIsolasi:
+    def test_item_pengguna_lain_404(self, client, client2):
+        fid = _buat_berkas(1, "milik-lain.pdf", ISI_PDF)
+        resp = client2.get(
+            f"/media-vault/preview/{fid}",
+            headers={"X-Reauth-Grant": _grant(client2, "doc.preview", fid)},
+        )
+        assert resp.status_code == 404
+
+    def test_item_di_sampah_404(self, client):
+        fid = _buat_berkas(1, "terhapus.pdf", ISI_PDF)
+        resp = client.post(f"/vault/delete/{fid}",
+                           data={"csrf_token": _csrf(client)})
+        assert resp.status_code == 302
+
+        resp = client.get(
+            f"/media-vault/preview/{fid}",
+            headers={"X-Reauth-Grant": _grant(client, "doc.preview", fid)},
+        )
+        assert resp.status_code == 404
+
+    def test_berkas_dirusak_tamper(self, client):
+        fid = _buat_berkas(1, "rusak.pdf", ISI_PDF)
+        with get_db() as db:
+            stored = db.execute(
+                "SELECT stored_name FROM vault_files WHERE id=?", (fid,)
+            ).fetchone()["stored_name"]
+        path = os.path.join(config.ENCRYPTED_FILES_DIR, stored)
+        with open(path, "wb") as f:
+            f.write(b"bukan-ciphertext-sah")
+
+        resp = client.get(
+            f"/media-vault/preview/{fid}",
+            headers={"X-Reauth-Grant": _grant(client, "doc.preview", fid)},
+        )
+        assert resp.status_code == 403
+        with get_db() as db:
+            blok = db.execute(
+                "SELECT action FROM blockchain_log WHERE asset_ref=?",
+                (f"file:{fid}",),
+            ).fetchall()
+        assert any(b["action"] == "TAMPER_DETECTED" for b in blok)
     def test_deteksi_magic_bytes_bukan_ekstensi(self, client):
         # Berkas bernama .docx tetapi berisi data PNG valid
         fid_png = _buat_media(1, "laporan.docx", _sample_png())

@@ -1,133 +1,242 @@
 /**
  * static/js/steganography.js
- * ──────────────────────────
- * Interaksi halaman Steganography: indikator kapasitas, pilihan kunci,
- * serta ekstraksi teks/berkas tanpa memuat ulang halaman.
+ * ────────────────────────────
+ * Halaman Steganography: pratinjau gambar pembawa, indikator kapasitas,
+ * segmented jenis muatan dan kunci, ekstraksi tanpa muat ulang halaman,
+ * menu aksi per baris, serta modal ekstrak dengan kolom kunci rahasia.
+ *
+ * Semua teks pesan dibaca dari atribut data-msg-* pada akar halaman
+ * (modules/strings.py), bukan teks JS. Nilai payload_type, key_mode, dan
+ * use_encryption disimpan pada input tersembunyi agar kontrak POST tidak
+ * berubah; checkbox enkripsi tidak memakai atribut name sehingga tidak
+ * pernah terkirim ganda dengan input tersembunyi.
  */
 (function () {
   'use strict';
 
-  var form = document.getElementById('stego-embed-form');
-  if (!form) {
+  var akar = document.querySelector('.kx-sg-page');
+  if (!akar) {
     return;
   }
 
-  var capacityUrl = form.getAttribute('data-capacity-url');
-  var csrfInput = form.querySelector('input[name="csrf_token"]');
-  var capacityBox = document.getElementById('stego-capacity');
-  var carrierInput = document.getElementById('carrier-image');
-  var messageInput = document.getElementById('stego-message');
-  var fileInput = document.getElementById('payload-file');
-  var typeText = document.getElementById('type-text');
-  var typeFile = document.getElementById('type-file');
-  var messageGroup = document.getElementById('message-group');
-  var fileGroup = document.getElementById('payload-file-group');
-  var useEnc = document.getElementById('use-enc');
-  var keyPassphrase = document.getElementById('key-passphrase');
-  var passphraseGroup = document.getElementById('passphrase-group');
-  var passphraseInput = document.getElementById('embed-passphrase');
-  var submitButton = form.querySelector('button[type="submit"]');
-  var capacity = null;
+  var formSisip = document.getElementById('sg-sisip-form');
+  var formEkstrakUnggah = document.getElementById('sg-ekstrak-form');
+  var formHapus = document.getElementById('sg-hapus-form');
+  var kapasitasTeks = document.getElementById('sg-kapasitas-teks');
+  var kotakKapasitas = document.getElementById('sg-kapasitas');
+  var inputPembawa = document.getElementById('sg-pembawa');
+  var inputPesan = document.getElementById('sg-pesan');
+  var inputBerkas = document.getElementById('sg-berkas');
+  var checkboxEnkripsi = document.getElementById('sg-enkripsi');
+  var inputUseEnc = document.getElementById('sg-use-enc');
+  var inputJenis = document.getElementById('sg-jenis');
+  var inputKunciMode = document.getElementById('sg-kunci-mode');
+  var fieldTeks = document.getElementById('sg-teks-field');
+  var fieldBerkas = document.getElementById('sg-berkas-field');
+  var infoKunciAkun = document.getElementById('sg-kunci-akun-info');
+  var fieldKunciRahasia = document.getElementById('sg-kunci-rahasia-field');
+  var inputPassphraseSisip = document.getElementById('sg-passphrase');
+  var tombolSisip = document.getElementById('sg-sisip-btn');
+  var pratinjau = document.getElementById('sg-pratinjau');
+  var pratinjauImg = document.getElementById('sg-pratinjau-img');
+  var kotakHasil = document.getElementById('stego-result');
+  var kosongHasil = document.getElementById('sg-hasil-kosong');
+  var modalEkstrak = document.getElementById('sg-modal-ekstrak');
+  var modalNama = document.getElementById('sg-modal-nama');
+  var modalPassphrase = document.getElementById('sg-modal-passphrase');
+  var modalTombolEkstrak = document.getElementById('sg-modal-ekstrak-btn');
 
-  function isFilePayload() {
-    return typeFile.checked;
+  var kapasitasUrl = formSisip ? formSisip.getAttribute('data-capacity-url') : '';
+  var kapasitas = null;
+  var urlPratinjau = null;
+  var barisModal = null;
+
+  function pesan(kunci, data) {
+    var teks = akar.getAttribute('data-msg-' + kunci) || '';
+    if (data) {
+      Object.keys(data).forEach(function (nama) {
+        teks = teks.split('{' + nama + '}').join(String(data[nama]));
+      });
+    }
+    return teks;
   }
 
-  function perkiraanByte() {
-    var overhead = useEnc && useEnc.checked ? 192 : 0;
-    if (isFilePayload()) {
-      var berkas = fileInput.files[0];
-      return berkas ? berkas.size + berkas.name.length + 64 + overhead : 0;
+  function toast(teks, jenis) {
+    if (window.KX && typeof KX.toast === 'function') {
+      KX.toast(teks, jenis);
     }
-    var teks = messageInput.value || '';
-    return new TextEncoder().encode(teks).length + overhead;
   }
 
-  function perbaruiKapasitas() {
-    if (!capacityBox) {
-      return;
+  function ukuran(byte) {
+    if (window.KX && KX.dropzone && typeof KX.dropzone.ukuran === 'function') {
+      return KX.dropzone.ukuran(byte);
     }
-    var used = perkiraanByte();
-    if (capacity === null) {
-      capacityBox.className = 'alert alert-info py-2';
-      capacityBox.textContent =
-        'Perkiraan terpakai: ' + used +
-        ' byte (pilih gambar pembawa untuk melihat kapasitas).';
-      if (submitButton) {
-        submitButton.disabled = false;
-      }
-      return;
-    }
+    return String(byte) + ' B';
+  }
 
-    var sisa = capacity - used;
-    capacityBox.className = sisa >= 0
-      ? 'alert alert-info py-2'
-      : 'alert alert-danger py-2';
-    capacityBox.textContent =
-      'Kapasitas: ' + capacity + ' byte · ' +
-      'Perkiraan terpakai: ' + used + ' byte · ' +
-      (sisa >= 0
-        ? 'Sisa: ' + sisa + ' byte.'
-        : 'Melebihi kapasitas sebanyak ' + Math.abs(sisa) + ' byte.');
-    if (submitButton) {
-      submitButton.disabled = sisa < 0;
-    }
+  function tokenCsrf() {
+    var meta = document.querySelector('meta[name="csrf-token"]');
+    return meta ? meta.getAttribute('content') : '';
+  }
+
+  // ── Segmented jenis muatan ───────────────────────────────────────────
+  function jenisBerkas() {
+    return inputJenis && inputJenis.value === 'file';
   }
 
   function aturJenisMuatan() {
-    var fileMode = isFilePayload();
-    messageGroup.style.display = fileMode ? 'none' : '';
-    fileGroup.style.display = fileMode ? '' : 'none';
+    var berkas = jenisBerkas();
+    if (fieldTeks) {
+      fieldTeks.hidden = berkas;
+    }
+    if (fieldBerkas) {
+      fieldBerkas.hidden = !berkas;
+    }
     perbaruiKapasitas();
   }
 
-  function aturPilihanKunci() {
-    var passphraseMode = keyPassphrase.checked;
-    passphraseGroup.style.display = passphraseMode ? '' : 'none';
-    if (!passphraseMode && passphraseInput) {
-      passphraseInput.value = '';
+  document.querySelectorAll('[data-sg-jenis]').forEach(function (tombol) {
+    tombol.addEventListener('click', function () {
+      var nilai = tombol.getAttribute('data-sg-jenis');
+      if (inputJenis) {
+        inputJenis.value = nilai;
+      }
+      document.querySelectorAll('[data-sg-jenis]').forEach(function (el) {
+        var aktif = el === tombol;
+        el.classList.toggle('is-active', aktif);
+        el.setAttribute('aria-pressed', aktif ? 'true' : 'false');
+      });
+      aturJenisMuatan();
+    });
+  });
+
+  // ── Segmented kunci muatan ──────────────────────────────────────────
+  function aturKunci() {
+    var rahasia = inputKunciMode && inputKunciMode.value === 'passphrase';
+    if (infoKunciAkun) {
+      infoKunciAkun.hidden = rahasia;
+    }
+    if (fieldKunciRahasia) {
+      fieldKunciRahasia.hidden = !rahasia;
+    }
+    if (inputPassphraseSisip) {
+      inputPassphraseSisip.required = rahasia;
+      if (!rahasia) {
+        inputPassphraseSisip.value = '';
+      }
     }
   }
 
-  if (typeText) {
-    typeText.addEventListener('change', aturJenisMuatan);
-  }
-  if (typeFile) {
-    typeFile.addEventListener('change', aturJenisMuatan);
-  }
-  if (keyPassphrase) {
-    keyPassphrase.addEventListener('change', aturPilihanKunci);
-  }
-  var keyAccount = document.getElementById('key-account');
-  if (keyAccount) {
-    keyAccount.addEventListener('change', aturPilihanKunci);
-  }
-  if (messageInput) {
-    messageInput.addEventListener('input', perbaruiKapasitas);
-  }
-  if (fileInput) {
-    fileInput.addEventListener('change', perbaruiKapasitas);
-  }
-  if (useEnc) {
-    useEnc.addEventListener('change', perbaruiKapasitas);
+  document.querySelectorAll('[data-sg-kunci]').forEach(function (tombol) {
+    tombol.addEventListener('click', function () {
+      var nilai = tombol.getAttribute('data-sg-kunci');
+      if (inputKunciMode) {
+        inputKunciMode.value = nilai;
+      }
+      document.querySelectorAll('[data-sg-kunci]').forEach(function (el) {
+        var aktif = el === tombol;
+        el.classList.toggle('is-active', aktif);
+        el.setAttribute('aria-pressed', aktif ? 'true' : 'false');
+      });
+      aturKunci();
+    });
+  });
+
+  // ── Checkbox enkripsi muatan ─────────────────────────────────────────
+  function sinkronEnkripsi() {
+    if (inputUseEnc && checkboxEnkripsi) {
+      inputUseEnc.value = checkboxEnkripsi.checked ? '1' : '0';
+    }
+    perbaruiKapasitas();
   }
 
-  if (carrierInput && capacityUrl) {
-    carrierInput.addEventListener('change', function () {
-      var berkas = carrierInput.files[0];
+  if (checkboxEnkripsi) {
+    checkboxEnkripsi.addEventListener('change', sinkronEnkripsi);
+  }
+
+  // ── Kapasitas ───────────────────────────────────────────────────────
+  function perkiraanByte() {
+    var overhead = checkboxEnkripsi && checkboxEnkripsi.checked ? 192 : 0;
+    if (jenisBerkas()) {
+      var berkas = inputBerkas && inputBerkas.files ? inputBerkas.files[0] : null;
+      return berkas ? berkas.size + berkas.name.length + 64 + overhead : 0;
+    }
+    var teks = inputPesan ? inputPesan.value : '';
+    return new TextEncoder().encode(teks).length + overhead;
+  }
+
+  function tandaiKapasitas(lebih) {
+    if (kotakKapasitas) {
+      kotakKapasitas.classList.toggle('is-warn', lebih);
+    }
+    if (tombolSisip) {
+      tombolSisip.disabled = Boolean(lebih);
+    }
+  }
+
+  function perbaruiKapasitas() {
+    if (!kapasitasTeks) {
+      return;
+    }
+    if (kapasitas === null) {
+      kapasitasTeks.textContent = pesan('capacity-initial');
+      tandaiKapasitas(false);
+      return;
+    }
+    var terpakai = perkiraanByte();
+    var sisa = kapasitas - terpakai;
+    if (sisa >= 0) {
+      kapasitasTeks.textContent = pesan('capacity-fmt', {
+        terpakai: ukuran(terpakai),
+        kapasitas: ukuran(kapasitas)
+      }) + ' ' + pesan('capacity-left', { sisa: ukuran(sisa) });
+      tandaiKapasitas(false);
+    } else {
+      kapasitasTeks.textContent = pesan('capacity-fmt', {
+        terpakai: ukuran(terpakai),
+        kapasitas: ukuran(kapasitas)
+      }) + ' ' + pesan('capacity-over', { lebih: ukuran(Math.abs(sisa)) });
+      tandaiKapasitas(true);
+    }
+  }
+
+  if (inputPesan) {
+    inputPesan.addEventListener('input', perbaruiKapasitas);
+  }
+  if (inputBerkas) {
+    inputBerkas.addEventListener('change', perbaruiKapasitas);
+  }
+
+  function perbaruiPratinjau() {
+    var berkas = inputPembawa && inputPembawa.files ? inputPembawa.files[0] : null;
+    if (urlPratinjau) {
+      URL.revokeObjectURL(urlPratinjau);
+      urlPratinjau = null;
+    }
+    if (!berkas || !pratinjau || !pratinjauImg) {
+      if (pratinjau) {
+        pratinjau.hidden = true;
+      }
+      return;
+    }
+    urlPratinjau = URL.createObjectURL(berkas);
+    pratinjauImg.src = urlPratinjau;
+    pratinjau.hidden = false;
+  }
+
+  if (inputPembawa && kapasitasUrl) {
+    inputPembawa.addEventListener('change', function () {
+      perbaruiPratinjau();
+      var berkas = inputPembawa.files ? inputPembawa.files[0] : null;
       if (!berkas) {
-        capacity = null;
+        kapasitas = null;
         perbaruiKapasitas();
         return;
       }
-
       var data = new FormData();
       data.append('carrier_image', berkas);
-      if (csrfInput) {
-        data.append('csrf_token', csrfInput.value);
-      }
-
-      apiFetch(capacityUrl, { method: 'POST', body: data })
+      data.append('csrf_token', tokenCsrf());
+      apiFetch(kapasitasUrl, { method: 'POST', body: data })
         .then(function (resp) {
           return resp.json().then(function (info) {
             return { ok: resp.ok, info: info };
@@ -135,85 +244,158 @@
         })
         .then(function (hasil) {
           if (!hasil.ok || hasil.info.error) {
-            capacity = null;
-            capacityBox.className = 'alert alert-danger py-2';
-            capacityBox.textContent = hasil.info.error ||
-              'Kapasitas gambar tidak dapat dibaca.';
-            perbaruiKapasitas();
+            kapasitas = null;
+            if (kapasitasTeks) {
+              kapasitasTeks.textContent = hasil.info.error || pesan('capacity-error');
+            }
+            tandaiKapasitas(true);
             return;
           }
-          capacity = hasil.info.capacity;
+          kapasitas = hasil.info.capacity;
           perbaruiKapasitas();
         })
         .catch(function () {
-          capacity = null;
-          capacityBox.className = 'alert alert-danger py-2';
-          capacityBox.textContent = 'Kapasitas gambar tidak dapat dibaca.';
-          perbaruiKapasitas();
+          kapasitas = null;
+          if (kapasitasTeks) {
+            kapasitasTeks.textContent = pesan('capacity-error');
+          }
+          tandaiKapasitas(true);
         });
     });
   }
 
-  // ── Navigasi mode presentasi (form dan endpoint tetap sama) ───────────────
-  var modeButtons = document.querySelectorAll('[data-stego-mode]');
-  var modePanels = {
-    embed: document.getElementById('stego-embed-panel'),
-    extract: document.getElementById('stego-extract-panel')
-  };
-
-  function aktifkanMode(mode) {
-    if (!modePanels.embed || !modePanels.extract) {
+  // ── Dropzone: dukungan papan tombol (Enter/Spasi) ───────────────────
+  document.addEventListener('keydown', function (event) {
+    if (event.key !== 'Enter' && event.key !== ' ') {
       return;
     }
-    var dipilih = mode === 'extract' ? 'extract' : 'embed';
-    modePanels.embed.hidden = dipilih !== 'embed';
-    modePanels.extract.hidden = dipilih !== 'extract';
-    modeButtons.forEach(function (tombol) {
-      var aktif = tombol.getAttribute('data-stego-mode') === dipilih;
-      tombol.classList.toggle('is-active', aktif);
-      tombol.setAttribute('aria-selected', aktif ? 'true' : 'false');
+    var zona = event.target.closest ? event.target.closest('[data-kx-dropzone]') : null;
+    if (!zona || event.target.tagName === 'INPUT') {
+      return;
+    }
+    event.preventDefault();
+    var input = zona.querySelector('input[type="file"]');
+    if (input) {
+      input.click();
+    }
+  });
+
+  // ── Hasil ekstraksi ─────────────────────────────────────────────────
+  function bersihkanHasil() {
+    if (!kotakHasil) {
+      return;
+    }
+    Array.prototype.forEach.call(kotakHasil.children, function (anak) {
+      if (anak !== kosongHasil) {
+        anak.remove();
+      }
     });
   }
 
-  modeButtons.forEach(function (tombol) {
-    tombol.addEventListener('click', function () {
-      aktifkanMode(tombol.getAttribute('data-stego-mode'));
-    });
-  });
+  function tampilkanKosongHasil() {
+    bersihkanHasil();
+    if (kosongHasil) {
+      kosongHasil.hidden = false;
+    }
+  }
 
-  // ── Tampilan hasil ekstraksi di dalam halaman ─────────────────────────────
-  var resultBox = document.getElementById('stego-result');
-
-  function tampilkanHasil(kelas, judul, isi) {
-    if (!resultBox) {
+  function kotakInfo(jenis, teks) {
+    bersihkanHasil();
+    if (kosongHasil) {
+      kosongHasil.hidden = true;
+    }
+    if (!kotakHasil) {
       return;
     }
-    aktifkanMode('extract');
-    resultBox.textContent = '';
     var kotak = document.createElement('div');
-    kotak.className = 'alert ' + kelas;
-    var heading = document.createElement('strong');
-    heading.textContent = judul;
-    kotak.appendChild(heading);
-    if (isi) {
-      var isiNode = document.createElement('pre');
-      isiNode.className = 'mb-0 mt-2';
-      isiNode.style.whiteSpace = 'pre-wrap';
-      isiNode.textContent = isi;
-      kotak.appendChild(isiNode);
+    kotak.className = 'kx-infobox ' + jenis;
+    var namaIkon = jenis === 'kx-sg-infobox-danger' ? 'alert-triangle' : 'info';
+    kotak.innerHTML =
+      '<svg class="kx-icon" width="17" height="17" viewBox="0 0 24 24" aria-hidden="true" focusable="false">' +
+      '<use href="' + alamatSprite() + '#' + namaIkon + '"></use></svg>';
+    var p = document.createElement('p');
+    p.textContent = teks;
+    kotak.appendChild(p);
+    kotakHasil.appendChild(kotak);
+  }
+
+  function alamatSprite() {
+    var contoh = document.querySelector('use[href*="sprite.svg"]');
+    if (contoh) {
+      return (contoh.getAttribute('href') || '').split('#')[0];
     }
-    resultBox.appendChild(kotak);
+    return '/static/icons/sprite.svg';
+  }
+
+  function hasilTeks(isi) {
+    bersihkanHasil();
+    if (kosongHasil) {
+      kosongHasil.hidden = true;
+    }
+    if (!kotakHasil) {
+      return;
+    }
+    var bungkus = document.createElement('div');
+    bungkus.className = 'kx-sg-hasil-isi';
+
+    var kepala = document.createElement('div');
+    kepala.className = 'kx-sg-hasil-kepala';
+    var label = document.createElement('span');
+    label.className = 'kx-sg-hasil-label';
+    label.textContent = pesan('text-title');
+    var tombolSalin = document.createElement('button');
+    tombolSalin.type = 'button';
+    tombolSalin.className = 'kx-btn kx-btn-sm kx-btn-secondary';
+    tombolSalin.textContent = 'Salin';
+    tombolSalin.addEventListener('click', function () {
+      if (window.KX && typeof KX.salin === 'function') {
+        KX.salin(pre.textContent, tombolSalin);
+      }
+    });
+    kepala.appendChild(label);
+    kepala.appendChild(tombolSalin);
+
+    var pre = document.createElement('pre');
+    pre.className = 'kx-code kx-sg-hasil-teks';
+    pre.textContent = isi;
+
+    bungkus.appendChild(kepala);
+    bungkus.appendChild(pre);
+    kotakHasil.appendChild(bungkus);
+  }
+
+  function tampilkanMemuat() {
+    bersihkanHasil();
+    if (kosongHasil) {
+      kosongHasil.hidden = true;
+    }
+    if (!kotakHasil) {
+      return;
+    }
+    var bungkus = document.createElement('div');
+    bungkus.className = 'kx-sg-hasil-muat';
+    var label = document.createElement('span');
+    label.className = 'kx-sg-sr';
+    label.textContent = pesan('processing');
+    var baris = document.createElement('div');
+    baris.className = 'kx-skeleton kx-sg-baris-muat';
+    var blok = document.createElement('div');
+    blok.className = 'kx-skeleton kx-sg-blok-muat';
+    bungkus.appendChild(label);
+    bungkus.appendChild(baris);
+    bungkus.appendChild(blok);
+    kotakHasil.appendChild(bungkus);
   }
 
   function namaBerkasDari(header) {
     if (!header) {
       return null;
     }
-    var match = /filename\*?=(?:UTF-8''|")?([^";]+)/i.exec(header);
-    if (!match) {
+    var cocok = /filename\*?=(?:UTF-8''|\x22)?([^\x22;]+)/i.exec(header);
+    if (!cocok) {
       return null;
     }
-    var nama = match[1].replace(/^"|"$/g, '');
+    var nama = cocok[1].replace(/^\x22|\x22$/g, '');
     try {
       return decodeURIComponent(nama);
     } catch (err) {
@@ -234,21 +416,17 @@
     }, 1000);
   }
 
-  function kirimEkstraksi(formEkstrak, token) {
-    tampilkanHasil('alert-info', 'Memproses ekstraksi…', null);
+  // ── Pengiriman ekstraksi ────────────────────────────────────────────
+  function kirimEkstraksi(url, data, token, dariModal) {
+    tampilkanMemuat();
 
-    var data = new FormData(formEkstrak);
-    var csrf = formEkstrak.querySelector('input[name="csrf_token"]');
-    if (csrf && !data.get('csrf_token')) {
-      data.append('csrf_token', csrf.value);
-    }
-
+    data.append('csrf_token', tokenCsrf());
     var headers = {};
     if (token) {
       headers['X-Reauth-Grant'] = token;
     }
 
-    apiFetch(formEkstrak.action, {
+    apiFetch(url, {
       method: 'POST',
       headers: headers,
       body: data
@@ -256,81 +434,222 @@
       .then(function (resp) {
         var tipe = resp.headers.get('Content-Type') || '';
         if (tipe.indexOf('application/json') !== -1) {
-          return resp.json().then(function (payload) {
-            if (!resp.ok || !payload.success) {
-              throw new Error(payload.error || 'Ekstraksi gagal.');
-            }
-            if (payload.type === 'text') {
-              tampilkanHasil('alert-success', 'Pesan hasil ekstraksi:', payload.text);
-            } else {
-              tampilkanHasil('alert-success', payload.message || 'Ekstraksi berhasil.', null);
-            }
+          return resp.json().then(function (muatan) {
+            return { ok: resp.ok, json: muatan };
           });
         }
-
         if (!resp.ok) {
-          throw new Error('Ekstraksi gagal.');
+          throw new Error(pesan('extract-failed'));
         }
         return resp.blob().then(function (blob) {
-          var nama = namaBerkasDari(resp.headers.get('Content-Disposition')) ||
-            'berkas-hasil';
-          unduhBlob(blob, nama);
-          tampilkanHasil('alert-success',
-            'Berkas berhasil diekstrak dan diunduh: ' + nama, null);
+          return {
+            ok: true,
+            blob: blob,
+            nama: namaBerkasDari(resp.headers.get('Content-Disposition')) ||
+              'berkas-hasil'
+          };
         });
       })
-      .catch(function (err) {
-        tampilkanHasil('alert-danger', 'Ekstraksi gagal.', err.message);
+      .then(function (hasil) {
+        if (dariModal) {
+          tutupModalEkstrak();
+        }
+        if (!hasil.ok || (hasil.json && hasil.json.success === false)) {
+          var galat = hasil.json && hasil.json.error
+            ? hasil.json.error : pesan('extract-failed');
+          kotakInfo('kx-sg-infobox-danger', galat);
+          return;
+        }
+        if (hasil.json) {
+          if (hasil.json.type === 'text') {
+            hasilTeks(hasil.json.text);
+          } else {
+            kotakInfo('kx-infobox', hasil.json.message || pesan('file-downloaded'));
+          }
+          return;
+        }
+        unduhBlob(hasil.blob, hasil.nama);
+        kotakInfo('kx-infobox', pesan('file-downloaded', { nama: hasil.nama }));
+        toast(pesan('file-downloaded', { nama: hasil.nama }), 'success');
+      })
+      .catch(function () {
+        if (dariModal) {
+          tutupModalEkstrak();
+        }
+        kotakInfo('kx-sg-infobox-danger', pesan('extract-failed'));
       });
   }
 
-  function formUntukResource(resource) {
-    var daftar = document.querySelectorAll('.stego-extract-form');
-    for (var i = 0; i < daftar.length; i += 1) {
-      if (daftar[i].getAttribute('data-reauth-resource') === String(resource)) {
-        return daftar[i];
-      }
-    }
-    return null;
+  // ── Menu aksi per baris ──────────────────────────────────────────────
+  function tutupSemuaMenu() {
+    document.querySelectorAll('.kx-sg-menu').forEach(function (menu) {
+      menu.hidden = true;
+    });
+    document.querySelectorAll('[data-sg-menu]').forEach(function (tombol) {
+      tombol.setAttribute('aria-expanded', 'false');
+    });
   }
 
+  function toggleMenu(tombol) {
+    var wrap = tombol.closest('.kx-sg-menu-wrap');
+    var menu = wrap ? wrap.querySelector('.kx-sg-menu') : null;
+    if (!menu) {
+      return;
+    }
+    var buka = menu.hidden;
+    tutupSemuaMenu();
+    menu.hidden = !buka;
+    tombol.setAttribute('aria-expanded', buka ? 'true' : 'false');
+  }
+
+  function tutupModalEkstrak() {
+    if (modalEkstrak && window.KX && KX.modal) {
+      KX.modal.tutup(modalEkstrak);
+    }
+  }
+
+  function bukaModalEkstrak(baris) {
+    barisModal = baris;
+    if (modalNama) {
+      modalNama.textContent = baris.getAttribute('data-sg-nama') || '';
+    }
+    if (modalPassphrase) {
+      modalPassphrase.value = '';
+    }
+    if (modalTombolEkstrak) {
+      modalTombolEkstrak.setAttribute(
+        'data-reauth-resource', baris.getAttribute('data-sg-id') || ''
+      );
+    }
+    if (modalEkstrak && window.KX && KX.modal) {
+      KX.modal.buka(modalEkstrak);
+    }
+  }
+
+  document.addEventListener('click', function (event) {
+    var tombolMenu = event.target.closest('[data-sg-menu]');
+    if (tombolMenu) {
+      toggleMenu(tombolMenu);
+      return;
+    }
+
+    if (!event.target.closest('.kx-sg-menu')) {
+      tutupSemuaMenu();
+    }
+
+    if (event.target.closest('[data-sg-tutup-modal]')) {
+      tutupModalEkstrak();
+      return;
+    }
+
+    var itemEkstrak = event.target.closest('[data-sg-ekstrak]');
+    if (itemEkstrak) {
+      tutupSemuaMenu();
+      var baris = itemEkstrak.closest('tr[data-sg-id]');
+      if (baris) {
+        bukaModalEkstrak(baris);
+      }
+      return;
+    }
+
+    var itemHapus = event.target.closest('[data-sg-hapus]');
+    if (itemHapus) {
+      tutupSemuaMenu();
+      var barisHapus = itemHapus.closest('tr[data-sg-id]');
+      if (!barisHapus) {
+        return;
+      }
+      var nama = barisHapus.getAttribute('data-sg-nama') || '';
+      var urlHapus = barisHapus.getAttribute('data-sg-hapus-url') || '';
+      var kirim = function () {
+        if (formHapus && urlHapus) {
+          formHapus.action = urlHapus;
+          formHapus.submit();
+        }
+      };
+      if (window.KX && typeof KX.konfirmasiHapus === 'function') {
+        KX.konfirmasiHapus({
+          judul: pesan('delete-title'),
+          nama: nama,
+          pesan: pesan('delete-message', { nama: nama }),
+          onKonfirmasi: kirim
+        });
+      } else {
+        kirim();
+      }
+      return;
+    }
+
+    if (event.target.closest('[data-sg-fokus-sisip]')) {
+      var target = inputPesan || formSisip;
+      if (target && target.scrollIntoView) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      if (inputPesan) {
+        inputPesan.focus();
+      }
+    }
+  });
+
+  document.addEventListener('keydown', function (event) {
+    if (event.key === 'Escape') {
+      tutupSemuaMenu();
+    }
+    if (event.key === 'Enter' && event.target === modalPassphrase) {
+      event.preventDefault();
+      if (modalTombolEkstrak) {
+        modalTombolEkstrak.click();
+      }
+    }
+  });
+
+  // ── Grant autentikasi ulang ──────────────────────────────────────────
   document.addEventListener('cryptix:reauth-grant', function (event) {
     var detail = event.detail || {};
     if (detail.scope !== 'stego.extract') {
       return;
     }
-    var formEkstrak;
     if (detail.resource) {
-      formEkstrak = formUntukResource(detail.resource);
-    } else {
-      formEkstrak = document.querySelector(
-        '.stego-extract-form[data-stego-upload="1"]'
+      var baris = document.querySelector(
+        'tr[data-sg-id="' + String(detail.resource) + '"]'
+      );
+      if (!baris) {
+        return;
+      }
+      var data = new FormData();
+      if (modalPassphrase && modalPassphrase.value) {
+        data.append('passphrase', modalPassphrase.value);
+      }
+      kirimEkstraksi(
+        baris.getAttribute('data-sg-ekstrak-url'), data, detail.token, true
+      );
+      return;
+    }
+    if (formEkstrakUnggah) {
+      kirimEkstraksi(
+        formEkstrakUnggah.action,
+        new FormData(formEkstrakUnggah),
+        detail.token,
+        false
       );
     }
-    if (formEkstrak) {
-      kirimEkstraksi(formEkstrak, detail.token);
+  });
+
+  // Enter di dalam formulir ekstrak unggahan harus melewati tombol grant,
+  // bukan mengirim POST langsung tanpa verifikasi ulang.
+  document.addEventListener('submit', function (event) {
+    if (!formEkstrakUnggah || event.target !== formEkstrakUnggah) {
+      return;
     }
-  });
+    event.preventDefault();
+    var tombol = formEkstrakUnggah.querySelector('[data-reauth="stego.extract"]');
+    if (tombol) {
+      tombol.click();
+    }
+  }, true);
 
-  document.querySelectorAll('.stego-extract-form').forEach(function (formEkstrak) {
-    formEkstrak.addEventListener('submit', function (event) {
-      event.preventDefault();
-      var tombol = formEkstrak.querySelector('[data-reauth="stego.extract"]');
-      if (tombol) {
-        tombol.click();
-      }
-    });
-  });
-
-  document.querySelectorAll('.stego-delete-form').forEach(function (formHapus) {
-    formHapus.addEventListener('submit', function (event) {
-      if (!window.confirm('Hapus gambar stego ini?')) {
-        event.preventDefault();
-      }
-    });
-  });
-
+  // ── Keadaan awal ─────────────────────────────────────────────────────
   aturJenisMuatan();
-  aturPilihanKunci();
-  aktifkanMode('embed');
+  aturKunci();
+  sinkronEnkripsi();
 })();

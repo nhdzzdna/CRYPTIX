@@ -1,313 +1,247 @@
 {% extends "base.html" %}
 {% block title %}Steganography — KOSYAK{% endblock %}
 {% block page_title %}Steganography{% endblock %}
-{% block page_subtitle %}
-<p class="page-subtitle">Sisipkan dan ekstrak muatan rahasia pada gambar dengan metode LSB. Seluruh pemrosesan memakai implementasi steganografi KOSYAK yang sama.</p>
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/halaman/steganography.css') }}" />
 {% endblock %}
 
-{% macro icon_embed() %}
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="m21 16-4.5-4.5L9 19"/><path d="M17 2v4M15 4h4"/></svg>
-{% endmacro %}
-
-{% macro icon_extract() %}
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/><path d="m10 13 2 2 3-3"/><circle cx="7" cy="6.5" r=".8"/></svg>
-{% endmacro %}
-
-{% macro icon_image() %}
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
-{% endmacro %}
-
-{% macro icon_file() %}
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
-{% endmacro %}
-
-{% macro icon_key() %}
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="7.5" cy="15.5" r="4.5"/><path d="M10.7 12.3 21 2"/><path d="M17 6l2 2"/><path d="M14 9l2 2"/></svg>
-{% endmacro %}
-
-{% macro icon_lock() %}
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/><circle cx="12" cy="15" r="1.2"/></svg>
-{% endmacro %}
-
-{% macro icon_search() %}
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-{% endmacro %}
-
-{% macro icon_shield() %}
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
-{% endmacro %}
-
-{% macro icon_download() %}
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M4 21h16"/></svg>
-{% endmacro %}
-
-{% macro icon_trash() %}
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/><path d="M10 11v5M14 11v5"/></svg>
-{% endmacro %}
-
-{% macro icon_info() %}
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><circle cx="12" cy="7.8" r=".9" fill="currentColor" stroke="none"/></svg>
-{% endmacro %}
-
 {% block content %}
-<div class="stego-page">
+<div class="kx-sg-page"
+     data-msg-capacity-initial="{{ MSG.STEGO_CAPACITY_INITIAL }}"
+     data-msg-capacity-fmt="{{ MSG.STEGO_CAPACITY_FMT }}"
+     data-msg-capacity-left="{{ MSG.STEGO_CAPACITY_LEFT }}"
+     data-msg-capacity-over="{{ MSG.STEGO_CAPACITY_OVER }}"
+     data-msg-capacity-error="{{ MSG.STEGO_CAPACITY_ERROR }}"
+     data-msg-processing="{{ MSG.STEGO_EXTRACT_PROCESSING }}"
+     data-msg-extract-failed="{{ MSG.STEGO_EXTRACT_FAILED_JS }}"
+     data-msg-file-downloaded="{{ MSG.STEGO_FILE_DOWNLOADED }}"
+     data-msg-text-title="{{ MSG.STEGO_TEXT_RESULT_TITLE }}"
+     data-msg-delete-title="{{ MSG.STEGO_DELETE_TITLE }}"
+     data-msg-delete-message="{{ MSG.STEGO_DELETE_MESSAGE }}">
 
-  <!-- Mode navigation -->
-  <div class="stego-modebar" role="tablist" aria-label="Mode Steganography">
-    <button type="button" class="stego-mode is-active" role="tab"
-            id="stego-tab-embed" aria-selected="true" aria-controls="stego-embed-panel"
-            data-stego-mode="embed">
-      <span class="stego-mode-icon" aria-hidden="true">{{ icon_embed() }}</span>
-      <span class="stego-mode-text">
-        <span class="stego-mode-title">Sisipkan Muatan</span>
-        <span class="stego-mode-sub">Embed ke gambar pembawa</span>
-      </span>
-    </button>
-    <button type="button" class="stego-mode" role="tab"
-            id="stego-tab-extract" aria-selected="false" aria-controls="stego-extract-panel"
-            data-stego-mode="extract">
-      <span class="stego-mode-icon" aria-hidden="true">{{ icon_extract() }}</span>
-      <span class="stego-mode-text">
-        <span class="stego-mode-title">Ekstrak Muatan</span>
-        <span class="stego-mode-sub">Baca pesan dari gambar stego</span>
-      </span>
-    </button>
-  </div>
+  <div class="kx-sg-grid">
 
-  <div class="stego-workspace">
-
-    <!-- Embed workspace -->
-    <section id="stego-embed-panel" class="stego-panel stego-panel-embed"
-             role="tabpanel" aria-labelledby="stego-tab-embed stego-embed-title">
-      <header class="stego-panel-head">
-        <div class="stego-panel-heading">
-          <span class="stego-panel-badge">Mode Penyisipan</span>
-          <h2 id="stego-embed-title" class="stego-panel-title">Sisipkan Muatan (Embed)</h2>
-          <p class="stego-panel-sub">Pilih gambar pembawa, tentukan muatan, lalu sisipkan dengan kunci akun atau passphrase.</p>
-        </div>
-        <span class="stego-panel-icon" aria-hidden="true">{{ icon_embed() }}</span>
+    <!-- ── Kartu Sisipkan ────────────────────────────────────────────── -->
+    <section class="kx-card kx-sg-panel" aria-labelledby="sg-sisip-title">
+      <header class="kx-card-head">
+        <h2 class="kx-card-title" id="sg-sisip-title">Sisipkan</h2>
+        <span class="kx-sg-panel-ikon" aria-hidden="true">{{ ikon('upload', 18) }}</span>
       </header>
-      <div class="stego-panel-body">
+      <div class="kx-card-body">
         <form method="POST" action="{{ url_for('stego.embed') }}" enctype="multipart/form-data"
-              id="stego-embed-form" data-capacity-url="{{ url_for('stego.capacity') }}"
-              class="stego-form">
+              class="kx-sg-form" id="sg-sisip-form"
+              data-capacity-url="{{ url_for('stego.capacity') }}">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
 
-          <div class="form-group">
-            <label for="carrier-image">Gambar Carrier</label>
-            <input type="file" name="carrier_image" id="carrier-image"
-                   class="form-control stego-file" accept=".png,.jpg,.jpeg,.bmp" required />
-            <small class="form-hint">Format PNG, JPG, atau BMP. Dimensi maksimum 4000 × 4000 piksel.</small>
-          </div>
-
-          <div class="form-group">
-            <span class="stego-label">Jenis Muatan</span>
-            <div class="stego-choices">
-              <label class="stego-choice">
-                <input type="radio" id="type-text" name="payload_type" value="text" checked />
-                <span class="stego-choice-text">
-                  <span class="stego-choice-title">Teks</span>
-                  <span class="stego-choice-sub">Pesan teks langsung</span>
-                </span>
-              </label>
-              <label class="stego-choice">
-                <input type="radio" id="type-file" name="payload_type" value="file" />
-                <span class="stego-choice-text">
-                  <span class="stego-choice-title">Berkas</span>
-                  <span class="stego-choice-sub">Berkas biner atau dokumen</span>
-                </span>
-              </label>
+          <div class="kx-field">
+            <span class="kx-label" id="sg-pembawa-label">Gambar pembawa</span>
+            <div class="kx-dropzone kx-sg-dropzone" data-kx-dropzone role="button" tabindex="0"
+                 aria-labelledby="sg-pembawa-label">
+              <input type="file" name="carrier_image" id="sg-pembawa"
+                     accept=".png,.jpg,.jpeg,.bmp" required />
+              <span class="kx-sg-dropzone-ikon" aria-hidden="true">{{ ikon('image', 26) }}</span>
+              <span class="kx-dropzone-title">Letakkan gambar atau klik untuk memilih</span>
+              <span class="kx-dropzone-help">PNG, JPG, atau BMP · maks 4000 × 4000 piksel</span>
             </div>
           </div>
 
-          <div class="form-group" id="message-group">
-            <label for="stego-message">Pesan Rahasia</label>
-            <textarea name="message" id="stego-message" class="form-control stego-textarea" rows="4"
+          <figure class="kx-sg-pratinjau" id="sg-pratinjau" hidden>
+            <img id="sg-pratinjau-img" alt="Pratinjau gambar pembawa" />
+          </figure>
+
+          <div class="kx-field">
+            <span class="kx-label" id="sg-jenis-label">Jenis muatan</span>
+            <div class="kx-tabs" role="group" aria-labelledby="sg-jenis-label">
+              <button type="button" class="kx-tab is-active" data-sg-jenis="text" aria-pressed="true">Teks</button>
+              <button type="button" class="kx-tab" data-sg-jenis="file" aria-pressed="false">Berkas</button>
+            </div>
+            <input type="hidden" name="payload_type" id="sg-jenis" value="text" />
+          </div>
+
+          <div class="kx-field" id="sg-teks-field">
+            <label class="kx-label" for="sg-pesan">Pesan</label>
+            <textarea class="kx-textarea kx-sg-pesan" name="message" id="sg-pesan" rows="4"
                       placeholder="Tulis pesan yang akan disembunyikan…"></textarea>
           </div>
 
-          <div class="form-group" id="payload-file-group" style="display:none;">
-            <label for="payload-file">Berkas Rahasia</label>
-            <input type="file" name="payload_file" id="payload-file" class="form-control stego-file" />
-            <small class="form-hint">Berkas dienkripsi dengan AES-256-GCM sebelum disisipkan.</small>
-          </div>
-
-          <div class="form-group">
-            <span class="stego-label">Kunci Muatan</span>
-            <div class="stego-choices">
-              <label class="stego-choice">
-                <input type="radio" id="key-account" name="key_mode" value="account" checked />
-                <span class="stego-choice-icon" aria-hidden="true">{{ icon_key() }}</span>
-                <span class="stego-choice-text">
-                  <span class="stego-choice-title">Kunci akun</span>
-                  <span class="stego-choice-sub">DEK otomatis</span>
-                </span>
-              </label>
-              <label class="stego-choice">
-                <input type="radio" id="key-passphrase" name="key_mode" value="passphrase" />
-                <span class="stego-choice-icon" aria-hidden="true">{{ icon_lock() }}</span>
-                <span class="stego-choice-text">
-                  <span class="stego-choice-title">Passphrase</span>
-                  <span class="stego-choice-sub">Kunci kustom</span>
-                </span>
-              </label>
+          <div class="kx-field" id="sg-berkas-field" hidden>
+            <span class="kx-label" id="sg-berkas-label">Berkas muatan</span>
+            <div class="kx-dropzone kx-sg-dropzone" data-kx-dropzone role="button" tabindex="0"
+                 aria-labelledby="sg-berkas-label">
+              <input type="file" name="payload_file" id="sg-berkas" />
+              <span class="kx-sg-dropzone-ikon" aria-hidden="true">{{ ikon('file', 26) }}</span>
+              <span class="kx-dropzone-title">Letakkan berkas atau klik untuk memilih</span>
             </div>
           </div>
 
-          <div class="form-group" id="passphrase-group" style="display:none;">
-            <label for="embed-passphrase">Passphrase</label>
-            <input type="password" name="passphrase" id="embed-passphrase"
-                   class="form-control" autocomplete="off" />
-            <small class="form-hint">Passphrase tidak disimpan di sesi, cookie, atau log.</small>
+          <div class="kx-field">
+            <span class="kx-label" id="sg-kunci-label">Kunci muatan</span>
+            <div class="kx-tabs" role="group" aria-labelledby="sg-kunci-label">
+              <button type="button" class="kx-tab is-active" data-sg-kunci="account" aria-pressed="true">Kunci akun</button>
+              <button type="button" class="kx-tab" data-sg-kunci="passphrase" aria-pressed="false">Kunci rahasia</button>
+            </div>
+            <input type="hidden" name="key_mode" id="sg-kunci-mode" value="account" />
           </div>
 
-          <div class="alert alert-info py-2 stego-capacity" id="stego-capacity" aria-live="polite">
-            Pilih gambar pembawa untuk melihat kapasitas dan perkiraan penggunaan.
+          <p class="kx-sg-kunci-akun" id="sg-kunci-akun-info">{{ MSG.STEGO_ACCOUNT_KEY_NOTE }}</p>
+
+          <div class="kx-field" id="sg-kunci-rahasia-field" hidden>
+            <label class="kx-label" for="sg-passphrase">Kunci rahasia</label>
+            <div class="kx-sandi" data-kx-sandi>
+              <input type="password" class="kx-input" name="passphrase" id="sg-passphrase"
+                     autocomplete="off" />
+            </div>
+            <p class="kx-sg-hint">{{ MSG.STEGO_KEY_NOT_STORED }}</p>
           </div>
 
-          <div class="form-group stego-encrypt">
-            <input type="hidden" name="use_encryption" value="0" />
-            <label class="form-check stego-check" for="use-enc">
-              <input type="checkbox" id="use-enc" name="use_encryption" value="1" checked />
-              <span>
-                Enkripsi muatan
-                <small class="form-hint">Super Encryption untuk teks, AES-256-GCM untuk berkas.</small>
-              </span>
-            </label>
+          <div class="kx-infobox kx-sg-kapasitas" id="sg-kapasitas" role="status" aria-live="polite">
+            <span class="kx-icon" aria-hidden="true">{{ ikon('info', 17) }}</span>
+            <p id="sg-kapasitas-teks">{{ MSG.STEGO_CAPACITY_INITIAL }}</p>
           </div>
 
-          <div class="stego-form-actions">
-            <button type="submit" class="btn btn-primary stego-submit-btn">
-              {{ icon_embed() }}<span>Sisipkan Muatan</span>
-            </button>
-          </div>
+          <label class="kx-checkbox kx-sg-enkripsi">
+            <input type="checkbox" id="sg-enkripsi" checked />
+            <span>Enkripsi muatan</span>
+          </label>
+          <input type="hidden" name="use_encryption" id="sg-use-enc" value="1" />
+
+          <button type="submit" class="kx-btn kx-btn-primary kx-sg-sisip-btn" id="sg-sisip-btn">
+            {{ ikon('upload', 15) }}<span>Sisipkan</span>
+          </button>
         </form>
-        <p class="stego-note">
-          Hasil selalu berformat PNG. Menyimpan ulang gambar sebagai JPEG akan merusak muatan karena kompresi mengubah bit LSB.
-        </p>
+
+        <div class="kx-infobox kx-sg-png-warn">
+          <span class="kx-icon" aria-hidden="true">{{ ikon('alert-triangle', 17) }}</span>
+          <p>{{ MSG.STEGO_PNG_WARNING }}</p>
+        </div>
       </div>
     </section>
 
-    <!-- Extract workspace -->
-    <section id="stego-extract-panel" class="stego-panel stego-panel-extract"
-             role="tabpanel" aria-labelledby="stego-tab-extract stego-extract-title" hidden>
-      <header class="stego-panel-head">
-        <div class="stego-panel-heading">
-          <span class="stego-panel-badge stego-panel-badge-info">Mode Ekstraksi</span>
-          <h2 id="stego-extract-title" class="stego-panel-title">Ekstrak dari Gambar Unggahan</h2>
-          <p class="stego-panel-sub">Unggah gambar stego untuk membaca muatan. Passphrase hanya diperlukan bila dipakai saat penyisipan.</p>
-        </div>
-        <span class="stego-panel-icon" aria-hidden="true">{{ icon_extract() }}</span>
+    <!-- ── Kartu Ekstrak ─────────────────────────────────────────────── -->
+    <section class="kx-card kx-sg-panel" aria-labelledby="sg-ekstrak-title">
+      <header class="kx-card-head">
+        <h2 class="kx-card-title" id="sg-ekstrak-title">Ekstrak</h2>
+        <span class="kx-sg-panel-ikon" aria-hidden="true">{{ ikon('search', 18) }}</span>
       </header>
-      <div class="stego-panel-body">
+      <div class="kx-card-body">
         <form method="POST" action="{{ url_for('stego.extract_upload') }}" enctype="multipart/form-data"
-              class="stego-form stego-extract-form" data-stego-upload="1">
+              class="kx-sg-form" id="sg-ekstrak-form" data-stego-upload="1">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
 
-          <div class="form-group">
-            <label for="stego-image">Gambar Stego</label>
-            <input type="file" name="stego_image" id="stego-image"
-                   class="form-control stego-file" accept=".png,.jpg,.jpeg,.bmp" required />
-            <small class="form-hint">Gunakan berkas PNG hasil penyisipan agar muatan tetap utuh.</small>
+          <div class="kx-field">
+            <span class="kx-label" id="sg-stego-label">Gambar stego</span>
+            <div class="kx-dropzone kx-sg-dropzone" data-kx-dropzone role="button" tabindex="0"
+                 aria-labelledby="sg-stego-label">
+              <input type="file" name="stego_image" id="sg-stego"
+                     accept=".png,.jpg,.jpeg,.bmp" required />
+              <span class="kx-sg-dropzone-ikon" aria-hidden="true">{{ ikon('image', 26) }}</span>
+              <span class="kx-dropzone-title">Letakkan gambar atau klik untuk memilih</span>
+              <span class="kx-dropzone-help">Hasil penyisipan PNG menjaga muatan tetap utuh</span>
+            </div>
           </div>
 
-          <div class="form-group">
-            <label for="extract-passphrase">Passphrase (opsional)</label>
-            <input type="password" name="passphrase" id="extract-passphrase" class="form-control"
-                   placeholder="Kosongkan bila memakai kunci akun" autocomplete="off" />
+          <div class="kx-field">
+            <label class="kx-label" for="sg-ekstrak-passphrase">Kunci rahasia (opsional)</label>
+            <div class="kx-sandi" data-kx-sandi>
+              <input type="password" class="kx-input" name="passphrase" id="sg-ekstrak-passphrase"
+                     autocomplete="off" placeholder="Kosongkan bila memakai kunci akun" />
+            </div>
           </div>
 
-          <div class="stego-form-actions">
-            <button type="button" class="btn btn-primary stego-submit-btn"
-                    data-reauth="stego.extract">
-              {{ icon_search() }}<span>Ekstrak Muatan</span>
-            </button>
-          </div>
+          <button type="button" class="kx-btn kx-btn-primary kx-sg-ekstrak-btn"
+                  id="sg-ekstrak-btn" data-reauth="stego.extract">
+            {{ ikon('search', 15) }}<span>Ekstrak</span>
+          </button>
         </form>
 
-        <!-- Hasil ekstraksi ditampilkan di dalam halaman, bukan flash message -->
-        <div id="stego-result" class="stego-result" role="status" aria-live="polite">
-          <div class="stego-empty">
-            <span class="stego-empty-icon" aria-hidden="true">{{ icon_search() }}</span>
-            <h3 class="stego-empty-title">Belum ada hasil ekstraksi</h3>
-            <p class="stego-empty-text">Unggah gambar stego lalu jalankan ekstraksi. Hasil teks atau berkas akan muncul di area ini.</p>
+        <!-- Hasil ekstraksi ditampilkan di dalam halaman, bukan flash. -->
+        <div id="stego-result" class="kx-sg-hasil" role="status" aria-live="polite">
+          <div class="kx-empty kx-sg-hasil-kosong" id="sg-hasil-kosong">
+            <span aria-hidden="true">{{ ikon('search', 30) }}</span>
+            <p class="kx-empty-title">Belum ada hasil ekstraksi</p>
+            <p>Pilih gambar stego lalu jalankan Ekstrak; hasil teks atau berkas tampil di sini.</p>
           </div>
         </div>
 
-        <div class="stego-info">
-          <div class="stego-info-head">
-            <span class="stego-info-icon" aria-hidden="true">{{ icon_info() }}</span>
-            <span>Detail metode LSB</span>
+        <details class="kx-accordion kx-sg-teknis">
+          <summary>
+            <span>Detail teknis</span>
+            {{ ikon('chevron-down', 16) }}
+          </summary>
+          <div class="kx-accordion-body">
+            <ul class="kx-sg-teknis-list">
+              <li>Header ber-magic <code>CRXS</code> menyimpan versi, jenis muatan, panjang, dan CRC32.</li>
+              <li>Gambar tanpa pesan terdeteksi jelas dan ditolak.</li>
+              <li>Posisi bit diacak dengan PRNG yang diseed kunci steganografi.</li>
+              <li>Kapasitas ≈ <code>(W × H × 3 − 112) / 8</code> byte.</li>
+            </ul>
           </div>
-          <ul class="stego-info-list">
-            <li>Header ber-magic <code>CRXS</code> menyimpan versi, jenis muatan, panjang, dan CRC32.</li>
-            <li>Gambar tanpa pesan terdeteksi jelas dan ditolak.</li>
-            <li>Posisi bit diacak dengan PRNG yang diseed kunci steganografi.</li>
-            <li>Kapasitas ≈ <code>(W × H × 3 − 112) / 8</code> byte.</li>
-          </ul>
-        </div>
+        </details>
       </div>
     </section>
   </div>
 
-  <!-- Saved stego images -->
-  <section class="stego-panel stego-saved" aria-labelledby="stego-saved-title">
-    <header class="stego-panel-head">
-      <div class="stego-panel-heading">
-        <h2 id="stego-saved-title" class="stego-panel-title">Stego Images Tersimpan</h2>
-        <p class="stego-panel-sub">Gambar hasil penyisipan yang tersimpan pada akun ini.</p>
-      </div>
-      <span class="stego-count">{{ images|length }} gambar</span>
+  <!-- ── Stego image tersimpan ────────────────────────────────────────── -->
+  <section class="kx-card kx-sg-tersimpan" aria-labelledby="sg-tersimpan-title">
+    <header class="kx-card-head">
+      <h2 class="kx-card-title" id="sg-tersimpan-title">Stego image tersimpan</h2>
+      <span class="kx-badge kx-badge-accent">{{ images|length }}</span>
     </header>
-    <div class="stego-panel-body stego-saved-body">
+    <div class="kx-card-body">
       {% if images %}
-      <div class="stego-table-wrap">
-        <table class="table stego-table">
+      <div class="kx-table-wrap kx-sg-tabel">
+        <table class="kx-table">
           <thead>
-            <tr><th>Nama Asli</th><th>Enkripsi</th><th>Dibuat</th><th>Aksi</th></tr>
+            <tr>
+              <th scope="col">Nama asli</th>
+              <th scope="col">Enkripsi</th>
+              <th scope="col">Dibuat</th>
+              <th scope="col" class="kx-cell-actions">Aksi</th>
+            </tr>
           </thead>
           <tbody>
             {% for img in images %}
-            <tr>
-              <td>
-                <span class="stego-name">
-                  <span class="stego-name-icon" aria-hidden="true">{{ icon_image() }}</span>
-                  <span>{{ img.original_name }}</span>
+            <tr data-sg-id="{{ img.id }}"
+                data-sg-nama="{{ img.original_name }}"
+                data-sg-ekstrak-url="{{ url_for('stego.extract', img_id=img.id) }}"
+                data-sg-hapus-url="{{ url_for('stego.delete', img_id=img.id) }}">
+              <td data-label="Nama asli">
+                <span class="kx-sg-nama">
+                  <span class="kx-sg-nama-ikon" aria-hidden="true">{{ ikon('image', 16) }}</span>
+                  <span class="kx-sg-nama-teks">{{ img.original_name }}</span>
                 </span>
               </td>
-              <td>{% if img.has_encryption %}<span class="badge badge-success">Ya</span>{% else %}<span class="badge badge-secondary">Tidak</span>{% endif %}</td>
-              <td class="mono stego-date">{{ img.created_at[:16] }}</td>
-              <td>
-                <div class="stego-row-actions">
-                  <!-- Extract -->
-                  <form method="POST" action="{{ url_for('stego.extract', img_id=img.id) }}"
-                        class="stego-extract-form stego-inline-form"
-                        data-reauth-resource="{{ img.id }}">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-                    <input type="password" name="passphrase" class="form-control form-control-sm stego-row-pass"
-                           placeholder="Passphrase (opsional)" autocomplete="off" />
-                    <button type="button" class="btn btn-sm btn-primary stego-icon-btn"
-                            data-reauth="stego.extract" data-reauth-resource="{{ img.id }}"
-                            aria-label="Ekstrak {{ img.original_name }}" title="Ekstrak">
-                      {{ icon_search() }}
+              <td data-label="Enkripsi">
+                {% if img.has_encryption %}
+                <span class="kx-badge kx-badge-ok">{{ ikon('lock', 12) }}Ya</span>
+                {% else %}
+                <span class="kx-badge">Tidak</span>
+                {% endif %}
+              </td>
+              <td data-label="Dibuat" class="kx-sg-tanggal">{{ img.created_at[:16] }}</td>
+              <td class="kx-cell-actions">
+                <div class="kx-sg-menu-wrap">
+                  <button type="button" class="kx-btn kx-btn-icon kx-sg-menu-btn"
+                          aria-label="Menu aksi {{ img.original_name }}"
+                          aria-haspopup="menu" aria-expanded="false" data-sg-menu>
+                    {{ ikon('more-horizontal', 16) }}
+                  </button>
+                  <div class="kx-sg-menu" role="menu" hidden
+                       aria-label="Aksi untuk {{ img.original_name }}">
+                    <button type="button" class="kx-sg-menu-item" role="menuitem" data-sg-ekstrak>
+                      {{ ikon('search', 15) }}<span>Ekstrak</span>
                     </button>
-                  </form>
-                  <!-- Download -->
-                  <a href="{{ url_for('stego.download', img_id=img.id) }}"
-                     class="btn btn-sm btn-secondary stego-icon-btn"
-                     data-reauth="stego.download" data-reauth-resource="{{ img.id }}"
-                     aria-label="Unduh {{ img.original_name }}" title="Unduh">
-                    {{ icon_download() }}
-                  </a>
-                  <!-- Delete -->
-                  <form method="POST" action="{{ url_for('stego.delete', img_id=img.id) }}"
-                        class="stego-delete-form stego-inline-form">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-                    <button type="submit" class="btn btn-sm btn-outline-danger stego-icon-btn"
-                            aria-label="Hapus {{ img.original_name }}" title="Hapus">
-                      {{ icon_trash() }}
+                    <a class="kx-sg-menu-item" role="menuitem"
+                       href="{{ url_for('stego.download', img_id=img.id) }}"
+                       data-reauth="stego.download" data-reauth-resource="{{ img.id }}">
+                      {{ ikon('download', 15) }}<span>Unduh</span>
+                    </a>
+                    <button type="button" class="kx-sg-menu-item kx-sg-menu-item-danger"
+                            role="menuitem" data-sg-hapus
+                            aria-label="Hapus {{ img.original_name }}">
+                      {{ ikon('trash', 15) }}<span>Hapus</span>
                     </button>
-                  </form>
+                  </div>
                 </div>
               </td>
             </tr>
@@ -316,14 +250,52 @@
         </table>
       </div>
       {% else %}
-      <div class="stego-empty stego-empty-saved">
-        <span class="stego-empty-icon" aria-hidden="true">{{ icon_image() }}</span>
-        <h3 class="stego-empty-title">Belum ada stego image</h3>
-        <p class="stego-empty-text">Gambar hasil penyisipan akan tersimpan dan tampil di sini.</p>
+      <div class="kx-empty kx-sg-tersimpan-kosong">
+        <span aria-hidden="true">{{ ikon('image', 30) }}</span>
+        <p class="kx-empty-title">Belum ada stego image tersimpan</p>
+        <p>Sisipkan muatan ke gambar; hasilnya tersimpan dan tampil di sini.</p>
+        <button type="button" class="kx-btn kx-btn-primary kx-btn-sm" data-sg-fokus-sisip>
+          {{ ikon('upload', 15) }}<span>Sisipkan muatan</span>
+        </button>
       </div>
       {% endif %}
     </div>
   </section>
+
+  <!-- Formulir hapus tersembunyi; aksinya diatur per baris oleh JS. -->
+  <form method="POST" id="sg-hapus-form" class="kx-sg-form-diam" action="">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+  </form>
+
+  <!-- ── Modal ekstrak per baris ─────────────────────────────────────── -->
+  <div class="kx-modal-overlay kx-sg-modal" id="sg-modal-ekstrak" aria-hidden="true">
+    <div class="kx-modal" role="dialog" aria-modal="true" aria-labelledby="sg-modal-ekstrak-title">
+      <header class="kx-modal-head">
+        <h2 class="kx-modal-title" id="sg-modal-ekstrak-title">Ekstrak muatan</h2>
+        <button type="button" class="kx-btn kx-btn-icon" data-sg-tutup-modal aria-label="Tutup dialog">
+          {{ ikon('x', 16) }}
+        </button>
+      </header>
+      <div class="kx-modal-body">
+        <p class="kx-sg-modal-nama" id="sg-modal-nama"></p>
+        <div class="kx-field">
+          <label class="kx-label" for="sg-modal-passphrase">Kunci rahasia (opsional)</label>
+          <div class="kx-sandi" data-kx-sandi>
+            <input type="password" class="kx-input" name="passphrase" id="sg-modal-passphrase"
+                   autocomplete="off" />
+          </div>
+          <p class="kx-sg-hint">Kosongkan bila memakai kunci akun.</p>
+        </div>
+      </div>
+      <footer class="kx-modal-foot">
+        <button type="button" class="kx-btn kx-btn-secondary" data-sg-tutup-modal>Batal</button>
+        <button type="button" class="kx-btn kx-btn-primary" id="sg-modal-ekstrak-btn"
+                data-reauth="stego.extract">
+          {{ ikon('search', 15) }}<span>Ekstrak</span>
+        </button>
+      </footer>
+    </div>
+  </div>
 </div>
 {% endblock %}
 

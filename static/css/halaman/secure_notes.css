@@ -1,0 +1,214 @@
+/* static/css/halaman/secure_notes.css — halaman Secure Notes (kx-sn-*) */
+
+.kx-sn-grid {
+  display: grid;
+  grid-template-columns: 360px minmax(0, 1fr);
+  gap: var(--kx-space-4);
+  align-items: start;
+}
+
+/* ── Kartu daftar catatan ─────────────────────────────────────────────── */
+.kx-sn-daftar-body {
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+}
+
+.kx-sn-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--kx-space-2);
+  margin-bottom: var(--kx-space-2);
+}
+
+.kx-sn-cari {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+.kx-sn-cari .kx-icon {
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--kx-text-3);
+  pointer-events: none;
+}
+.kx-sn-cari .kx-input {
+  padding-left: 34px;
+}
+
+.kx-sn-lista {
+  display: flex;
+  flex-direction: column;
+  max-height: 560px;
+  overflow-y: auto;
+}
+
+.kx-sn-baris {
+  display: flex;
+  align-items: center;
+  gap: var(--kx-space-2);
+  width: 100%;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: var(--kx-radius-input);
+  background: transparent;
+  color: var(--kx-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.kx-sn-baris:hover {
+  background: var(--kx-surface-2);
+}
+.kx-sn-baris:focus-visible {
+  outline: none;
+  box-shadow: var(--kx-focus-ring);
+}
+.kx-sn-baris.is-aktif {
+  background: var(--kx-accent-soft);
+}
+
+.kx-sn-baris-ikon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--kx-radius-input);
+  background: var(--kx-surface-3);
+  color: var(--kx-text-2);
+}
+.kx-sn-baris.is-aktif .kx-sn-baris-ikon {
+  background: var(--kx-accent-soft);
+  color: var(--kx-accent);
+}
+
+.kx-sn-baris-utama {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+.kx-sn-judul {
+  color: var(--kx-text);
+  font-size: var(--kx-fs-body);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.kx-sn-tanggal {
+  color: var(--kx-text-3);
+  font-family: var(--kx-font-mono);
+  font-size: var(--kx-fs-caption);
+}
+.kx-sn-baris-kunci {
+  display: inline-flex;
+  flex: 0 0 auto;
+  color: var(--kx-text-3);
+}
+.kx-sn-baris.is-aktif .kx-sn-baris-kunci {
+  color: var(--kx-accent);
+}
+
+.kx-sn-tak-cocok {
+  margin: var(--kx-space-2) 0 0;
+  padding: var(--kx-space-3);
+  border-radius: var(--kx-radius-input);
+  background: var(--kx-surface-2);
+  color: var(--kx-text-2);
+  font-size: var(--kx-fs-caption);
+  text-align: center;
+}
+
+.kx-sn-kosong-lista {
+  padding: var(--kx-space-5) var(--kx-space-3);
+}
+
+/* ── Editor ────────────────────────────────────────────────────────────── */
+.kx-sn-kosong {
+  padding: var(--kx-space-2) 0 var(--kx-space-3);
+}
+
+.kx-sn-editor-kepala {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.kx-sn-editor-meta {
+  margin: 0;
+  color: var(--kx-text-2);
+  font-size: var(--kx-fs-caption);
+}
+
+.kx-sn-editor-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kx-space-3);
+}
+
+.kx-sn-buka {
+  align-items: flex-start;
+}
+.kx-sn-buka-teks {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--kx-space-2);
+}
+.kx-sn-buka-teks p {
+  margin: 0;
+}
+
+.kx-sn-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kx-space-3);
+}
+.kx-sn-isi {
+  min-height: 240px;
+}
+.kx-sn-form-aksi {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--kx-space-2);
+}
+
+.kx-sn-hapus-form {
+  display: none;
+}
+
+/* ── Responsif ─────────────────────────────────────────────────────────── */
+@media (max-width: 1199px) {
+  .kx-sn-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .kx-sn-lista {
+    max-height: 320px;
+  }
+}
+
+@media (max-width: 767px) {
+  .kx-sn-toolbar {
+    flex-wrap: wrap;
+  }
+  .kx-sn-cari {
+    flex: 1 1 100%;
+  }
+  .kx-sn-toolbar .kx-btn {
+    flex: 1 1 100%;
+    justify-content: center;
+  }
+  .kx-sn-isi {
+    min-height: 180px;
+  }
+  .kx-sn-form-aksi .kx-btn {
+    flex: 1 1 100%;
+    justify-content: center;
+  }
+}

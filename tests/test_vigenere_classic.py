@@ -70,7 +70,7 @@ def _post(client, **fields):
 
 
 def _first_output(html_text: str):
-    match = re.search(r'<pre class="output-box mono">(.*?)</pre>', html_text, re.S)
+    match = re.search(r'<pre class="kx-code[^"]*"[^>]*>(.*?)</pre>', html_text, re.S)
     return html.unescape(match.group(1)) if match else None
 
 
@@ -132,7 +132,7 @@ class TestVigenereClassicRoute:
         body = page.get_data(as_text=True)
         assert page.status_code == 400
         assert MSG.CRYPTO_VIGENERE_KEY_INVALID in body
-        assert "alert-danger" in body
+        assert "kx-infobox-danger" in body
 
     def test_empty_key_returns_html_400(self, client):
         page = _post(
@@ -149,7 +149,7 @@ class TestVigenereClassicRoute:
         )
         body = page.get_data(as_text=True)
         assert page.status_code == 200
-        assert "alert-danger" not in body
+        assert "kx-infobox-danger" not in body
         assert _first_output(body)
 
     def test_route_roundtrip(self, client):

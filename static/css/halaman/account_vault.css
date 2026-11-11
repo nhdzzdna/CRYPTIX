@@ -1,0 +1,246 @@
+/* static/css/halaman/account_vault.css — halaman Account Vault (kx-av-*) */
+
+.kx-av-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 380px;
+  gap: var(--kx-space-4);
+  align-items: start;
+}
+
+/* ── Kartu daftar kredensial ─────────────────────────────────────────── */
+.kx-av-lista-body {
+  display: flex;
+  flex-direction: column;
+  padding: 10px;
+}
+
+.kx-av-baris {
+  border-bottom: 1px solid var(--kx-border-soft);
+  padding: 2px 0;
+}
+.kx-av-baris:last-child {
+  border-bottom: 0;
+}
+
+.kx-av-baris-head {
+  display: flex;
+  align-items: center;
+  gap: var(--kx-space-3);
+  padding: 10px 12px;
+  border-radius: var(--kx-radius-input);
+}
+.kx-av-baris-head:hover {
+  background: var(--kx-surface-2);
+}
+
+.kx-av-inisial {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--kx-radius-input);
+  background: var(--kx-accent-soft);
+  color: var(--kx-accent);
+  font-family: var(--kx-font-display);
+  font-size: var(--kx-fs-subtitle);
+  font-weight: 600;
+}
+
+.kx-av-baris-utama {
+  flex: 1;
+  min-width: 0;
+}
+.kx-av-nama {
+  margin: 0;
+  color: var(--kx-text);
+  font-size: var(--kx-fs-body);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.kx-av-meta {
+  display: flex;
+  gap: 6px;
+  margin: 2px 0 0;
+  color: var(--kx-text-2);
+  font-size: var(--kx-fs-caption);
+  min-width: 0;
+}
+.kx-av-user,
+.kx-av-tanggal {
+  font-family: var(--kx-font-mono);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.kx-av-titik {
+  flex: 0 0 auto;
+  color: var(--kx-text-3);
+  font-family: var(--kx-font-mono);
+  font-size: var(--kx-fs-caption);
+  letter-spacing: 2px;
+}
+
+.kx-av-aksi {
+  display: flex;
+  flex: 0 0 auto;
+  gap: var(--kx-space-1);
+}
+
+/* ── Kotak tampil kredensial ────────────────────────────────────────── */
+.kx-av-reveal {
+  margin: 0 12px 12px;
+  padding: var(--kx-space-3);
+  border: 1px solid var(--kx-border);
+  border-radius: var(--kx-radius-input);
+  background: var(--kx-surface-2);
+}
+.kx-av-reveal-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--kx-space-3);
+}
+.kx-av-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.kx-av-item-lebar {
+  grid-column: 1 / -1;
+}
+.kx-av-item-label {
+  color: var(--kx-text-2);
+  font-size: var(--kx-fs-caption);
+}
+.kx-av-item-baris {
+  display: flex;
+  align-items: center;
+  gap: var(--kx-space-2);
+  min-width: 0;
+}
+.kx-av-nilai {
+  flex: 1;
+  min-width: 0;
+  color: var(--kx-text);
+  font-family: var(--kx-font-mono);
+  font-size: var(--kx-fs-help);
+  overflow-wrap: anywhere;
+}
+.kx-av-nilai-biasa {
+  font-family: var(--kx-font-ui);
+  white-space: pre-wrap;
+}
+.kx-av-sandi {
+  flex: 1;
+  min-width: 0;
+}
+.kx-av-reveal-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--kx-space-2);
+  margin-top: var(--kx-space-3);
+  padding-top: var(--kx-space-2);
+  border-top: 1px solid var(--kx-border-soft);
+}
+.kx-av-countdown {
+  margin: 0;
+  color: var(--kx-text-3);
+  font-size: var(--kx-fs-caption);
+}
+.kx-av-reveal-aksi {
+  display: flex;
+  flex: 0 0 auto;
+  gap: var(--kx-space-1);
+}
+
+/* ── Formulir edit ──────────────────────────────────────────────────── */
+.kx-av-edit {
+  margin: 0 12px 12px;
+  padding: var(--kx-space-3);
+  border: 1px solid var(--kx-accent-ring);
+  border-radius: var(--kx-radius-input);
+  background: var(--kx-surface-2);
+}
+.kx-av-edit-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--kx-space-2) var(--kx-space-3);
+}
+.kx-av-edit-aksi {
+  display: flex;
+  gap: var(--kx-space-2);
+  margin-top: var(--kx-space-2);
+}
+
+/* ── Panel tambah ────────────────────────────────────────────────────── */
+.kx-av-tambah {
+  position: sticky;
+  top: calc(var(--kx-topbar-h) + var(--kx-space-3));
+}
+.kx-av-tambah-ikon {
+  display: inline-flex;
+  color: var(--kx-text-3);
+}
+.kx-av-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kx-space-3);
+}
+.kx-av-label-baris {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--kx-space-2);
+}
+.kx-av-catatan {
+  min-height: 84px;
+}
+
+/* ── Empty state ─────────────────────────────────────────────────────── */
+.kx-av-kosong {
+  padding: var(--kx-space-5) var(--kx-space-3);
+}
+
+/* ── Responsif ───────────────────────────────────────────────────────── */
+@media (max-width: 1199px) {
+  .kx-av-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .kx-av-tambah {
+    order: -1;
+    position: static;
+  }
+}
+
+@media (max-width: 767px) {
+  .kx-av-baris-head {
+    flex-wrap: wrap;
+  }
+  .kx-av-titik {
+    display: none;
+  }
+  .kx-av-aksi {
+    flex: 1 1 100%;
+    margin-left: 52px;
+  }
+  .kx-av-reveal-grid,
+  .kx-av-edit-grid {
+    grid-template-columns: 1fr;
+  }
+  .kx-av-reveal-foot {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .kx-av-reveal-aksi {
+    justify-content: flex-end;
+  }
+  .kx-av-edit-aksi {
+    flex-direction: column-reverse;
+  }
+}
