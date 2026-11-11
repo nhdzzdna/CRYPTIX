@@ -116,6 +116,29 @@ def _token_file_path(mountpoint: str) -> str:
     return os.path.join(mountpoint, config.USB_TOKEN_FILENAME)
 
 
+def path_token(mountpoint: str) -> str:
+    """Lokasi berkas token pada sebuah mountpoint."""
+    return _token_file_path(mountpoint)
+
+
+def _tulis_atomik(path: str, isi: bytes) -> bool:
+    """Tulis ``isi`` ke ``path`` lewat berkas sementara lalu os.replace."""
+    sementara = f"{path}.tmp-{secrets.token_hex(8)}"
+    try:
+        with open(sementara, "wb") as handle:
+            handle.write(isi)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(sementara, path)
+        return True
+    except OSError:
+        try:
+            os.remove(sementara)
+        except OSError:
+            pass
+        return False
+
+
 # ── API publik ────────────────────────────────────────────────────────────────
 
 def daftar_drive() -> list[dict]:
@@ -124,6 +147,65 @@ def daftar_drive() -> list[dict]:
         {"mountpoint": m, "volume_serial": _get_volume_serial(m)}
         for m in _kandidat_drive()
     ]
+
+
+def buat_token(mountpoint: str) -> dict | None:
+    """
+    Siapkan token baru di memori tanpa menulis berkas.
+
+    Returns
+    -------
+    dict berisi ``token_id``, ``verifier``, ``volume_serial``, dan ``secret``
+    (bytes 32) bila mountpoint kandidat dongle; None bila bukan kandidat.
+    """
+    if not mountpoint:
+        return None
+    kandidat = {os.path.normpath(d) for d in _kandidat_drive()}
+    if os.path.normpath(mountpoint) not in kandidat:
+        return None
+
+    rahasia = os.urandom(32)
+    token_id = secrets.token_hex(16)
+    return {
+        "token_id": token_id,
+        "verifier": _verifier(rahasia),
+        "volume_serial": _get_volume_serial(mountpoint),
+        "secret": rahasia,
+    }
+
+
+def tulis_token(mountpoint: str, token: dict) -> bool:
+    """Tulis token ke dongle secara atomik (berkas sementara lalu replace)."""
+    if not mountpoint or not isinstance(token, dict):
+        return False
+    try:
+        os.makedirs(mountpoint, exist_ok=True)
+        payload = {
+            "version": TOKEN_VERSION,
+            "token_id": token["token_id"],
+            "secret": token["secret"].hex(),
+        }
+        isi = json.dumps(payload).encode("utf-8")
+    except (KeyError, AttributeError, OSError, TypeError):
+        return False
+    return _tulis_atomik(_token_file_path(mountpoint), isi)
+
+
+def pulihkan_token(mountpoint: str, isi: bytes | None) -> bool:
+    """
+    Pulihkan berkas token lama setelah pembaruan basis data gagal.
+
+    ``isi`` None berarti berkas token sebelumnya tidak ada sehingga berkas
+    baru dihapus. Pemulihan dilakukan secara atomik.
+    """
+    path = _token_file_path(mountpoint)
+    if isi is None:
+        try:
+            os.remove(path)
+            return True
+        except OSError:
+            return False
+    return _tulis_atomik(path, isi)
 
 
 def register_usb_token(mountpoint: str) -> dict | None:
@@ -138,32 +220,12 @@ def register_usb_token(mountpoint: str) -> dict | None:
     dict berisi ``token_id``, ``verifier``, ``volume_serial``, dan ``secret``
     (bytes 32) bila berhasil; None bila mountpoint bukan kandidat dongle.
     """
-    if not mountpoint:
+    token = buat_token(mountpoint)
+    if token is None:
         return None
-    kandidat = {os.path.normpath(d) for d in _kandidat_drive()}
-    if os.path.normpath(mountpoint) not in kandidat:
+    if not tulis_token(mountpoint, token):
         return None
-
-    try:
-        os.makedirs(mountpoint, exist_ok=True)
-        rahasia = os.urandom(32)
-        token_id = secrets.token_hex(16)
-        payload = {
-            "version": TOKEN_VERSION,
-            "token_id": token_id,
-            "secret": rahasia.hex(),
-        }
-        with open(_token_file_path(mountpoint), "w", encoding="utf-8") as handle:
-            json.dump(payload, handle)
-    except OSError:
-        return None
-
-    return {
-        "token_id": token_id,
-        "verifier": _verifier(rahasia),
-        "volume_serial": _get_volume_serial(mountpoint),
-        "secret": rahasia,
-    }
+    return token
 
 
 def verify_usb_token(stored_verifier: str, stored_serial: str,

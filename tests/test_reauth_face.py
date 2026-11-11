@@ -111,6 +111,7 @@ def _pasang_wajah(monkeypatch, confidence: float = 10.0) -> None:
         face_mod, "_deteksi_roi",
         lambda frame: np.full((200, 200), 5, dtype=np.uint8),
     )
+    monkeypatch.setattr(face_mod, "_mata_terbuka", lambda roi: True)
     monkeypatch.setattr(face_mod, "_latih", lambda samples: object())
     monkeypatch.setattr(
         face_mod, "_prediksi", lambda pen, roi: float(confidence)

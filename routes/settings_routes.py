@@ -46,6 +46,7 @@ def _konteks(user: dict, recovery_key_baru: str | None = None) -> dict:
         "wajah_terdaftar": face_mod.template_ada(user["id"]),
         "webauthn_terdaftar": bool(kredensial),
         "dongle_terpasang": usb_mod.dongle_pengguna_terpasang(user["id"]),
+        "drives": usb_mod.daftar_drive(),
         "session_timeout": int(waktu),
         "session_timeout_pilihan": pilihan,
         "recovery_key_baru": recovery_key_baru,
