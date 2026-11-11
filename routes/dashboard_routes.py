@@ -34,16 +34,20 @@ def index():
     user_id = session["user_id"]
     with get_db() as db:
         file_count = db.execute(
-            "SELECT COUNT(*) FROM vault_files WHERE user_id=?", (user_id,)
+            "SELECT COUNT(*) FROM vault_files "
+            "WHERE user_id=? AND deleted_at IS NULL", (user_id,)
         ).fetchone()[0]
         note_count = db.execute(
-            "SELECT COUNT(*) FROM secure_notes WHERE user_id=?", (user_id,)
+            "SELECT COUNT(*) FROM secure_notes "
+            "WHERE user_id=? AND deleted_at IS NULL", (user_id,)
         ).fetchone()[0]
         account_count = db.execute(
-            "SELECT COUNT(*) FROM account_vault WHERE user_id=?", (user_id,)
+            "SELECT COUNT(*) FROM account_vault "
+            "WHERE user_id=? AND deleted_at IS NULL", (user_id,)
         ).fetchone()[0]
         stego_count = db.execute(
-            "SELECT COUNT(*) FROM stego_images WHERE user_id=?", (user_id,)
+            "SELECT COUNT(*) FROM stego_images "
+            "WHERE user_id=? AND deleted_at IS NULL", (user_id,)
         ).fetchone()[0]
 
     # Disk usage of encrypted files

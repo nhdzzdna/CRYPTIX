@@ -317,7 +317,8 @@ def move_items():
 
         dimiliki = {
             baris["id"] for baris in db.execute(
-                "SELECT id FROM vault_files WHERE user_id=? AND id IN (%s)"
+                "SELECT id FROM vault_files WHERE user_id=? AND deleted_at IS NULL "
+                "AND id IN (%s)"
                 % ",".join("?" for _ in file_ids),
                 (session["user_id"], *file_ids),
             )
@@ -368,7 +369,8 @@ def set_item_state(resource_id: int):
             baris["file_id"] for baris in db.execute(
                 """SELECT ci.file_id FROM collection_items ci
                    JOIN vault_files vf ON vf.id = ci.file_id
-                   WHERE vf.user_id=? AND ci.collection_id=?
+                   WHERE vf.user_id=? AND vf.deleted_at IS NULL
+                     AND ci.collection_id=?
                      AND ci.file_id IN (%s)"""
                 % ",".join("?" for _ in file_ids),
                 (session["user_id"], resource_id, *file_ids),
@@ -437,7 +439,7 @@ def list_items(resource_id: int):
             """SELECT vf.*, ci.state AS item_state
                FROM collection_items ci
                JOIN vault_files vf ON vf.id = ci.file_id
-               WHERE ci.collection_id=? AND vf.user_id=?
+               WHERE ci.collection_id=? AND vf.user_id=? AND vf.deleted_at IS NULL
                ORDER BY ci.added_at, ci.file_id""",
             (resource_id, session["user_id"]),
         ).fetchall()
@@ -477,7 +479,8 @@ def list_hidden(resource_id: int):
             """SELECT vf.*, ci.state AS item_state
                FROM collection_items ci
                JOIN vault_files vf ON vf.id = ci.file_id
-               WHERE ci.collection_id=? AND vf.user_id=? AND ci.state='hidden'
+               WHERE ci.collection_id=? AND vf.user_id=? AND vf.deleted_at IS NULL
+                 AND ci.state='hidden'
                ORDER BY ci.added_at, ci.file_id""",
             (resource_id, session["user_id"]),
         ).fetchall()
@@ -507,7 +510,8 @@ def rename_file(file_id: int):
 
     with get_db() as db:
         row = db.execute(
-            "SELECT * FROM vault_files WHERE id=? AND user_id=?",
+            "SELECT * FROM vault_files WHERE id=? AND user_id=? "
+            "AND deleted_at IS NULL",
             (file_id, session["user_id"]),
         ).fetchone()
         if row is None:

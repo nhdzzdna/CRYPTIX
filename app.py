@@ -177,6 +177,13 @@ def create_app() -> Flask:
     from modules.media.winamp_integration import cleanup_stale_temp_files
     cleanup_stale_temp_files()
 
+    # ── Sampah: bersihkan item yang melewati masa retensi saat startup ───────
+    from modules.trash import bersihkan_kedaluwarsa
+    try:
+        bersihkan_kedaluwarsa()
+    except Exception as galat:  # pragma: no cover - pengaman startup
+        _logger.error("Pembersihan sampah saat startup gagal: %s", galat)
+
     # ── Register blueprints ───────────────────────────────────────────────────
     from routes.auth_routes      import auth_bp
     from routes.dashboard_routes import dashboard_bp
@@ -191,11 +198,12 @@ def create_app() -> Flask:
     from routes.security_routes  import security_bp
     from routes.settings_routes  import settings_bp
     from routes.assistant_routes import assistant_bp
+    from routes.trash_routes     import trash_bp
 
     for bp in [
         auth_bp, dashboard_bp, vault_bp, account_bp, document_bp,
         media_bp, notes_bp, crypto_bp, stego_bp, security_bp, settings_bp,
-        assistant_bp, collection_bp,
+        assistant_bp, collection_bp, trash_bp,
     ]:
         app.register_blueprint(bp)
 

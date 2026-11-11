@@ -154,8 +154,11 @@
     var tombol = document.createElement('button');
     tombol.type = 'submit';
     tombol.className = 'btn btn-sm doc-action ' + kelas;
-    tombol.setAttribute('data-reauth', scope);
-    tombol.setAttribute('data-reauth-resource', String(id));
+    if (scope !== 'item.delete') {
+      // Hapus lunak tidak memerlukan grant; scope lain tetap diverifikasi.
+      tombol.setAttribute('data-reauth', scope);
+      tombol.setAttribute('data-reauth-resource', String(id));
+    }
 
     var ikon = document.createElement('span');
     ikon.className = 'doc-action-icon';

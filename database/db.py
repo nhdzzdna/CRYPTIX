@@ -30,6 +30,12 @@ _KOLOM_BARU_USERS: tuple[tuple[str, str], ...] = (
     ("session_timeout_minutes", "INTEGER"),
 )
 
+# Tabel yang diberi kolom deleted_at oleh fitur sampah; basis data lama
+# dilengkapi agar soft delete tidak gagal pada baris yang sudah ada.
+_TABEL_SAMPAH: tuple[str, ...] = (
+    "vault_files", "secure_notes", "account_vault", "stego_images",
+)
+
 
 def _tambah_kolom_users(conn: sqlite3.Connection) -> None:
     """Lengkapi tabel users pada basis data yang dibuat sebelum skema ini."""
@@ -38,6 +44,15 @@ def _tambah_kolom_users(conn: sqlite3.Connection) -> None:
         if nama not in ada:
             conn.execute(f"ALTER TABLE users ADD COLUMN {nama} {jenis}")
             _logger.info("Kolom tabel users ditambahkan: %s", nama)
+
+
+def _tambah_kolom_sampah(conn: sqlite3.Connection) -> None:
+    """Lengkapi kolom deleted_at untuk fitur sampah (idempoten)."""
+    for tabel in _TABEL_SAMPAH:
+        kolom = {baris[1] for baris in conn.execute(f"PRAGMA table_info({tabel})")}
+        if "deleted_at" not in kolom:
+            conn.execute(f"ALTER TABLE {tabel} ADD COLUMN deleted_at TEXT")
+            _logger.info("Kolom deleted_at ditambahkan pada tabel %s", tabel)
 
 
 @contextlib.contextmanager
@@ -68,6 +83,7 @@ def init_db() -> None:
         with open(_SCHEMA_PATH, "r", encoding="utf-8") as f:
             conn.executescript(f.read())
         _tambah_kolom_users(conn)
+        _tambah_kolom_sampah(conn)
         # Ensure schema_meta exists and has version row
         conn.execute(
             "INSERT OR IGNORE INTO schema_meta (version) VALUES (1)"

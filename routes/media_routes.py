@@ -265,7 +265,8 @@ def view(file_id: int):
     """
     with get_db() as db:
         row = db.execute(
-            "SELECT * FROM vault_files WHERE id=? AND user_id=?",
+            "SELECT * FROM vault_files WHERE id=? AND user_id=? "
+            "AND deleted_at IS NULL",
             (file_id, session["user_id"]),
         ).fetchone()
 
@@ -331,7 +332,8 @@ def thumb(file_id: int):
     """Thumbnail gambar diperkecil di memori; video/audio tidak punya."""
     with get_db() as db:
         row = db.execute(
-            "SELECT * FROM vault_files WHERE id=? AND user_id=?",
+            "SELECT * FROM vault_files WHERE id=? AND user_id=? "
+            "AND deleted_at IS NULL",
             (file_id, session["user_id"]),
         ).fetchone()
 
@@ -382,7 +384,8 @@ def stream(file_id: int):
     """
     with get_db() as db:
         row = db.execute(
-            "SELECT * FROM vault_files WHERE id=? AND user_id=? AND file_type IN ('audio','video')",
+            "SELECT * FROM vault_files WHERE id=? AND user_id=? "
+            "AND deleted_at IS NULL AND file_type IN ('audio','video')",
             (file_id, session["user_id"]),
         ).fetchone()
 
@@ -455,7 +458,8 @@ def play(file_id: int):
     """Buka audio di Winamp; pemutaran HTML5 memakai rute stream."""
     with get_db() as db:
         row = db.execute(
-            "SELECT * FROM vault_files WHERE id=? AND user_id=? AND file_type IN ('audio','video')",
+            "SELECT * FROM vault_files WHERE id=? AND user_id=? "
+            "AND deleted_at IS NULL AND file_type IN ('audio','video')",
             (file_id, session["user_id"]),
         ).fetchone()
 
@@ -514,7 +518,7 @@ def download(file_id: int):
     with get_db() as db:
         row = db.execute(
             "SELECT * FROM vault_files WHERE id=? AND user_id=? "
-            "AND file_type IN ('audio','video')",
+            "AND deleted_at IS NULL AND file_type IN ('audio','video')",
             (file_id, session["user_id"]),
         ).fetchone()
 

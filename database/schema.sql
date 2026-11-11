@@ -36,7 +36,8 @@ CREATE TABLE IF NOT EXISTS vault_files (
     file_size           INTEGER NOT NULL,
     uploaded_at         TEXT    NOT NULL DEFAULT (datetime('now')),
     sha256_hash         TEXT    NOT NULL,      -- SHA-256 plaintext, verifikasi setelah dekripsi
-    sha256_ciphertext   TEXT    NOT NULL       -- SHA-256 berkas terenkripsi, verifikasi aset
+    sha256_ciphertext   TEXT    NOT NULL,      -- SHA-256 berkas terenkripsi, verifikasi aset
+    deleted_at          TEXT                     -- sampah: waktu soft delete; NULL = aktif
 );
 
 -- ── Account Vault ─────────────────────────────────────────────────────────────
@@ -51,7 +52,8 @@ CREATE TABLE IF NOT EXISTS account_vault (
     url_enc         TEXT,
     notes_enc       TEXT,
     created_at      TEXT    NOT NULL DEFAULT (datetime('now')),
-    updated_at      TEXT    NOT NULL DEFAULT (datetime('now'))
+    updated_at      TEXT    NOT NULL DEFAULT (datetime('now')),
+    deleted_at      TEXT                -- sampah: waktu soft delete; NULL = aktif
 );
 
 -- ── Secure Notes ──────────────────────────────────────────────────────────────
@@ -61,7 +63,8 @@ CREATE TABLE IF NOT EXISTS secure_notes (
     title_enc       TEXT    NOT NULL,   -- "v1:<nonce_hex>:<ciphertext_hex>"
     content_enc     TEXT    NOT NULL,
     created_at      TEXT    NOT NULL DEFAULT (datetime('now')),
-    updated_at      TEXT    NOT NULL DEFAULT (datetime('now'))
+    updated_at      TEXT    NOT NULL DEFAULT (datetime('now')),
+    deleted_at      TEXT                -- sampah: waktu soft delete; NULL = aktif
 );
 
 -- ── Schema Version ────────────────────────────────────────────────────────────
@@ -76,7 +79,8 @@ CREATE TABLE IF NOT EXISTS stego_images (
     original_name   TEXT    NOT NULL,   -- terenkripsi: "v1:<nonce>:<ct>"
     stored_name     TEXT    NOT NULL UNIQUE,
     has_encryption  INTEGER NOT NULL DEFAULT 0,   -- 1 if message was super-encrypted
-    created_at      TEXT    NOT NULL DEFAULT (datetime('now'))
+    created_at      TEXT    NOT NULL DEFAULT (datetime('now')),
+    deleted_at      TEXT                -- sampah: waktu soft delete; NULL = aktif
 );
 
 -- ── Blockchain Log ────────────────────────────────────────────────────────────

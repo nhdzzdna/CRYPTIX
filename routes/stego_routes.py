@@ -28,6 +28,7 @@ from modules.cryptography import session_keys
 from modules.cryptography.key_management import purpose_key
 from modules.cryptography.database_encryption import decrypt_field, encrypt_field, field_aad
 from modules.blockchain.blockchain import add_block
+from modules import trash
 
 stego_bp = Blueprint("stego", __name__)
 
@@ -74,7 +75,8 @@ def _hash_gambar(path: str) -> str:
 def index():
     with get_db() as db:
         rows = db.execute(
-            "SELECT * FROM stego_images WHERE user_id=? ORDER BY created_at DESC",
+            "SELECT * FROM stego_images WHERE user_id=? "
+            "AND deleted_at IS NULL ORDER BY created_at DESC",
             (session["user_id"],),
         ).fetchall()
 
@@ -261,7 +263,8 @@ def _hasil_ekstraksi(result: dict):
 def extract(img_id: int):
     with get_db() as db:
         row = db.execute(
-            "SELECT * FROM stego_images WHERE id=? AND user_id=?",
+            "SELECT * FROM stego_images WHERE id=? AND user_id=? "
+            "AND deleted_at IS NULL",
             (img_id, session["user_id"]),
         ).fetchone()
 
@@ -331,7 +334,8 @@ def extract_upload():
 def download(img_id: int):
     with get_db() as db:
         row = db.execute(
-            "SELECT * FROM stego_images WHERE id=? AND user_id=?",
+            "SELECT * FROM stego_images WHERE id=? AND user_id=? "
+            "AND deleted_at IS NULL",
             (img_id, session["user_id"]),
         ).fetchone()
 
@@ -350,18 +354,13 @@ def download(img_id: int):
 @stego_bp.route("/steganography/delete/<int:img_id>", methods=["POST"])
 @login_required
 def delete(img_id: int):
+    """Pindahkan gambar stego ke Sampah (soft delete); purge di /sampah."""
     with get_db() as db:
-        row = db.execute(
-            "SELECT * FROM stego_images WHERE id=? AND user_id=?",
-            (img_id, session["user_id"]),
-        ).fetchone()
-        if not row:
-            abort(404)
-        img_path = os.path.join(config.STEGO_IMAGES_DIR, row["stored_name"])
-        if os.path.exists(img_path):
-            os.remove(img_path)
-        db.execute("DELETE FROM stego_images WHERE id=?", (img_id,))
-        db.commit()
+        row = trash.pindah_ke_sampah(db, "stego", img_id, session["user_id"])
+    if row is None:
+        abort(404)
 
-    flash(MSG.STEGO_DELETED, "info")
+    add_block(session["user_id"], "TRASH_MOVE", f"stego:{img_id}",
+              trash.hash_aset("stego", row))
+    flash(MSG.TRASH_MOVED_STEGO, "info")
     return redirect(url_for("stego.index"))

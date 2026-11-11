@@ -91,6 +91,9 @@ SESSION_COOKIE_SECURE: bool   = os.environ.get(
 # ── Proof-of-Work ─────────────────────────────────────────────────────────────
 POW_DIFFICULTY: int = int(os.environ.get("POW_DIFFICULTY", 3))
 
+# ── Sampah (soft delete) ──────────────────────────────────────────────────────
+TRASH_RETENTION_DAYS: int = int(os.environ.get("TRASH_RETENTION_DAYS", 30))
+
 # ── Face Recognition ──────────────────────────────────────────────────────────
 FACE_CONFIDENCE_THRESHOLD: float = float(
     os.environ.get("FACE_CONFIDENCE_THRESHOLD", 70.0)

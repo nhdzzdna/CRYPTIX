@@ -46,6 +46,7 @@ SCOPES = frozenset({
     "stego.extract",
     "stego.download",
     "item.delete",
+    "trash.purge",
     "settings.change",
     "biometric.manage",
 })

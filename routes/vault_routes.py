@@ -31,6 +31,7 @@ from modules.cryptography.file_encryption import (
 )
 from modules.blockchain.blockchain import add_block
 from routes.collection_shared import halaman_koleksi
+from modules import trash
 
 vault_bp = Blueprint("vault", __name__)
 
@@ -222,7 +223,8 @@ def upload():
 def decrypt(resource_id: int):
     with get_db() as db:
         row = db.execute(
-            "SELECT * FROM vault_files WHERE id=? AND user_id=?",
+            "SELECT * FROM vault_files WHERE id=? AND user_id=? "
+            "AND deleted_at IS NULL",
             (resource_id, session["user_id"]),
         ).fetchone()
 
@@ -265,25 +267,14 @@ def decrypt(resource_id: int):
 @vault_bp.route("/vault/delete/<int:resource_id>", methods=["POST"])
 @limiter.limit(REVEAL_LIMIT, key_func=user_or_ip_key)
 @login_required
-@require_grant("item.delete")
 def delete(resource_id: int):
+    """Pindahkan berkas ke Sampah (soft delete); purge dilakukan di /sampah."""
     with get_db() as db:
-        row = db.execute(
-            "SELECT * FROM vault_files WHERE id=? AND user_id=?",
-            (resource_id, session["user_id"]),
-        ).fetchone()
-        if not row:
-            abort(404)
+        row = trash.pindah_ke_sampah(db, "file", resource_id, session["user_id"])
+    if row is None:
+        abort(404)
 
-        enc_path = os.path.join(config.ENCRYPTED_FILES_DIR, row["stored_name"])
-        if os.path.exists(enc_path):
-            os.remove(enc_path)
-
-        db.execute("DELETE FROM vault_files WHERE id=? AND user_id=?",
-                   (resource_id, session["user_id"]))
-        db.commit()
-
-    add_block(session["user_id"], "DELETE", f"file:{resource_id}",
-              row["sha256_ciphertext"])
-    flash(MSG.VAULT_FILE_DELETED, "info")
+    add_block(session["user_id"], "TRASH_MOVE", f"file:{resource_id}",
+              trash.hash_aset("file", row))
+    flash(MSG.TRASH_MOVED_FILE, "info")
     return redirect(url_for("vault.index"))

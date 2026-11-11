@@ -90,7 +90,8 @@ def halaman_koleksi(db, user_id: int, kind: str, file_types, db_key: bytes) -> d
     tanda = ",".join("?" for _ in jenis)
     rows = db.execute(
         f"SELECT * FROM vault_files WHERE user_id=? "
-        f"AND file_type IN ({tanda}) ORDER BY uploaded_at DESC, id DESC",
+        f"AND deleted_at IS NULL AND file_type IN ({tanda}) "
+        "ORDER BY uploaded_at DESC, id DESC",
         (user_id, *jenis),
     ).fetchall()
     koleksi_rows = db.execute(
