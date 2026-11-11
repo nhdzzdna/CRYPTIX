@@ -606,7 +606,7 @@ class MSG:
     AUDIO_DROPZONE_HINT      = "MP3, WAV, FLAC, OGG, M4A · Maks. 64 MB · Berkas dienkripsi sebelum disimpan"
     AUDIO_SEARCH_PLACEHOLDER = "Cari trek..."
     AUDIO_EMPTY_TRACKS       = "Belum ada trek audio"
-    AUDIO_EMPTY_TRACKS_TEXT  = "Unggah audio untuk mulai memutar musik terenkripsi."
+    AUDIO_EMPTY_TRACKS_TEXT  = "Unggah audio untuk mulai memutar audio terenkripsi."
     AUDIO_LOCK_MODAL_TITLE   = "Item Terkunci"
     AUDIO_LOCK_MODAL_HINT    = '"{nama}" berstatus terkunci. Pilih tindakan:'
     AUDIO_LOCK_ACTION_VIEW   = "Buka & Putar Sekali"
