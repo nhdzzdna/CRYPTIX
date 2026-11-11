@@ -1,184 +1,139 @@
 {% extends "base.html" %}
 {% block title %}Secure Notes — KOSYAK{% endblock %}
 {% block page_title %}Secure Notes{% endblock %}
-{% block page_subtitle %}
-<p class="page-subtitle">Simpan catatan pribadi dalam bentuk terenkripsi. Isi catatan hanya ditampilkan setelah verifikasi ulang.</p>
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/halaman/secure_notes.css') }}" />
 {% endblock %}
-{% block page_actions %}
-<a href="#note-add" class="btn btn-primary btn-sm notes-header-action">
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
-  Tambah Catatan
-</a>
-{% endblock %}
-
-{% macro icon_lock() %}
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/><circle cx="12" cy="15" r="1.2"/></svg>
-{% endmacro %}
-
-{% macro icon_note() %}
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6"/></svg>
-{% endmacro %}
-
-{% macro icon_eye() %}
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z"/><circle cx="12" cy="12" r="2.6"/></svg>
-{% endmacro %}
-
-{% macro icon_edit() %}
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
-{% endmacro %}
-
-{% macro icon_trash() %}
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/><path d="M10 11v5M14 11v5"/></svg>
-{% endmacro %}
-
-{% macro icon_clock() %}
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
-{% endmacro %}
 
 {% block content %}
-<div class="notes-page">
-  <div class="notes-layout">
-    <aside class="notes-side" aria-label="Tambah catatan">
-      <section id="note-add" class="notes-panel notes-add" aria-labelledby="note-add-title">
-        <header class="notes-panel-head">
-          <div class="notes-panel-heading">
-            <h2 id="note-add-title" class="notes-panel-title">Tambah Catatan</h2>
-            <p class="notes-panel-sub">Judul dan isi catatan dienkripsi sebelum disimpan.</p>
+<div class="kx-sn-page"
+     data-msg-open-loading="{{ MSG.NOTES_OPEN_LOADING }}"
+     data-msg-open-failed="{{ MSG.NOTES_OPEN_FAILED }}"
+     data-msg-search-empty="{{ MSG.NOTES_SEARCH_EMPTY }}"
+     data-msg-new-title="{{ MSG.NOTES_NEW_TITLE }}"
+     data-msg-delete-title="{{ MSG.NOTES_DELETE_TITLE }}"
+     data-msg-delete-message="{{ MSG.NOTES_DELETE_MESSAGE }}">
+  <div class="kx-sn-grid">
+
+    <!-- ── Daftar catatan ─────────────────────────────────────────────── -->
+    <section class="kx-card kx-sn-daftar" aria-labelledby="sn-daftar-title">
+      <header class="kx-card-head">
+        <h2 class="kx-card-title" id="sn-daftar-title">Catatan tersimpan ({{ notes|length }})</h2>
+        <span class="kx-badge kx-badge-ok">{{ ikon('lock', 13) }}Terenkripsi</span>
+      </header>
+
+      <div class="kx-card-body kx-sn-daftar-body">
+        {% if notes %}
+        <div class="kx-sn-toolbar">
+          <div class="kx-sn-cari">
+            {{ ikon('search', 15) }}
+            <input type="search" class="kx-input" id="sn-cari"
+                   placeholder="Cari catatan…" autocomplete="off" />
           </div>
-          <span class="notes-panel-icon" aria-hidden="true">{{ icon_lock() }}</span>
+          <button type="button" class="kx-btn kx-btn-primary kx-btn-sm" data-sn-baru>
+            {{ ikon('plus', 15) }}<span>Catatan baru</span>
+          </button>
+        </div>
+
+        <div class="kx-sn-lista" id="sn-daftar">
+          {% for note in notes %}
+          <button type="button" class="kx-sn-baris" data-sn-id="{{ note.id }}"
+                  data-sn-judul="{{ note.title }}"
+                  data-sn-tanggal="{{ note.updated_at[:16] }}"
+                  data-sn-open-url="{{ url_for('notes.open_note', resource_id=note.id) }}"
+                  data-sn-edit-url="{{ url_for('notes.edit', resource_id=note.id) }}"
+                  data-sn-hapus-url="{{ url_for('notes.delete', resource_id=note.id) }}">
+            <span class="kx-sn-baris-ikon" aria-hidden="true">{{ ikon('file-text', 17) }}</span>
+            <span class="kx-sn-baris-utama">
+              <span class="kx-sn-judul">{{ note.title }}</span>
+              <span class="kx-sn-tanggal">{{ note.updated_at[:16] }}</span>
+            </span>
+            <span class="kx-sn-baris-kunci" aria-hidden="true">{{ ikon('lock', 14) }}</span>
+          </button>
+          {% endfor %}
+        </div>
+
+        <p class="kx-sn-tak-cocok" id="sn-tak-cocok" hidden>{{ MSG.NOTES_SEARCH_EMPTY }}</p>
+        {% else %}
+        <div class="kx-empty kx-sn-kosong-lista">
+          <span aria-hidden="true">{{ ikon('file-text', 30) }}</span>
+          <p class="kx-empty-title">Belum ada catatan</p>
+          <p>Buat catatan terenkripsi pertama Anda lewat tombol Catatan baru.</p>
+          <button type="button" class="kx-btn kx-btn-primary kx-btn-sm" data-sn-baru>
+            {{ ikon('plus', 15) }}<span>Catatan baru</span>
+          </button>
+        </div>
+        {% endif %}
+      </div>
+    </section>
+
+    <!-- ── Editor ────────────────────────────────────────────────────── -->
+    <section class="kx-card kx-sn-editor" aria-label="Editor catatan">
+      <div class="kx-sn-kosong" id="sn-kosong">
+        <div class="kx-empty">
+          <span aria-hidden="true">{{ ikon('file-text', 30) }}</span>
+          <p class="kx-empty-title">Belum ada catatan dipilih</p>
+          <p>Pilih catatan pada daftar untuk membacanya, atau buat catatan baru.</p>
+          <button type="button" class="kx-btn kx-btn-primary kx-btn-sm" data-sn-baru>
+            {{ ikon('plus', 15) }}<span>Catatan baru</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="kx-sn-editor-isi" id="sn-editor-isi" hidden>
+        <header class="kx-card-head">
+          <div class="kx-sn-editor-kepala">
+            <h2 class="kx-card-title" id="sn-editor-judul">{{ MSG.NOTES_NEW_TITLE }}</h2>
+            <p class="kx-sn-editor-meta" id="sn-editor-meta" hidden>
+              Diperbarui <span class="kx-sn-tanggal" id="sn-editor-tanggal"></span>
+            </p>
+          </div>
+          <button type="button" class="kx-btn kx-btn-sm kx-btn-danger" id="sn-hapus" hidden>
+            {{ ikon('trash', 15) }}<span>Hapus</span>
+          </button>
         </header>
-        <div class="notes-panel-body">
-          <form method="POST" action="{{ url_for('notes.add') }}" class="notes-add-form">
+
+        <div class="kx-card-body kx-sn-editor-body">
+          <div class="kx-infobox kx-sn-buka" id="sn-buka-kotak" hidden>
+            {{ ikon('lock', 18) }}
+            <div class="kx-sn-buka-teks">
+              <p>{{ MSG.NOTES_OPEN_HINT }}</p>
+              <button type="button" class="kx-btn kx-btn-primary kx-btn-sm" id="sn-buka"
+                      data-reauth="note.open">
+                {{ ikon('eye', 15) }}<span>Buka</span>
+              </button>
+            </div>
+          </div>
+
+          <form method="POST" action="{{ url_for('notes.add') }}" class="kx-sn-form" id="sn-form">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-            <div class="form-group">
-              <label for="note-title">Judul</label>
-              <input type="text" id="note-title" name="title" class="form-control"
+            <div class="kx-field">
+              <label class="kx-label" for="sn-judul">Judul</label>
+              <input type="text" class="kx-input" id="sn-judul" name="title"
                      placeholder="Judul catatan" autocomplete="off" required />
             </div>
-            <div class="form-group">
-              <label for="note-content">Isi Catatan</label>
-              <textarea id="note-content" name="content" class="form-control" rows="5"
-                        placeholder="Tulis isi catatan" required></textarea>
+            <div class="kx-field">
+              <label class="kx-label" for="sn-isi">Isi catatan</label>
+              <textarea class="kx-textarea kx-sn-isi" id="sn-isi" name="content"
+                        rows="10" placeholder="Tulis isi catatan" required></textarea>
             </div>
-            <div class="notes-form-actions">
-              <button type="submit" class="btn btn-primary notes-submit-btn">
-                {{ icon_lock() }}<span>Simpan Terenkripsi</span>
+            <div class="kx-sn-form-aksi">
+              <button type="submit" class="kx-btn kx-btn-primary" id="sn-simpan">
+                {{ ikon('lock', 15) }}<span>Simpan terenkripsi</span>
               </button>
+              <button type="button" class="kx-btn kx-btn-secondary" id="sn-tutup" hidden>Tutup</button>
+              <button type="button" class="kx-btn kx-btn-secondary" id="sn-batal" hidden>Batal</button>
             </div>
           </form>
         </div>
-      </section>
-    </aside>
-
-    <div class="notes-main">
-      {% if notes %}
-      <section class="notes-overview" aria-label="Ringkasan catatan">
-        <div class="notes-stat">
-          <span class="notes-stat-label">Total catatan</span>
-          <span class="notes-stat-value">{{ notes|length }}</span>
-          <span class="notes-stat-hint">Catatan terenkripsi tersimpan</span>
-        </div>
-        <div class="notes-stat">
-          <span class="notes-stat-label">Catatan terbaru</span>
-          <span class="notes-stat-value notes-stat-text">{{ notes[0].title }}</span>
-          <span class="notes-stat-hint mono">{{ notes[0].updated_at[:16] }}</span>
-        </div>
-        {% set pembaruan = notes|map(attribute='updated_at')|max %}
-        <div class="notes-stat">
-          <span class="notes-stat-label">Pembaruan terakhir</span>
-          <span class="notes-stat-value notes-stat-date mono">{{ pembaruan[:16] }}</span>
-          <span class="notes-stat-hint"><span class="notes-stat-hint-icon" aria-hidden="true">{{ icon_clock() }}</span>Waktu perubahan terakhir</span>
-        </div>
-      </section>
-      {% endif %}
-
-      <section class="notes-panel notes-list" aria-labelledby="notes-list-title">
-        <header class="notes-panel-head">
-          <div class="notes-panel-heading">
-            <h2 id="notes-list-title" class="notes-panel-title">Catatan Tersimpan</h2>
-            <p class="notes-panel-sub">Isi catatan tetap tersembunyi hingga verifikasi ulang berhasil.</p>
-          </div>
-          <span class="notes-panel-count">{{ notes|length }} catatan</span>
-        </header>
-        <div class="notes-panel-body notes-list-body">
-          {% if notes %}
-            {% for note in notes %}
-            <article class="notes-entry note-entry" data-note="{{ note.id }}">
-              <div class="notes-entry-head">
-                <span class="notes-entry-icon" aria-hidden="true">{{ icon_note() }}</span>
-                <div class="notes-entry-main">
-                  <h3 class="notes-entry-title">{{ note.title }}</h3>
-                  <div class="notes-entry-meta">
-                    <span class="notes-meta-label">Diperbarui</span>
-                    <span class="notes-meta-sep" aria-hidden="true">·</span>
-                    <span class="notes-entry-date mono">{{ note.updated_at[:16] }}</span>
-                  </div>
-                </div>
-                <div class="notes-entry-actions">
-                  <button type="button" class="btn btn-sm btn-secondary notes-open-btn"
-                          data-reauth="note.open"
-                          data-reauth-resource="{{ note.id }}"
-                          data-note-open-id="{{ note.id }}"
-                          data-note-open-url="{{ url_for('notes.open_note', resource_id=note.id) }}">
-                    {{ icon_eye() }}<span>Buka</span>
-                  </button>
-                  <span class="notes-status text-muted" data-note-status="{{ note.id }}" role="status"></span>
-                </div>
-              </div>
-
-              <div class="notes-detail" data-note-box="{{ note.id }}" hidden>
-                <div class="notes-detail-head">
-                  <span class="notes-detail-label">Isi Catatan</span>
-                  <button type="button" class="btn btn-sm btn-ghost notes-close-btn"
-                          data-note-close="{{ note.id }}">Tutup</button>
-                </div>
-                <p class="notes-detail-content" data-note-content="{{ note.id }}"></p>
-              </div>
-
-              <form method="POST" action="{{ url_for('notes.edit', resource_id=note.id) }}"
-                    class="notes-edit-form" data-note-edit="{{ note.id }}" hidden>
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-                <div class="form-group">
-                  <label for="note-edit-title-{{ note.id }}">Judul</label>
-                  <input type="text" id="note-edit-title-{{ note.id }}" name="title" class="form-control" required />
-                </div>
-                <div class="form-group">
-                  <label for="note-edit-content-{{ note.id }}">Isi Catatan</label>
-                  <textarea id="note-edit-content-{{ note.id }}" name="content" class="form-control" rows="5" required></textarea>
-                </div>
-                <div class="notes-form-actions">
-                  <button type="submit" class="btn btn-primary"
-                          data-reauth="note.edit"
-                          data-reauth-resource="{{ note.id }}">
-                    {{ icon_edit() }}<span>Simpan</span>
-                  </button>
-                  <button type="button" class="btn btn-secondary"
-                          data-note-cancel="{{ note.id }}">Batal</button>
-                </div>
-              </form>
-
-              <div class="notes-entry-foot">
-                <form method="POST" action="{{ url_for('notes.delete', resource_id=note.id) }}"
-                      class="notes-delete-form">
-                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-                  <button type="submit" class="btn btn-sm btn-danger notes-delete-btn">
-                    {{ icon_trash() }}<span>Hapus</span>
-                  </button>
-                </form>
-              </div>
-            </article>
-            {% endfor %}
-          {% else %}
-          <div class="notes-empty">
-            <span class="notes-empty-icon" aria-hidden="true">{{ icon_note() }}</span>
-            <h3 class="notes-empty-title">Belum ada catatan</h3>
-            <p class="notes-empty-text">Gunakan formulir tambah catatan untuk menyimpan catatan pertama Anda.</p>
-          </div>
-          {% endif %}
-        </div>
-      </section>
-    </div>
+      </div>
+    </section>
   </div>
+
+  <!-- Formulir hapus bersama; aksi diatur oleh secure_notes.js -->
+  <form method="POST" action="" class="kx-sn-hapus-form" id="sn-hapus-form" hidden>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+  </form>
 </div>
 {% endblock %}
 

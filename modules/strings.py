@@ -74,6 +74,13 @@ class MSG:
     NOTES_SAVED              = "Catatan berhasil disimpan."
     NOTES_UPDATED            = "Catatan berhasil diperbarui."
     NOTES_DELETED            = "Catatan berhasil dihapus."
+    NOTES_OPEN_HINT          = "Isi catatan hanya tampil setelah verifikasi ulang."
+    NOTES_OPEN_LOADING       = "Membuka…"
+    NOTES_OPEN_FAILED        = "Catatan gagal dibuka. Muat ulang halaman lalu coba kembali."
+    NOTES_SEARCH_EMPTY       = "Tidak ada catatan yang cocok dengan pencarian."
+    NOTES_NEW_TITLE          = "Catatan baru"
+    NOTES_DELETE_TITLE       = "Hapus catatan?"
+    NOTES_DELETE_MESSAGE     = "{nama} akan dipindahkan ke Sampah. Anda masih dapat memulihkannya dari sana."
 
     # â”€â”€ Account Vault (credentials) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     ACCOUNT_FIELDS_REQUIRED  = "Nama situs, nama pengguna, dan kata sandi harus diisi."
