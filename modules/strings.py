@@ -601,3 +601,14 @@ class MSG:
     DOC_SEARCH_NOT_FOUND     = "Dokumen tidak ditemukan"
     DOC_SEARCH_NOT_FOUND_TEXT = "Coba kata kunci lain atau ubah urutan pencarian."
     DOC_DELETE_CONFIRM_MSG   = "Dokumen {nama} akan dipindahkan ke Sampah. Anda masih dapat memulihkannya dari sana."
+
+    # ── U2b: Audio ────────────────────────────────────────────────────────────
+    AUDIO_DROPZONE_HINT      = "MP3, WAV, FLAC, OGG, M4A · Maks. 64 MB · Berkas dienkripsi sebelum disimpan"
+    AUDIO_SEARCH_PLACEHOLDER = "Cari trek..."
+    AUDIO_EMPTY_TRACKS       = "Belum ada trek audio"
+    AUDIO_EMPTY_TRACKS_TEXT  = "Unggah audio untuk mulai memutar musik terenkripsi."
+    AUDIO_LOCK_MODAL_TITLE   = "Item Terkunci"
+    AUDIO_LOCK_MODAL_HINT    = '"{nama}" berstatus terkunci. Pilih tindakan:'
+    AUDIO_LOCK_ACTION_VIEW   = "Buka & Putar Sekali"
+    AUDIO_LOCK_ACTION_UNLOCK = "Lepas Kunci"
+    AUDIO_LOCK_ACTION_CANCEL = "Batal"
