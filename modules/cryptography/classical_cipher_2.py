@@ -161,3 +161,49 @@ def playfair_decrypt(ciphertext: str, key: str) -> str:
         else:
             result.append(ch)
     return "".join(result)
+
+
+_ATURAN_BARIS = "baris sama"
+_ATURAN_KOLOM = "kolom sama"
+_ATURAN_PERSEGI = "persegi"
+
+
+def playfair_encrypt_trace(plaintext: str, key: str,
+                           limit: int | None = None) -> tuple[list[dict], int]:
+    """
+    Jejak enkripsi Playfair per pasangan huruf.
+
+    Setiap baris berisi pasangan asal, pasangan hasil, dan aturan yang dipakai:
+    ``baris sama``, ``kolom sama``, atau ``persegi``. Kunci tidak disertakan.
+
+    Returns
+    -------
+    (list[dict], int)  Daftar jejak dan jumlah pasangan seluruhnya.
+    """
+    table = _build_table(key)
+    prepared = _prepare_text(_letters_of(plaintext))
+    total = len(prepared) // 2
+    jejak: list[dict] = []
+
+    for i in range(0, len(prepared), 2):
+        if limit is not None and len(jejak) >= limit:
+            break
+        a, b = prepared[i][0], prepared[i + 1][0]
+        ra, ca = _find_position(table, a)
+        rb, cb = _find_position(table, b)
+        if ra == rb:
+            aturan = _ATURAN_BARIS
+            hasil = table[ra][(ca + 1) % 5] + table[rb][(cb + 1) % 5]
+        elif ca == cb:
+            aturan = _ATURAN_KOLOM
+            hasil = table[(ra + 1) % 5][ca] + table[(rb + 1) % 5][cb]
+        else:
+            aturan = _ATURAN_PERSEGI
+            hasil = table[ra][cb] + table[rb][ca]
+        jejak.append({
+            "pasangan_asal": a + b,
+            "pasangan_hasil": hasil,
+            "aturan": aturan,
+        })
+
+    return jejak, total

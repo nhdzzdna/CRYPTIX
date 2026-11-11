@@ -20,7 +20,7 @@ from modules.cryptography.classical_cipher_2 import playfair_encrypt, playfair_d
 from modules.cryptography.modern_cipher_1    import chacha20_encrypt, chacha20_decrypt
 from modules.cryptography.modern_cipher_2    import blowfish_encrypt, blowfish_decrypt
 from modules.cryptography.super_encryption   import (
-    super_encrypt, super_decrypt, super_encrypt_steps,
+    super_encrypt, super_decrypt, super_encrypt_stages,
 )
 
 crypto_bp = Blueprint("crypto", __name__)
@@ -68,7 +68,7 @@ def _tool_key(key: str) -> bytes:
 def index():
     result = None
     error  = None
-    steps  = None
+    stages = None
     status = 200
 
     if request.method == "POST":
@@ -107,8 +107,9 @@ def index():
                 if not passphrase:
                     error = MSG.CRYPTO_PASSPHRASE_REQUIRED
                 elif action == "encrypt" and request.form.get("show_steps"):
-                    steps = super_encrypt_steps(text, passphrase=passphrase)
-                    result = steps["final"]
+                    detail = super_encrypt_stages(text, passphrase=passphrase)
+                    result = detail["final"]
+                    stages = detail["stages"]
                 else:
                     result = (
                         super_encrypt(text, passphrase=passphrase)
@@ -121,5 +122,5 @@ def index():
             error = MSG.CRYPTO_OPERATION_FAILED
 
     return render_template(
-        "crypto_tools.html", result=result, error=error, steps=steps,
+        "crypto_tools.html", result=result, error=error, stages=stages,
     ), status

@@ -209,3 +209,29 @@ class TestIndividualCipherRoute:
             text="pesan", key="",
         )
         assert "alert-danger" in page.get_data(as_text=True)
+
+
+class TestSuperEncryptionTraceRoute:
+    def test_steps_show_trace_tables_and_limits(self, client):
+        page = _post(
+            client, cipher="super", action="encrypt",
+            text="A" * 300, passphrase=PASSPHRASE, show_steps="1",
+        )
+        body = page.get_data(as_text=True)
+        assert page.status_code == 200
+        assert "crypto-trace-table" in body
+        assert "Pasangan Asal" in body
+        assert "Sebelum (hex)" in body
+        assert "ditampilkan 200 pertama" in body
+        assert "ditampilkan 100 pasangan pertama" in body
+        assert "ditampilkan 64 byte pertama" in body
+        assert PASSPHRASE not in body
+
+    def test_steps_mask_vigenere_key(self, client):
+        page = _post(
+            client, cipher="super", action="encrypt",
+            text="Halo Dunia", passphrase=PASSPHRASE, show_steps="1",
+        )
+        body = page.get_data(as_text=True)
+        assert "***" in body
+        assert PASSPHRASE not in body
