@@ -53,6 +53,10 @@
     '<path d="M8 10V7a4 4 0 0 1 8 0v3"/><circle cx="12" cy="15" r="1.2"/></svg>';
   var IKON_PUTAR =
     '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>';
+  var IKON_PRATINJAU =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" ' +
+    'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/>' +
+    '<circle cx="12" cy="12" r="3"/></svg>';
   var IKON_UNDUH =
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" ' +
     'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12"/>' +
@@ -261,6 +265,14 @@
 
     var aksi = document.createElement('div');
     aksi.className = 'collection-item-actions doc-file-actions';
+
+    var tombolPratinjau = document.createElement('button');
+    tombolPratinjau.type = 'button';
+    tombolPratinjau.className = 'btn btn-sm btn-secondary doc-action';
+    tombolPratinjau.setAttribute('data-reauth', 'doc.preview');
+    tombolPratinjau.setAttribute('data-reauth-resource', String(item.id));
+    tombolPratinjau.innerHTML = IKON_PRATINJAU + '<span>Pratinjau</span>';
+    aksi.appendChild(tombolPratinjau);
 
     aksi.appendChild(buatFormAksi(item.id, 'file.download', 'Unduh', 'btn-success'));
     aksi.appendChild(buatFormAksi(item.id, 'item.delete', 'Hapus', 'btn-danger'));
@@ -526,6 +538,16 @@
     if (event.target === tombolLepasItem) {
       tampilkanGalat(pesan('need-folder'));
       return;
+    }
+    if (jenisHalaman === 'dokumen') {
+      var baris = event.target.closest('[data-doc-item]');
+      if (baris && baris.getAttribute('data-locked') === '1'
+          && !event.target.closest('button, input, a, form, label')) {
+        if (window.CryptixLock) {
+          window.CryptixLock.pilih(baris, null, 'doc.preview');
+        }
+        return;
+      }
     }
     if (event.target === tombolGantiNama) {
       formGantiNama.hidden = !formGantiNama.hidden;

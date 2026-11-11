@@ -1,7 +1,9 @@
 """
 routes/media_routes.py
 ───────────────────────
-Media Vault: encrypted audio/video files with Winamp/HTML5 playback.
+Media Vault: encrypted audio/video files with Winamp/HTML5 playback,
+plus in-memory document preview (PDF, image, text) with magic-byte
+detection.
 """
 
 import io
@@ -66,32 +68,6 @@ IMAGE_MIME_TYPES = {
     "bmp":  "image/bmp",
     "webp": "image/webp",
 }
-
-
-
-MAX_TEXT_BYTES = 512 * 1024
-
-
-def _deteksi_jenis(data: bytes):
-    if data.startswith(b"%PDF-"):
-        return ("pdf", "application/pdf")
-    if data.startswith(b"\\x89PNG\\r\\n\\x1a\\n"):
-        return ("image", "image/png")
-    if data.startswith(b"\\xff\\xd8\\xff"):
-        return ("image", "image/jpeg")
-    if data.startswith((b"GIF87a", b"GIF89a")):
-        return ("image", "image/gif")
-    if data.startswith(b"BM"):
-        return ("image", "image/bmp")
-    if len(data) >= 12 and data[:4] == b"RIFF" and data[8:12] == b"WEBP":
-        return ("image", "image/webp")
-    try:
-        teks = data.decode("utf-8")
-    except UnicodeDecodeError:
-        return None
-    if any(ord(ch) < 32 and ch not in "\\t\\n\\r\\f\\b" for ch in teks):
-        return None
-    return ("text", "text/plain; charset=utf-8")
 
 
 def _mime_any(filename: str) -> str:
@@ -549,14 +525,58 @@ def download(file_id: int):
     )
 
 
+# ── Pratinjau dokumen (UB) ────────────────────────────────────────────────────
+
+MAGIC_PDF = b"%PDF-"
+MAGIC_IMAGES = (
+    (b"\x89PNG\r\n\x1a\n", "image/png"),
+    (b"\xff\xd8\xff", "image/jpeg"),
+    (b"GIF87a", "image/gif"),
+    (b"GIF89a", "image/gif"),
+    (b"BM", "image/bmp"),
+)
+MAX_TEXT_BYTES = 1_000_000
+
+
+def _deteksi_jenis(data: bytes):
+    if data.startswith(b"%PDF-"):
+        return ("pdf", "application/pdf")
+    if data.startswith(bytes.fromhex("89504e470d0a1a0a")):
+        return ("image", "image/png")
+    if data.startswith(bytes.fromhex("ffd8ff")):
+        return ("image", "image/jpeg")
+    if data.startswith((b"GIF87a", b"GIF89a")):
+        return ("image", "image/gif")
+    if data.startswith(b"BM"):
+        return ("image", "image/bmp")
+    if len(data) >= 12 and data[:4] == b"RIFF" and data[8:12] == b"WEBP":
+        return ("image", "image/webp")
+    try:
+        teks = data.decode("utf-8")
+    except UnicodeDecodeError:
+        return None
+    if any(ord(ch) < 32 and ch not in "\t\n\r\f\b" for ch in teks):
+        return None
+    return ("text", "text/plain; charset=utf-8")
+
+
 @media_bp.route("/media-vault/preview/<int:file_id>")
 @login_required
 @require_grant("doc.preview")
 def preview(file_id: int):
+    """
+    Pratinjau dokumen dalam memori: PDF dan gambar disajikan inline,
+    teks dikirim sebagai JSON, jenis lain ditolak 415.
+
+    Dekripsi terjadi hanya di memori dan hash plaintext diverifikasi
+    seperti rute view. Untuk item terkunci, grant ``doc.preview`` berlaku
+    sebagai pengganti ``item.view`` karena keduanya adalah verifikasi
+    ulang per item; kunci koleksi tetap memerlukan ``album.unlock``.
+    """
     with get_db() as db:
         row = db.execute(
             "SELECT * FROM vault_files WHERE id=? AND user_id=? "
-            "AND deleted_at IS NULL AND file_type='document'",
+            "AND deleted_at IS NULL",
             (file_id, session["user_id"]),
         ).fetchone()
 
@@ -568,49 +588,49 @@ def preview(file_id: int):
         return _respons_terkunci(*ditolak)
 
     try:
-        nama = decrypt_field(
+        path = os.path.join(config.ENCRYPTED_FILES_DIR, row["stored_name"])
+        plaintext = decrypt_all(
+            path, _file_key(), file_aad(row["user_id"], row["stored_name"])
+        )
+        if hashlib.sha256(plaintext).hexdigest() != row["sha256_hash"]:
+            raise ValueError("SHA-256 plaintext tidak cocok dengan nilai tercatat.")
+        original_name = decrypt_field(
             row["original_name"], _db_key(),
             field_aad(row["user_id"], "vault_files", "original_name"),
         )
-        path = os.path.join(config.ENCRYPTED_FILES_DIR, row["stored_name"])
-        data = decrypt_all(
-            path, _file_key(), file_aad(row["user_id"], row["stored_name"])
-        )
-        if hashlib.sha256(data).hexdigest() != row["sha256_hash"]:
-            raise ValueError("SHA-256 plaintext tidak cocok.")
     except OSError:
         abort(404)
     except Exception:
-        add_block(
-            session["user_id"], "TAMPER_DETECTED", f"file:{file_id}",
-            row["sha256_ciphertext"],
-        )
+        add_block(session["user_id"], "TAMPER_DETECTED", f"file:{file_id}",
+                  row["sha256_ciphertext"])
         abort(403)
 
-    jenis = _deteksi_jenis(data)
+    jenis = _deteksi_jenis(plaintext)
     if jenis is None:
         return jsonify({
             "success": False,
-            "reason": "jenis",
             "error": MSG.DOC_PREVIEW_UNSUPPORTED,
+            "reason": "jenis",
         }), 415
+    kategori, mime = jenis
 
-    kind, mimetype = jenis
-    if kind == "text":
-        response = jsonify({
+    if kategori == "text":
+        return jsonify({
             "success": True,
-            "name": nama,
+            "name": original_name,
             "kind": "text",
-            "size": len(data),
-            "truncated": len(data) > MAX_TEXT_BYTES,
-            "text": data[:MAX_TEXT_BYTES].decode("utf-8", errors="replace"),
+            "size": len(plaintext),
+            "truncated": len(plaintext) > MAX_TEXT_BYTES,
+            "text": plaintext.decode("utf-8", errors="replace")[:MAX_TEXT_BYTES],
         })
-        response.headers["Cache-Control"] = "no-store"
-        return response
 
-    response = Response(data, status=200, mimetype=mimetype)
+    response = Response(plaintext, status=200, mimetype=mime)
     response.headers["Content-Disposition"] = "inline"
+    response.headers["Content-Length"] = str(len(plaintext))
     response.headers["Cache-Control"] = "no-store"
-    response.headers["X-Frame-Options"] = "SAMEORIGIN"
-    response.headers["Content-Security-Policy"] = "frame-ancestors 'self'"
+    response.headers["Pragma"] = "no-cache"
+    if kategori == "pdf":
+        # Hanya rute ini yang boleh di-frame sendiri (penampil PDF modal).
+        response.headers["X-Frame-Options"] = "SAMEORIGIN"
+        response.headers["Content-Security-Policy"] = "frame-ancestors 'self'"
     return response

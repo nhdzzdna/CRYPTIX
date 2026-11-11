@@ -219,3 +219,92 @@ Audio:
   tapi butuh grant) — perubahan spek, bukan pelemahan.
 - Suite penuh pada tree Bagian 2 (tanpa tes pratinjau): 661 lulus
   (639 baseline setelah merge origin/main + 22 tes kunci baru).
+
+## Bagian 3 — Pratinjau dokumen
+
+### Ringkasan
+- Endpoint `GET /media-vault/preview/<file_id>` dengan grant reusable
+  `doc.preview` (15 menit per item). Dekripsi hanya di memori; hash
+  plaintext diverifikasi seperti rute view — tamper memicu blok
+  `TAMPER_DETECTED` + 403.
+- Jenis dideteksi dari magic bytes plaintext (bukan ekstensi): PDF
+  (`%PDF-`) dan gambar (PNG/JPEG/GIF87a/GIF89a/BMP/WEBP) disajikan
+  inline; teks UTF-8 tanpa byte NUL dikirim sebagai JSON (dipotong
+  `MAX_TEXT_BYTES` = 1.000.000, penanda `truncated`); jenis lain
+  ditolak 415 JSON reason `jenis`.
+- Header khusus hanya untuk pratinjau PDF: `X-Frame-Options:
+  SAMEORIGIN` dan `Content-Security-Policy: frame-ancestors 'self'`
+  (global tetap DENY/`'none'`; `after_request` memakai `setdefault`
+  sehingga tidak menimpa). Semua respons pratinjau `no-store`.
+- Antarmuka: tombol "Pratinjau" pada setiap baris dokumen (termasuk
+  kartu dinamis isi folder) dan klik baris dokumen terkunci → dialog
+  CryptixLock → grant `doc.preview` → modal sederhana (gambar/PDF via
+  blob URL, teks via `<pre>`; Escape/klik latar menutup dan mencabut
+  blob).
+
+### File yang berubah
+- `routes/media_routes.py` (endpoint `preview`, `_deteksi_jenis`,
+  konstanta magic bytes), `modules/authentication/reauth.py`
+  (`doc.preview` di SCOPES dan REUSABLE_TTL),
+  `modules/strings.py` (`DOC_PREVIEW_*`), `routes/vault_routes.py`
+  (kunci pesan pratinjau di `_dokumen_msg`),
+  `templates/vault.html` (tombol Pratinjau, modal `#preview-modal`),
+  `static/js/dokumen.js` (logika modal pratinjau),
+  `static/js/collection_folders.js` (tombol Pratinjau kartu dinamis +
+  klik baris dokumen terkunci), `static/css/style.css` (gaya modal),
+  `tests/test_ub_pratinjau.py` (baru).
+
+### Keputusan
+1. `doc.preview` berlaku sebagai pengganti `item.view` di
+   `akses_item` (parameter `scope_item`) — keduanya verifikasi ulang
+   per item, dan kunci koleksi tetap memerlukan `album.unlock`.
+   Konsekuensi teruji: decorator `require_grant` tetap menuntut
+   `doc.preview` di header (grant `item.view` aktif saja → 401
+   missing), salah scope → 403 scope, album terkunci tanpa
+   `album.unlock` aktif → 403 `terkunci`.
+2. Fallback `find_active_grant` pada `grant_sah` memungkinkan header
+   yang membawa token `doc.preview` tetap lolos cek `album.unlock`
+   yang sudah aktif di sesi (token header gagal untuk scope lain,
+   grant berulang dicari ulang).
+3. Teks dikirim sebagai JSON, bukan `text/plain`, agar ukuran dan
+   status terpotong eksplisit serta tidak dapat disalahartikan
+   sebagai HTML; browser merendernya lewat `textContent` (aman XSS).
+4. PDF dan gambar dimuat klien sebagai blob di memori
+   (`URL.createObjectURL`, dicabut saat modal ditutup) — tidak ada
+   berkas sementara di disk.
+5. Berkas kosong (`b""`) terdeteksi sebagai teks — kasus tepi
+   diterima karena tanpa NUL dan valid UTF-8.
+
+### Keterbatasan
+- DOCX/PPTX/XLSX tidak dipratinjau (415) — hanya PDF, gambar, dan
+  teks; format kantor perlu diunduh untuk dilihat.
+- Deteksi hanya mengenali magic bytes yang terdaftar (TIFF dll. tidak
+  didukung). SVG jatuh ke jalur teks (XML valid UTF-8), bukan
+  dirender sebagai gambar — menghindari skrip aktif dalam SVG.
+- Pratinjau memuat seluruh plaintext ke memori klien; berkas sangat
+  besar dapat memakan RAM (batas teks ada, batas PDF/gambar tidak).
+- PDF ditampilkan lewat `<iframe>` blob — bergantung penampil PDF
+  bawaan peramban.
+- Verifikasi ulang untuk pratinjau berjenjang (401 decorator → 403
+  `terkunci`) — dua lapis; pengguna melihat dialog reauth dulu,
+  baru penolakan kunci.
+
+### Catatan pemeliharaan
+- Commit Bagian 2 (`1289c70`) tanpa sengaja menyertakan fragmen kode
+  mati di `routes/media_routes.py` (draf lama `_deteksi_jenis` +
+  `MAX_TEXT_BYTES = 512*1024`, tak pernah direferensikan di state
+  Bagian 2; suite 661 tetap lulus dengannya). Diterapkan fix-forward:
+  commit Bagian 3 ini menghapus fragmen tersebut sekaligus memasang
+  versi final `_deteksi_jenis` — tidak ada rewrite history.
+
+### Tes
+- `tests/test_ub_pratinjau.py` (baru): 28 lulus — deteksi jenis
+  (PDF, semua magic gambar + WEBP, teks; NUL dan non-UTF-8 → None),
+  tanpa grant 401 missing, salah scope 403, PDF inline + header
+  SAMEORIGIN/CSP `frame-ancestors 'self'`/inline/no-store, 6 jenis
+  gambar inline + mime, teks JSON + terpotong, 415 reason `jenis`,
+  grant reusable 15 menit, item terkunci (`item.view` aktif tidak
+  cukup → `doc.preview` 200), album terkunci (403 lalu 200 dengan
+  `album.unlock` aktif — menguji fallback `grant_sah`), pengguna lain
+  404, item sampah 404, berkas dirusak → 403 + `TAMPER_DETECTED`.
+- Suite penuh tree lengkap Bagian 2+3: 689 lulus (661 + 28).

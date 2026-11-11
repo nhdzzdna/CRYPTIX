@@ -35,6 +35,10 @@
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/><circle cx="12" cy="15" r="1.2"/></svg>
 {% endmacro %}
 
+{% macro icon_preview() %}
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+{% endmacro %}
+
 {% macro doc_item(f) %}
 <div class="collection-item doc-file-row{% if f.state == 'locked' %} item-terkunci{% endif %}" data-doc-item data-file-id="{{ f.id }}"
      data-kind="document" data-name="{{ f.original_name }}"
@@ -60,6 +64,11 @@
     </div>
   </div>
   <div class="collection-item-actions doc-file-actions">
+    <button type="button" class="btn btn-sm btn-secondary doc-action"
+            data-reauth="doc.preview"
+            data-reauth-resource="{{ f.id }}">
+      {{ icon_preview() }}<span>{{ msg.preview }}</span>
+    </button>
     <form method="POST" action="{{ url_for('vault.decrypt', resource_id=f.id) }}"
           class="d-inline">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
@@ -304,6 +313,20 @@
     <button type="button" id="lock-items-button" class="btn btn-sm btn-secondary">{{ msg.lock_items }}</button>
     <button type="button" id="unlock-items-button" class="btn btn-sm btn-secondary"
             data-reauth="item.unlock" data-reauth-resource="">{{ msg.unlock_items }}</button>
+  </div>
+</div>
+
+<div id="preview-modal" class="modal-overlay media-viewer" style="display:none;"
+     role="dialog" aria-modal="true" aria-labelledby="preview-title"
+     data-msg-text-label="{{ msg.preview_text_label }}"
+     data-msg-unsupported="{{ msg.preview_unsupported }}"
+     data-msg-failed="{{ msg.preview_failed }}">
+  <div class="viewer-box preview-box">
+    <button type="button" id="preview-close" class="viewer-close" aria-label="{{ msg.preview_close }}">×</button>
+    <div class="viewer-bar">
+      <span id="preview-title"></span>
+    </div>
+    <div id="preview-stage" class="viewer-stage preview-stage"></div>
   </div>
 </div>
 {% endblock %}
