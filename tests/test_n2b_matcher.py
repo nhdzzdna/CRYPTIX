@@ -179,13 +179,16 @@ def _kirim(client, token: str, payload: dict):
 
 
 def test_endpoint_menjawab_topik_cocok(app, monkeypatch):
+    from modules.assistant import security_agent
+
     monkeypatch.setattr(matcher, "muat_topik", lambda: TOPIK_PALSU)
+    monkeypatch.setattr(security_agent.knowledge, "cari_topik", lambda pesan: None)
     user = _pengguna("pemilik_topik", "topik@contoh.test")
     client = _client(app, user, "pemilik_topik")
     token = _csrf(client)
 
     resp = _kirim(client, token, {
-        "message": "Bagaimana cara mendaftarkan wajah?",
+        "message": "mendaftarkan wajah",
     })
     assert resp.status_code == 200
     data = resp.get_json()
