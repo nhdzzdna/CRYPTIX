@@ -1,15 +1,12 @@
-cryptography>=42.0.0
-pycryptodome>=3.20.0
-Flask>=3.0.0
-Flask-WTF>=1.2.1
-Pillow>=10.3.0
-numpy>=1.26.0
-psutil==7.2.2
-python-dotenv>=1.0.1
-pytest>=8.2.0
-# Sesi F: WebAuthn (butir 2.5)
-webauthn==3.0.1
-# Sesi G: pengenalan wajah headless (butir 2.6)
-opencv-contrib-python-headless==4.10.0.84
-# Sesi G: pembatas laju endpoint sensitif (butir 2.7)
+cryptography==50.0.2
+pycryptodome==4.4.0
+Flask==3.1.3
+Flask-WTF==1.3.0
 Flask-Limiter==3.8.0
+Pillow==13.0.0
+numpy==2.5.4
+psutil==7.2.2
+python-dotenv==1.2.4
+webauthn==3.0.1
+opencv-contrib-python-headless==4.10.0.84
+pytest==9.2.0
