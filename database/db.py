@@ -72,6 +72,40 @@ def _migrasi_state_item(conn: sqlite3.Connection) -> None:
         )
 
 
+def _tambah_kolom_kunci_berkas(conn: sqlite3.Connection) -> None:
+    """
+    Tambahkan kolom vault_files.locked agar item tanpa album dapat dikunci.
+
+    Idempoten: kolom hanya ditambahkan bila belum ada pada basis data lama.
+    """
+    kolom = {baris[1] for baris in conn.execute("PRAGMA table_info(vault_files)")}
+    if "locked" not in kolom:
+        conn.execute(
+            "ALTER TABLE vault_files ADD COLUMN locked INTEGER NOT NULL DEFAULT 0"
+        )
+        _logger.info("Kolom locked ditambahkan pada tabel vault_files")
+
+
+def _sinkron_kunci_berkas(conn: sqlite3.Connection) -> None:
+    """
+    Salin state 'locked' koleksi lama ke kunci tingkat berkas.
+
+    ``collection_items.state`` tetap dipertahankan untuk kompatibilitas;
+    ``vault_files.locked`` menjadi sumber kunci yang juga berlaku bagi item
+    di luar koleksi. Idempoten: baris yang sudah terkunci tidak berubah.
+    """
+    diubah = conn.execute(
+        """UPDATE vault_files SET locked=1
+           WHERE locked=0 AND id IN (
+               SELECT file_id FROM collection_items WHERE state='locked'
+           )"""
+    ).rowcount
+    if diubah:
+        _logger.info(
+            "Kunci item koleksi disalin ke vault_files.locked: %d baris", diubah
+        )
+
+
 @contextlib.contextmanager
 def get_db():
     """
@@ -101,7 +135,9 @@ def init_db() -> None:
             conn.executescript(f.read())
         _tambah_kolom_users(conn)
         _tambah_kolom_sampah(conn)
+        _tambah_kolom_kunci_berkas(conn)
         _migrasi_state_item(conn)
+        _sinkron_kunci_berkas(conn)
         # Ensure schema_meta exists and has version row
         conn.execute(
             "INSERT OR IGNORE INTO schema_meta (version) VALUES (1)"

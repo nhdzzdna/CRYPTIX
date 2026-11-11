@@ -37,6 +37,7 @@ CREATE TABLE IF NOT EXISTS vault_files (
     uploaded_at         TEXT    NOT NULL DEFAULT (datetime('now')),
     sha256_hash         TEXT    NOT NULL,      -- SHA-256 plaintext, verifikasi setelah dekripsi
     sha256_ciphertext   TEXT    NOT NULL,      -- SHA-256 berkas terenkripsi, verifikasi aset
+    locked              INTEGER NOT NULL DEFAULT 0, -- kunci tingkat berkas (termasuk tanpa album)
     deleted_at          TEXT                     -- sampah: waktu soft delete; NULL = aktif
 );
 

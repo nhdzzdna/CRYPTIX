@@ -33,7 +33,7 @@ from modules.media.winamp_integration import (
 )
 from modules.blockchain.blockchain import add_block
 from routes.collection_shared import (
-    halaman_koleksi, file_info as _berkas_info, akses_item,
+    halaman_koleksi, file_info as _berkas_info, akses_item, display_name,
 )
 
 media_bp = Blueprint("media", __name__)
@@ -110,14 +110,8 @@ def _db_key() -> bytes:
 
 
 def _display_name(row, db_key: bytes) -> str:
-    """Buka nama asli media untuk daftar; token gagal ditandai aman."""
-    try:
-        return decrypt_field(
-            row["original_name"], db_key,
-            field_aad(row["user_id"], "vault_files", "original_name"),
-        )
-    except ValueError:
-        return "[Nama tidak terbaca]"
+    """Buka nama asli media; token gagal memakai nama penyimpanan ringkas."""
+    return display_name(row, db_key)
 
 
 @media_bp.route("/media-vault")
