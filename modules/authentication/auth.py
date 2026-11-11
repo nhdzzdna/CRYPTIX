@@ -6,6 +6,7 @@ Tahap 1 login dua tahap (password + dongle → DEK) dan pendaftaran akun.
 All DB access goes through database.db — no Flask imports here.
 """
 
+import hmac
 import os
 import re
 import sqlite3
@@ -358,6 +359,11 @@ def reregister_usb_token(user_id: int, dek: bytes, current_password: str,
     dapat membuka DEK. DEK tidak berubah: data, template biometrik, dan kunci
     pemulihan tetap sah.
 
+    Bila ``mountpoint`` kosong, satu-satunya kandidat drive boleh dipakai;
+    lebih dari satu kandidat ditolak agar pengguna memilih dengan sadar.
+    Rahasia baru, bungkus ulang, dan uji buka diselesaikan di memori sebelum
+    berkas token lama diganti secara atomik.
+
     Returns
     -------
     dict ``success`` dan ``error``/``token_id``.
@@ -370,13 +376,23 @@ def reregister_usb_token(user_id: int, dek: bytes, current_password: str,
     ):
         return {"success": False, "error": MSG.SETTINGS_WRONG_PASSWORD}
 
+    mountpoint = (mountpoint or "").strip()
     if not mountpoint:
         drives = usb_mod.daftar_drive()
-        mountpoint = drives[0]["mountpoint"] if drives else ""
+        if not drives:
+            return {"success": False, "error": MSG.SETTINGS_USB_NO_DRIVE}
+        if len(drives) > 1:
+            return {
+                "success": False,
+                "error": MSG.SETTINGS_USB_CHOOSE_DRIVE,
+            }
+        mountpoint = drives[0]["mountpoint"]
 
-    result = usb_mod.register_usb_token(mountpoint)
+    # Rahasia baru hanya hidup di memori sampai bungkus ulang dan uji buka
+    # berhasil; berkas token lama belum disentuh.
+    result = usb_mod.buat_token(mountpoint)
     if result is None:
-        return {"success": False, "error": MSG.SETTINGS_USB_NO_DRIVE}
+        return {"success": False, "error": MSG.SETTINGS_USB_INVALID_DRIVE}
 
     try:
         bundle = rewrap_dek(
@@ -385,16 +401,48 @@ def reregister_usb_token(user_id: int, dek: bytes, current_password: str,
     except (TypeError, ValueError):
         return {"success": False, "error": MSG.SETTINGS_PASSWORD_REWRAP_FAILED}
 
-    with get_db() as db:
-        db.execute(
-            "UPDATE users SET usb_token_id=?, usb_verifier=?, "
-            "usb_volume_serial=?, kek_salt=?, wrapped_dek=? WHERE id=?",
-            (
-                result["token_id"], result["verifier"],
-                result["volume_serial"], bundle["kek_salt"],
-                bundle["wrapped_dek"], user_id,
-            ),
+    try:
+        uji = unlock_dek(
+            current_password,
+            result["secret"],
+            {
+                "user_id": user_id,
+                "kek_salt": bundle["kek_salt"],
+                "wrapped_dek": bundle["wrapped_dek"],
+            },
         )
-        db.commit()
+    except (TypeError, ValueError, KeyError):
+        return {"success": False, "error": MSG.SETTINGS_PASSWORD_REWRAP_FAILED}
+    if not hmac.compare_digest(uji, dek):
+        return {"success": False, "error": MSG.SETTINGS_PASSWORD_REWRAP_FAILED}
+
+    path = usb_mod.path_token(mountpoint)
+    try:
+        with open(path, "rb") as handle:
+            berkas_lama = handle.read()
+    except FileNotFoundError:
+        berkas_lama = None
+    except OSError:
+        return {"success": False, "error": MSG.SETTINGS_USB_WRITE_FAILED}
+
+    if not usb_mod.tulis_token(mountpoint, result):
+        return {"success": False, "error": MSG.SETTINGS_USB_WRITE_FAILED}
+
+    try:
+        with get_db() as db:
+            db.execute(
+                "UPDATE users SET usb_token_id=?, usb_verifier=?, "
+                "usb_volume_serial=?, kek_salt=?, wrapped_dek=? WHERE id=?",
+                (
+                    result["token_id"], result["verifier"],
+                    result["volume_serial"], bundle["kek_salt"],
+                    bundle["wrapped_dek"], user_id,
+                ),
+            )
+            db.commit()
+    except sqlite3.Error:
+        usb_mod.pulihkan_token(mountpoint, berkas_lama)
+        return {"success": False, "error": MSG.SETTINGS_USB_WRITE_FAILED}
+
     usb_mod.lupakan_cache(user_id)
     return {"success": True, "token_id": result["token_id"]}
