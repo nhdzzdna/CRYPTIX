@@ -1,0 +1,146 @@
+/* static/css/tokens.css - Token desain KOSYAK (tema gelap)
+   Semua warna, jarak, radius, ukuran teks, dan transisi untuk komponen kx-*. */
+
+/* ── Font lokal ─────────────────────────────────────────────────────────── */
+@font-face {
+  font-family: "Plus Jakarta Sans";
+  src: url("../fonts/PlusJakartaSans-VariableFont_wght.ttf") format("truetype");
+  font-weight: 200 800;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Plus Jakarta Sans";
+  src: url("../fonts/PlusJakartaSans-Italic-VariableFont_wght.ttf") format("truetype");
+  font-weight: 200 800;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Space Grotesk";
+  src: url("../fonts/SpaceGrotesk-VariableFont_wght.ttf") format("truetype");
+  font-weight: 300 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("../fonts/JetBrainsMono-VariableFont_wght.ttf") format("truetype");
+  font-weight: 100 800;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("../fonts/JetBrainsMono-Italic-VariableFont_wght.ttf") format("truetype");
+  font-weight: 100 800;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* ── Token ──────────────────────────────────────────────────────────────── */
+:root {
+  /* Permukaan */
+  --kx-bg:          #0B0F14;
+  --kx-surface:     #12181F;
+  --kx-surface-2:   #18212B;
+  --kx-surface-3:   #1E2936;
+  --kx-border:      #1F2A36;
+  --kx-border-soft: rgba(31, 42, 54, .65);
+
+  /* Teks */
+  --kx-text:        #E6EDF3;
+  --kx-text-2:      #8B98A5;
+  --kx-text-3:      #63717F;
+
+  /* Aksen */
+  --kx-accent:      #2DD4BF;
+  --kx-accent-strong: #22BFAC;
+  --kx-accent-soft: rgba(45, 212, 191, .12);
+  --kx-accent-ring: rgba(45, 212, 191, .30);
+
+  /* Status */
+  --kx-ok:          #22C55E;
+  --kx-ok-soft:     rgba(34, 197, 94, .14);
+  --kx-warn:        #EAB308;
+  --kx-warn-soft:   rgba(234, 179, 8, .14);
+  --kx-danger:      #EF4444;
+  --kx-danger-soft: rgba(239, 68, 68, .14);
+  --kx-info:        #60A5FA;
+  --kx-info-soft:   rgba(96, 165, 250, .14);
+
+  /* Tipografi */
+  --kx-font-ui:      "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --kx-font-display: "Space Grotesk", "Plus Jakarta Sans", system-ui, sans-serif;
+  --kx-font-mono:    "JetBrains Mono", ui-monospace, "SFMono-Regular", Consolas, monospace;
+
+  --kx-fs-caption: 12px;
+  --kx-fs-help:    13px;
+  --kx-fs-body:    14px;
+  --kx-fs-subtitle:16px;
+  --kx-fs-title:   26px;
+  --kx-fs-stat:    30px;
+
+  /* Radius */
+  --kx-radius-card:  12px;
+  --kx-radius-input: 8px;
+  --kx-radius-pill:  999px;
+  --kx-radius-sm:    6px;
+
+  /* Spasi kelipatan 4 */
+  --kx-space-1: 4px;
+  --kx-space-2: 8px;
+  --kx-space-3: 16px;
+  --kx-space-4: 24px;
+  --kx-space-5: 32px;
+
+  /* Tata letak */
+  --kx-sidebar-w: 238px;
+  --kx-topbar-h:  68px;
+  --kx-content-max: 1200px;
+  --kx-modal-w: 480px;
+  --kx-drawer-w: 420px;
+
+  /* Gerak dan bayangan */
+  --kx-transition: 140ms ease;
+  --kx-shadow: 0 1px 2px rgba(0, 0, 0, .35);
+  --kx-shadow-lg: 0 18px 42px rgba(0, 0, 0, .48);
+  --kx-focus-ring: 0 0 0 3px var(--kx-accent-ring);
+
+  /* Alias lama agar aturan style.css ikut token baru */
+  --bg-primary: var(--kx-bg);
+  --bg-surface: var(--kx-surface);
+  --bg-hover: var(--kx-surface-2);
+  --border-primary: var(--kx-border);
+  --text-primary: var(--kx-text);
+  --text-secondary: var(--kx-text-2);
+  --accent-primary: var(--kx-accent);
+  --accent-strong: var(--kx-accent-strong);
+  --accent-soft: var(--kx-accent-soft);
+  --status-success: var(--kx-ok);
+  --status-warning: var(--kx-warn);
+  --status-danger: var(--kx-danger);
+  --status-info: var(--kx-info);
+  --font-ui: var(--kx-font-ui);
+  --font-display: var(--kx-font-display);
+  --font-mono: var(--kx-font-mono);
+  --radius-sm: var(--kx-radius-sm);
+  --radius: var(--kx-radius-card);
+  --radius-lg: 14px;
+  --transition: var(--kx-transition);
+  --focus-ring: var(--kx-focus-ring);
+  --sidebar-w: var(--kx-sidebar-w);
+  --topbar-h: var(--kx-topbar-h);
+  --content-max: var(--kx-content-max);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

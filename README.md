@@ -1,8 +1,8 @@
 
-# CRYPTIX — Digital Archive Security Platform
+# KOSYAK — Digital Archive Security Platform
 
 ## Deskripsi
-CRYPTIX adalah aplikasi web arsip digital pribadi berbasis Python/Flask yang mengamankan file, teks, gambar, kredensial akun, dan log aktivitas dengan berbagai teknik kriptografi modern dan klasik.
+KOSYAK adalah aplikasi web arsip digital pribadi berbasis Python/Flask yang mengamankan file, teks, gambar, kredensial akun, dan log aktivitas dengan berbagai teknik kriptografi modern dan klasik.
 
 Dikembangkan sebagai proyek akhir mata kuliah Kriptografi oleh Kelompok 3.
 
@@ -39,7 +39,7 @@ Buka browser di `http://127.0.0.1:5000`.
 ## Cara Menyiapkan USB Token
 
 1. Colokkan flashdisk yang akan dijadikan token.
-2. Login ke CRYPTIX, buka **Settings → Security → USB Token**.
+2. Login ke KOSYAK, buka **Settings → Security → USB Token**.
 3. Klik **"Register USB Token"** — aplikasi membaca serial number volume dan menulis file `.cryptix_token` yang ditandatangani HMAC ke root flashdisk.
 4. Set `USB_REQUIRED = True` di `config.py` untuk mengaktifkan wajib USB saat login.
 5. Setiap kali login, flashdisk yang sama harus tercolok.
@@ -63,42 +63,6 @@ Buka browser di `http://127.0.0.1:5000`.
 3. Sistem menggunakan ORB feature matching dari OpenCV untuk membandingkan citra.
 
 > ⚠️ **Catatan Penting:** Fitur fingerprint adalah **simulasi akademik menggunakan pencocokan citra**. Ini BUKAN pengenalan sidik jari dari sensor perangkat keras. Dalam kondisi nyata, citra harus berasal dari scanner sidik jari terdedikasi. Akurasi sangat bergantung pada kualitas dan konsistensi citra yang diunggah.
-
----
-
-## Security Assistant
-
-CRYPTIX dilengkapi **Security Assistant** — sebuah agen berbasis aturan (*rule-based*) yang tampil sebagai antarmuka chat di sidebar.
-
-> ⚠️ **Security Assistant BUKAN Large Language Model (LLM) dan tidak menggunakan API eksternal apa pun.** Semua logika berjalan sepenuhnya lokal menggunakan pencocokan pola regex dan data metadata aplikasi.
-
-### Kemampuan
-
-| # | Kemampuan | Contoh Pertanyaan |
-|---|-----------|-------------------|
-| 1 | 🛡 **Status keamanan** | *"Bagaimana status keamanan akun saya?"* |
-| 2 | 🔐 **Rekomendasi enkripsi** | *"Bagaimana cara enkripsi file PDF saya?"* |
-| 3 | 🔑 **Cek kekuatan password** | *"Cek password: MyPass123!"* |
-| 4 | 📋 **Ringkasan log aktivitas** | *"Jelaskan log aktivitas saya."* |
-| 5 | ℹ️ **Panduan penggunaan fitur** | *"Cara pakai Steganografi?"* |
-
-### Cara Kerja
-
-1. Pesan pengguna diklasifikasi melalui **regex pattern matching** (tanpa NLP/ML).
-2. Handler yang sesuai membaca **metadata saja** dari database (jumlah file, status biometrik, aksi blockchain).
-3. **Tidak ada isi file, kunci enkripsi, atau password tersimpan** yang pernah dibaca oleh agent.
-4. Password yang dikirim untuk dicek hanya hidup di memori proses Python — tidak disimpan ke DB, log, atau hash chain.
-5. UI menampilkan tiga langkah berpikir bertahap (*"Memahami pertanyaan…"*, *"Membaca data aplikasi…"*, *"Menyusun jawaban…"*) sebelum jawaban muncul.
-6. Riwayat percakapan disimpan di **Flask session** (bukan database).
-
-### Batasan Security Assistant
-
-| Batasan | Keterangan |
-|---------|-----------|
-| Rule-based only | Tidak dapat menjawab pertanyaan di luar 5 kategori yang didukung. |
-| Tidak memahami konteks percakapan | Setiap pesan diproses secara independen. |
-| Jawaban deterministik | Tidak ada variasi jawaban — output konsisten untuk input yang sama. |
-| Cek password hanya skor sederhana | Tidak menggunakan database password bocor (HaveIBeenPwned). |
 
 ---
 
@@ -132,8 +96,7 @@ CRYPTIX/
 │   ├── cryptography/         # key management, 4 cipher, super enc, file enc, db enc
 │   ├── steganography/        # LSB
 │   ├── blockchain/           # hash chain
-│   ├── media/                # winamp integration
-│   └── assistant/            # rule-based security agent
+│   └── media/                # winamp integration
 ├── routes/                   # Blueprint Flask per fitur
 ├── templates/                # Jinja2 HTML
 ├── static/                   # CSS, JS, images
