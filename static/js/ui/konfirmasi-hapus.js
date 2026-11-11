@@ -39,12 +39,23 @@
     var badan = document.createElement("div");
     badan.className = "kx-modal-body";
     var paragraf = document.createElement("p");
-    paragraf.appendChild(document.createTextNode("Item "));
-    var nama = document.createElement("span");
-    nama.className = "kx-dialog-hapus-nama";
-    nama.textContent = teks(opsi.nama, "ini");
-    paragraf.appendChild(nama);
-    paragraf.appendChild(document.createTextNode(" akan dihapus permanen. Tindakan ini tidak dapat dibatalkan."));
+    var namaTeks = teks(opsi.nama, "ini");
+    var polaPesan = teks(
+      opsi.pesan,
+      "Item {nama} akan dihapus permanen. Tindakan ini tidak dapat dibatalkan."
+    );
+    var bagian = polaPesan.split("{nama}");
+    bagian.forEach(function (potongan, indeks) {
+      if (potongan) {
+        paragraf.appendChild(document.createTextNode(potongan));
+      }
+      if (indeks < bagian.length - 1) {
+        var nama = document.createElement("span");
+        nama.className = "kx-dialog-hapus-nama";
+        nama.textContent = namaTeks;
+        paragraf.appendChild(nama);
+      }
+    });
     badan.appendChild(paragraf);
     modal.appendChild(badan);
 

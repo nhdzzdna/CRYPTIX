@@ -185,6 +185,14 @@ class MSG:
     ACCOUNT_RECOVERY_DONE     = "Pemulihan akun berhasil. Simpan kunci pemulihan baru, lalu masuk kembali."
     # â”€â”€ Sesi I: Account Vault, Secure Notes, My Vault â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     ACCOUNT_UPDATED           = "Kredensial berhasil diperbarui."
+    ACCOUNT_COPY_DONE         = "Tersalin. Clipboard dikosongkan otomatis setelah 30 detik."
+    ACCOUNT_COPY_FAILED       = "Gagal menyalin. Salin secara manual."
+    ACCOUNT_REVEAL_LOADING    = "Memuat…"
+    ACCOUNT_REVEAL_FAILED     = "Kredensial gagal ditampilkan. Muat ulang halaman lalu coba kembali."
+    ACCOUNT_REVEAL_HIDDEN     = "Tampilan kredensial disembunyikan otomatis."
+    ACCOUNT_REVEAL_COUNTDOWN  = "Disembunyikan otomatis dalam {detik} detik."
+    ACCOUNT_DELETE_TITLE      = "Hapus kredensial?"
+    ACCOUNT_DELETE_MESSAGE    = "{nama} akan dipindahkan ke Sampah. Anda masih dapat memulihkannya dari sana."
     VAULT_FILE_CONTENT_INVALID = "Isi file tidak sesuai dengan jenisnya."
     # â”€â”€ GL: pembatas laju, galat JSON, dan detektor wajah â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     RATE_LIMITED              = "Anda terlalu sering mengirim permintaan. Silakan tunggu beberapa saat lalu coba kembali."

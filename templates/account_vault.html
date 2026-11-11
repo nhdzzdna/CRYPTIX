@@ -1,237 +1,211 @@
 {% extends "base.html" %}
 {% block title %}Account Vault — KOSYAK{% endblock %}
 {% block page_title %}Account Vault{% endblock %}
-{% block page_subtitle %}
-<p class="page-subtitle">Simpan dan kelola kredensial terenkripsi. Informasi sensitif hanya ditampilkan setelah verifikasi ulang.</p>
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/halaman/account_vault.css') }}" />
 {% endblock %}
-{% block page_actions %}
-<a href="#account-add" class="btn btn-primary btn-sm account-header-action">
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
-  Tambah Akun
-</a>
-{% endblock %}
-
-{% macro icon_lock() %}
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/><circle cx="12" cy="15" r="1.2"/></svg>
-{% endmacro %}
-
-{% macro icon_key() %}
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="15" r="4"/><path d="M10.8 12.2 20 3"/><path d="M16 7l2 2"/><path d="M13 10l2 2"/></svg>
-{% endmacro %}
-
-{% macro icon_eye() %}
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z"/><circle cx="12" cy="12" r="2.6"/></svg>
-{% endmacro %}
-
-{% macro icon_copy() %}
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-{% endmacro %}
-
-{% macro icon_trash() %}
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/><path d="M10 11v5M14 11v5"/></svg>
-{% endmacro %}
-
-{% macro icon_clock() %}
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
-{% endmacro %}
 
 {% block content %}
-<div class="account-page">
-  <div class="account-layout">
-    <aside class="account-side" aria-label="Tambah kredensial">
-      <section id="account-add" class="account-panel account-add" aria-labelledby="account-add-title">
-        <header class="account-panel-head">
-          <div class="account-panel-heading">
-            <h2 id="account-add-title" class="account-panel-title">Tambah Kredensial</h2>
-            <p class="account-panel-sub">Data akun disimpan dalam bentuk terenkripsi.</p>
+<div class="kx-av-page"
+     data-msg-copy-done="{{ MSG.ACCOUNT_COPY_DONE }}"
+     data-msg-copy-failed="{{ MSG.ACCOUNT_COPY_FAILED }}"
+     data-msg-reveal-loading="{{ MSG.ACCOUNT_REVEAL_LOADING }}"
+     data-msg-reveal-failed="{{ MSG.ACCOUNT_REVEAL_FAILED }}"
+     data-msg-reveal-hidden="{{ MSG.ACCOUNT_REVEAL_HIDDEN }}"
+     data-msg-reveal-countdown="{{ MSG.ACCOUNT_REVEAL_COUNTDOWN }}"
+     data-msg-delete-title="{{ MSG.ACCOUNT_DELETE_TITLE }}"
+     data-msg-delete-message="{{ MSG.ACCOUNT_DELETE_MESSAGE }}">
+  <div class="kx-av-grid">
+
+    <!-- ── Daftar kredensial ─────────────────────────────────────────── -->
+    <section class="kx-card kx-av-lista" aria-labelledby="av-lista-title">
+      <header class="kx-card-head">
+        <h2 class="kx-card-title" id="av-lista-title">Kredensial tersimpan ({{ entries|length }})</h2>
+        <span class="kx-badge kx-badge-ok">{{ ikon('lock', 13) }}Terenkripsi</span>
+      </header>
+
+      <div class="kx-card-body kx-av-lista-body">
+        {% if entries %}
+          {% for e in entries %}
+          <article class="kx-av-baris" data-entry="{{ e.id }}">
+            <div class="kx-av-baris-head">
+              <span class="kx-av-inisial" aria-hidden="true">{{ e.site_name[:1]|upper }}</span>
+              <div class="kx-av-baris-utama">
+                <h3 class="kx-av-nama">{{ e.site_name }}</h3>
+                <p class="kx-av-meta">
+                  <span class="kx-av-user">{{ e.username_masked }}</span>
+                  <span class="kx-av-meta-sep" aria-hidden="true">·</span>
+                  <span class="kx-av-tanggal">{{ e.updated_at[:16] }}</span>
+                </p>
+              </div>
+              <span class="kx-av-titik" aria-hidden="true">••••••••</span>
+              <div class="kx-av-aksi">
+                <button type="button" class="kx-btn kx-btn-sm kx-btn-secondary"
+                        data-reauth="account.reveal"
+                        data-reauth-resource="{{ e.id }}"
+                        data-reveal-id="{{ e.id }}"
+                        data-reveal-url="{{ url_for('account.reveal', resource_id=e.id) }}">
+                  {{ ikon('eye', 15) }}<span>Tampilkan</span>
+                </button>
+                <button type="button" class="kx-btn kx-btn-sm kx-btn-secondary" data-av-salin="{{ e.id }}">
+                  {{ ikon('copy', 15) }}<span>Salin</span>
+                </button>
+                <button type="button" class="kx-btn kx-btn-sm kx-btn-danger"
+                        data-av-hapus="{{ e.id }}"
+                        data-av-nama="{{ e.site_name }}"
+                        data-av-url="{{ url_for('account.delete', resource_id=e.id) }}">
+                  {{ ikon('trash', 15) }}<span>Hapus</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="kx-av-reveal" data-reveal-box="{{ e.id }}" hidden>
+              <div class="kx-av-reveal-grid">
+                <div class="kx-av-item">
+                  <span class="kx-av-item-label">Username / Email</span>
+                  <div class="kx-av-item-baris">
+                    <span class="kx-av-nilai" data-field="username"></span>
+                    <button type="button" class="kx-btn kx-btn-sm kx-btn-ghost" data-copy-field="username">
+                      {{ ikon('copy', 14) }}<span>Salin</span>
+                    </button>
+                  </div>
+                </div>
+                <div class="kx-av-item">
+                  <span class="kx-av-item-label">Kata sandi</span>
+                  <div class="kx-av-item-baris">
+                    <div class="kx-sandi kx-av-sandi">
+                      <input type="password" class="kx-input" readonly autocomplete="off"
+                             aria-label="Kata sandi" data-field-password="{{ e.id }}" />
+                    </div>
+                    <button type="button" class="kx-btn kx-btn-sm kx-btn-ghost" data-copy-field="password">
+                      {{ ikon('copy', 14) }}<span>Salin</span>
+                    </button>
+                  </div>
+                </div>
+                <div class="kx-av-item">
+                  <span class="kx-av-item-label">URL</span>
+                  <span class="kx-av-nilai" data-field="url"></span>
+                </div>
+                <div class="kx-av-item kx-av-item-lebar">
+                  <span class="kx-av-item-label">Catatan</span>
+                  <span class="kx-av-nilai kx-av-nilai-biasa" data-field="notes"></span>
+                </div>
+              </div>
+              <div class="kx-av-reveal-foot">
+                <p class="kx-av-countdown" data-countdown="{{ e.id }}"></p>
+                <div class="kx-av-reveal-aksi">
+                  <button type="button" class="kx-btn kx-btn-sm kx-btn-secondary" data-av-edit="{{ e.id }}">
+                    {{ ikon('rotate-ccw', 14) }}<span>Edit</span>
+                  </button>
+                  <button type="button" class="kx-btn kx-btn-sm kx-btn-ghost" data-av-tutup="{{ e.id }}">
+                    {{ ikon('eye-off', 14) }}<span>Sembunyikan</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <form method="POST" action="{{ url_for('account.edit', resource_id=e.id) }}"
+                  class="kx-av-edit" data-edit-form="{{ e.id }}" hidden>
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+              <div class="kx-av-edit-grid">
+                <div class="kx-field">
+                  <label class="kx-label" for="edit-site-name-{{ e.id }}">Nama situs</label>
+                  <input type="text" class="kx-input" id="edit-site-name-{{ e.id }}" name="site_name" autocomplete="off" required />
+                </div>
+                <div class="kx-field">
+                  <label class="kx-label" for="edit-username-{{ e.id }}">Username / Email</label>
+                  <input type="text" class="kx-input" id="edit-username-{{ e.id }}" name="username" autocomplete="off" required />
+                </div>
+                <div class="kx-field">
+                  <label class="kx-label" for="edit-password-{{ e.id }}">Kata sandi</label>
+                  <div class="kx-sandi">
+                    <input type="password" class="kx-input" id="edit-password-{{ e.id }}" name="password" autocomplete="new-password" required />
+                  </div>
+                </div>
+                <div class="kx-field">
+                  <label class="kx-label" for="edit-url-{{ e.id }}">URL (opsional)</label>
+                  <input type="url" class="kx-input" id="edit-url-{{ e.id }}" name="url" autocomplete="off" />
+                </div>
+              </div>
+              <div class="kx-field">
+                <label class="kx-label" for="edit-notes-{{ e.id }}">Catatan (opsional)</label>
+                <textarea class="kx-textarea" id="edit-notes-{{ e.id }}" name="notes" rows="3"></textarea>
+              </div>
+              <div class="kx-av-edit-aksi">
+                <button type="submit" class="kx-btn kx-btn-primary"
+                        data-reauth="account.reveal"
+                        data-reauth-resource="{{ e.id }}">
+                  {{ ikon('lock', 15) }}<span>Simpan perubahan</span>
+                </button>
+                <button type="button" class="kx-btn kx-btn-secondary" data-edit-cancel="{{ e.id }}">Batal</button>
+              </div>
+            </form>
+          </article>
+          {% endfor %}
+        {% else %}
+          <div class="kx-empty kx-av-kosong">
+            <span aria-hidden="true">{{ ikon('key', 30) }}</span>
+            <p class="kx-empty-title">Belum ada kredensial tersimpan</p>
+            <p>Isi panel Tambah kredensial untuk menyimpan kredensial pertama Anda.</p>
+            <button type="button" class="kx-btn kx-btn-primary kx-btn-sm" data-av-fokus>
+              {{ ikon('plus', 15) }}<span>Tambah kredensial</span>
+            </button>
           </div>
-          <span class="account-panel-icon" aria-hidden="true">{{ icon_lock() }}</span>
-        </header>
-        <div class="account-panel-body">
-          <form method="POST" action="{{ url_for('account.add') }}" class="account-add-form">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-            <div class="form-grid account-form-grid">
-              <div class="form-group">
-                <label for="account-site-name">Nama Situs</label>
-                <input type="text" id="account-site-name" name="site_name" class="form-control"
-                       placeholder="Google, GitHub…" autocomplete="off" required />
-              </div>
-              <div class="form-group">
-                <label for="account-username">Username / Email</label>
-                <input type="text" id="account-username" name="username" class="form-control"
-                       autocomplete="off" required />
-              </div>
-              <div class="form-group">
-                <label for="account-password">Password</label>
-                <input type="password" id="account-password" name="password" class="form-control"
-                       autocomplete="new-password" required />
-              </div>
-              <div class="form-group">
-                <label for="account-url">URL (opsional)</label>
-                <input type="url" id="account-url" name="url" class="form-control"
-                       placeholder="Masukkan URL akun" autocomplete="off" />
-              </div>
-            </div>
-            <div class="form-group">
-              <label for="account-notes">Catatan (opsional)</label>
-              <textarea id="account-notes" name="notes" class="form-control" rows="2"></textarea>
-            </div>
-            <div class="account-form-actions">
-              <button type="submit" class="btn btn-primary account-submit-btn">
-                {{ icon_lock() }}<span>Simpan Terenkripsi</span>
+        {% endif %}
+      </div>
+    </section>
+
+    <!-- ── Tambah kredensial ─────────────────────────────────────────── -->
+    <aside class="kx-card kx-av-tambah" aria-labelledby="av-tambah-title">
+      <header class="kx-card-head">
+        <h2 class="kx-card-title" id="av-tambah-title">Tambah kredensial</h2>
+        <span class="kx-av-tambah-ikon" aria-hidden="true">{{ ikon('key', 18) }}</span>
+      </header>
+      <div class="kx-card-body">
+        <form method="POST" action="{{ url_for('account.add') }}" class="kx-av-form" id="av-add-form">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+          <div class="kx-field">
+            <label class="kx-label" for="av-add-site">Nama situs</label>
+            <input type="text" class="kx-input" id="av-add-site" name="site_name"
+                   placeholder="GitHub, Google…" autocomplete="off" required />
+          </div>
+          <div class="kx-field">
+            <label class="kx-label" for="av-add-username">Username / Email</label>
+            <input type="text" class="kx-input" id="av-add-username" name="username" autocomplete="off" required />
+          </div>
+          <div class="kx-field">
+            <div class="kx-av-label-baris">
+              <label class="kx-label" for="av-add-password">Kata sandi</label>
+              <button type="button" class="kx-btn kx-btn-sm kx-btn-ghost" id="av-buat-otomatis">
+                {{ ikon('key', 14) }}<span>Buat otomatis</span>
               </button>
             </div>
-          </form>
-        </div>
-      </section>
+            <div class="kx-sandi">
+              <input type="password" class="kx-input" id="av-add-password" name="password"
+                     autocomplete="new-password" required />
+            </div>
+            <div class="kx-meter" data-kx-meter data-kx-meter-input="#av-add-password"></div>
+          </div>
+          <div class="kx-field">
+            <label class="kx-label" for="av-add-url">URL (opsional)</label>
+            <input type="url" class="kx-input" id="av-add-url" name="url" autocomplete="off" />
+          </div>
+          <div class="kx-field">
+            <label class="kx-label" for="av-add-notes">Catatan (opsional)</label>
+            <textarea class="kx-textarea kx-av-catatan" id="av-add-notes" name="notes" rows="3"></textarea>
+          </div>
+          <button type="submit" class="kx-btn kx-btn-primary kx-btn-block">
+            {{ ikon('lock', 16) }}<span>Simpan terenkripsi</span>
+          </button>
+        </form>
+      </div>
     </aside>
-
-    <div class="account-main">
-      {% if entries %}
-      <section class="account-overview" aria-label="Ringkasan akun">
-        <div class="account-stat">
-          <span class="account-stat-label">Total akun</span>
-          <span class="account-stat-value">{{ entries|length }}</span>
-          <span class="account-stat-hint">Kredensial tersimpan</span>
-        </div>
-        <div class="account-stat">
-          <span class="account-stat-label">Kredensial terbaru</span>
-          <span class="account-stat-value account-stat-text">{{ entries[0].site_name }}</span>
-          <span class="account-stat-hint mono">{{ entries[0].updated_at[:16] }}</span>
-        </div>
-        {% set pembaruan = entries|map(attribute='updated_at')|max %}
-        <div class="account-stat">
-          <span class="account-stat-label">Pembaruan terakhir</span>
-          <span class="account-stat-value account-stat-date mono">{{ pembaruan[:16] }}</span>
-          <span class="account-stat-hint"><span class="account-stat-hint-icon" aria-hidden="true">{{ icon_clock() }}</span>Waktu perubahan terakhir</span>
-        </div>
-      </section>
-      {% endif %}
-
-      <section class="account-panel account-list" aria-labelledby="account-list-title">
-        <header class="account-panel-head">
-          <div class="account-panel-heading">
-            <h2 id="account-list-title" class="account-panel-title">Kredensial Tersimpan</h2>
-            <p class="account-panel-sub">Kata sandi tetap tersembunyi hingga verifikasi ulang berhasil.</p>
-          </div>
-          <span class="account-panel-count">{{ entries|length }} akun</span>
-        </header>
-        <div class="account-panel-body account-list-body">
-          {% if entries %}
-            {% for e in entries %}
-            <article class="account-entry" data-entry="{{ e.id }}">
-              <div class="account-entry-head">
-                <span class="account-entry-icon" aria-hidden="true">{{ icon_key() }}</span>
-                <div class="account-entry-main">
-                  <h3 class="account-entry-name">{{ e.site_name }}</h3>
-                  <div class="account-entry-meta">
-                    <span class="mono account-entry-user">{{ e.username_masked }}</span>
-                    <span class="account-meta-sep" aria-hidden="true">·</span>
-                    <span class="account-entry-date mono">{{ e.updated_at[:16] }}</span>
-                  </div>
-                </div>
-                <div class="account-entry-actions">
-                  <button type="button" class="btn btn-sm btn-secondary account-reveal-btn"
-                          data-reauth="account.reveal"
-                          data-reauth-resource="{{ e.id }}"
-                          data-reveal-id="{{ e.id }}"
-                          data-reveal-url="{{ url_for('account.reveal', resource_id=e.id) }}">
-                    {{ icon_eye() }}<span>Tampilkan</span>
-                  </button>
-                  <span class="account-reveal-status text-muted" data-reveal-status="{{ e.id }}" role="status"></span>
-                </div>
-              </div>
-
-              <div class="account-reveal" data-reveal-box="{{ e.id }}" hidden>
-                <div class="account-reveal-grid">
-                  <div class="account-reveal-item">
-                    <span class="account-reveal-label">Username / Email</span>
-                    <div class="account-reveal-row">
-                      <span class="account-reveal-value mono" data-field="username"></span>
-                      <button type="button" class="btn btn-sm btn-ghost account-copy-btn" data-copy-field="username">
-                        {{ icon_copy() }}<span>Salin</span>
-                      </button>
-                    </div>
-                  </div>
-                  <div class="account-reveal-item">
-                    <span class="account-reveal-label">Password</span>
-                    <div class="account-reveal-row">
-                      <span class="account-reveal-value mono" data-field="password"></span>
-                      <button type="button" class="btn btn-sm btn-ghost account-copy-btn" data-copy-field="password">
-                        {{ icon_copy() }}<span>Salin</span>
-                      </button>
-                    </div>
-                  </div>
-                  <div class="account-reveal-item">
-                    <span class="account-reveal-label">URL</span>
-                    <span class="account-reveal-value mono" data-field="url"></span>
-                  </div>
-                  <div class="account-reveal-item is-wide">
-                    <span class="account-reveal-label">Catatan</span>
-                    <span class="account-reveal-value" data-field="notes"></span>
-                  </div>
-                </div>
-                <p class="account-countdown text-muted" data-countdown="{{ e.id }}"></p>
-              </div>
-
-              <form method="POST" action="{{ url_for('account.edit', resource_id=e.id) }}"
-                    class="account-edit-form" data-edit-form="{{ e.id }}" hidden>
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-                <div class="form-grid">
-                  <div class="form-group">
-                    <label for="edit-site-name-{{ e.id }}">Nama Situs</label>
-                    <input type="text" id="edit-site-name-{{ e.id }}" name="site_name" class="form-control" required />
-                  </div>
-                  <div class="form-group">
-                    <label for="edit-username-{{ e.id }}">Username / Email</label>
-                    <input type="text" id="edit-username-{{ e.id }}" name="username" class="form-control" required />
-                  </div>
-                  <div class="form-group">
-                    <label for="edit-password-{{ e.id }}">Password</label>
-                    <input type="password" id="edit-password-{{ e.id }}" name="password" class="form-control" required />
-                  </div>
-                  <div class="form-group">
-                    <label for="edit-url-{{ e.id }}">URL (opsional)</label>
-                    <input type="url" id="edit-url-{{ e.id }}" name="url" class="form-control" />
-                  </div>
-                </div>
-                <div class="form-group">
-                  <label for="edit-notes-{{ e.id }}">Catatan (opsional)</label>
-                  <textarea id="edit-notes-{{ e.id }}" name="notes" class="form-control" rows="2"></textarea>
-                </div>
-                <div class="account-form-actions">
-                  <button type="submit" class="btn btn-primary"
-                          data-reauth="account.reveal"
-                          data-reauth-resource="{{ e.id }}">
-                    {{ icon_lock() }}<span>Simpan Perubahan</span>
-                  </button>
-                  <button type="button" class="btn btn-secondary"
-                          data-edit-cancel="{{ e.id }}">Batal</button>
-                </div>
-              </form>
-
-              <div class="account-entry-foot">
-                <form method="POST" action="{{ url_for('account.delete', resource_id=e.id) }}"
-                      class="account-delete-form">
-                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-                  <button type="submit" class="btn btn-sm btn-danger account-delete-btn">
-                    {{ icon_trash() }}<span>Hapus</span>
-                  </button>
-                </form>
-              </div>
-            </article>
-            {% endfor %}
-          {% else %}
-          <div class="account-empty">
-            <span class="account-empty-icon" aria-hidden="true">{{ icon_key() }}</span>
-            <h3 class="account-empty-title">Belum ada kredensial tersimpan</h3>
-            <p class="account-empty-text">Gunakan formulir tambah akun untuk menyimpan kredensial pertama Anda.</p>
-          </div>
-          {% endif %}
-        </div>
-      </section>
-    </div>
   </div>
+
+  <!-- Formulir hapus bersama; aksi diatur oleh account_vault.js -->
+  <form method="POST" action="" class="kx-av-hapus-form" id="av-hapus-form" hidden>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+  </form>
 </div>
 {% endblock %}
 
