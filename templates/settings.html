@@ -1,538 +1,646 @@
 {% extends "base.html" %}
+{% from "_ikon.html" import ikon %}
+
 {% block title %}Settings — KOSYAK{% endblock %}
-{% block page_title %}Settings{% endblock %}
-{% block page_subtitle %}
-<p class="page-subtitle">Kelola profil, perangkat tepercaya, dan metode autentikasi akun Anda.</p>
+{% block judul_halaman %}Settings{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/halaman/settings.css') }}">
 {% endblock %}
 
-{% macro icon_user() %}
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
-{% endmacro %}
-
-{% macro icon_devices() %}
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8"/><path d="M12 16v4"/></svg>
-{% endmacro %}
-
-{% macro icon_biometrics() %}
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4a8 8 0 0 1 8 8"/><path d="M4 12a8 8 0 0 1 8-8"/><path d="M6.5 16.5A6.5 6.5 0 0 1 5 12"/><path d="M18.5 16.5A6.5 6.5 0 0 0 20 12"/><path d="M9 12a3 3 0 0 1 6 0v3"/><path d="M12 12v5"/></svg>
-{% endmacro %}
-
-{% macro icon_lock() %}
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/><path d="M12 15v2"/></svg>
-{% endmacro %}
-
-{% macro icon_usb() %}
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="2" width="10" height="6" rx="1.5"/><path d="M10 5h1M13 5h1"/><path d="M9 8v3a3 3 0 0 0 3 3h0a3 3 0 0 1 3 3v5"/><rect x="13.5" y="18" width="3" height="4" rx="1"/></svg>
-{% endmacro %}
-
-{% macro icon_key() %}
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="7.5" cy="15.5" r="4.5"/><path d="M10.7 12.3 21 2"/><path d="M17 6l2 2"/><path d="M14 9l2 2"/></svg>
-{% endmacro %}
-
-{% macro icon_clock() %}
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
-{% endmacro %}
-
-{% macro icon_face() %}
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9 10h.01M15 10h.01"/><path d="M9 15a4 4 0 0 0 6 0"/></svg>
-{% endmacro %}
-
-{% macro icon_fingerprint() %}
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2a10 10 0 0 0-7.4 3.3"/><path d="M4 9.5V12a8 8 0 0 0 2.3 5.7"/><path d="M20 12a8 8 0 0 1-2.3 5.7"/><path d="M8 12a4 4 0 0 1 8 0v2"/><path d="M12 12v5"/><path d="M16.5 4.6A10 10 0 0 1 22 12"/></svg>
-{% endmacro %}
-
-{% macro icon_shield() %}
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2 4 5v6c0 5 3.5 8.5 8 11 4.5-2.5 8-6 8-11V5z"/><path d="m9 12 2 2 4-4"/></svg>
-{% endmacro %}
-
-{% macro icon_check() %}
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 4 4 10-10"/></svg>
-{% endmacro %}
-
-{% macro icon_alert() %}
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2.5 20h19z"/><path d="M12 9v5"/><circle cx="12" cy="17" r=".6" fill="currentColor"/></svg>
-{% endmacro %}
-
-{% macro icon_info() %}
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 10v6"/><circle cx="12" cy="7.5" r=".6" fill="currentColor"/></svg>
-{% endmacro %}
-
-{% macro icon_eye() %}
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6z"/><circle cx="12" cy="12" r="2.5"/></svg>
-{% endmacro %}
-
 {% block content %}
-<div class="settings-page">
+<div class="kx-settings-page">
 
-  {% if recovery_key_baru %}
-  <section class="settings-recovery" aria-labelledby="settings-recovery-key-title">
-    <div class="settings-recovery-head">
-      <span class="settings-recovery-icon" aria-hidden="true">{{ icon_key() }}</span>
-      <div class="settings-recovery-heading">
-        <h2 class="settings-recovery-title" id="settings-recovery-key-title">Kunci Pemulihan Baru</h2>
-        <p class="settings-recovery-sub">Kunci ini hanya ditampilkan satu kali.</p>
+  {# ── Navigasi 5 Tab Pill ── #}
+  <div class="kx-settings-tabs-wrap">
+    <nav class="kx-tabs kx-settings-tabs" role="tablist" aria-label="Navigasi Pengaturan">
+      <button type="button" class="kx-tab is-active" role="tab" id="tab-profil"
+              aria-controls="pane-profil" aria-selected="true" data-tab-target="profil">
+        {{ ikon('settings', 16) }}
+        <span>{{ MSG.SETTINGS_TAB_PROFIL }}</span>
+      </button>
+      <button type="button" class="kx-tab" role="tab" id="tab-keamanan"
+              aria-controls="pane-keamanan" aria-selected="false" data-tab-target="keamanan">
+        {{ ikon('shield', 16) }}
+        <span>{{ MSG.SETTINGS_TAB_KEAMANAN }}</span>
+      </button>
+      <button type="button" class="kx-tab" role="tab" id="tab-biometrik"
+              aria-controls="pane-biometrik" aria-selected="false" data-tab-target="biometrik">
+        {{ ikon('fingerprint', 16) }}
+        <span>{{ MSG.SETTINGS_TAB_BIOMETRIK }}</span>
+      </button>
+      <button type="button" class="kx-tab" role="tab" id="tab-sesi"
+              aria-controls="pane-sesi" aria-selected="false" data-tab-target="sesi">
+        {{ ikon('clock', 16) }}
+        <span>{{ MSG.SETTINGS_TAB_SESI }}</span>
+      </button>
+      <button type="button" class="kx-tab" role="tab" id="tab-akun"
+              aria-controls="pane-akun" aria-selected="false" data-tab-target="akun">
+        {{ ikon('alert-triangle', 16) }}
+        <span>{{ MSG.SETTINGS_TAB_AKUN }}</span>
+      </button>
+    </nav>
+  </div>
+
+  {# ── PANE 1: PROFIL ── #}
+  <section class="kx-tab-pane" id="pane-profil" role="tabpanel" aria-labelledby="tab-profil">
+    <div class="kx-settings-profil-grid">
+      <div class="kx-settings-col-stack">
+
+        {# Kartu Informasi Akun #}
+        <article class="kx-card">
+          <div class="kx-card-head">
+            <h3 class="kx-card-title">{{ MSG.SETTINGS_PROFIL_CARD_TITLE }}</h3>
+            <span class="kx-badge kx-badge-ok">{{ ikon('check', 14) }} Aktif</span>
+          </div>
+          <div class="kx-card-body">
+            <div class="kx-settings-profile-head">
+              <div class="kx-settings-avatar" aria-hidden="true">
+                {{ (user.username[0]|upper) if user.username else 'U' }}
+              </div>
+              <div class="kx-settings-profile-main">
+                <div class="kx-settings-row">
+                  <span class="kx-settings-label">Username</span>
+                  <span class="kx-mono kx-settings-val">{{ user.username }}</span>
+                </div>
+                <div class="kx-settings-row">
+                  <span class="kx-settings-label">Email</span>
+                  <div class="kx-settings-email-wrap">
+                    <span class="kx-mono kx-settings-val">{{ user.email }}</span>
+                    <button type="button" class="kx-btn kx-btn-secondary kx-btn-sm"
+                            data-buka-modal="#modal-ubah-email">
+                      {{ MSG.SETTINGS_PROFIL_CHANGE_EMAIL }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="kx-kv kx-settings-timestamps">
+              <div class="kx-kv-row">
+                <span class="kx-kv-label">{{ MSG.SETTINGS_PROFIL_JOINED }}</span>
+                <span class="kx-kv-value kx-mono">{{ user.created_at[:16] }}</span>
+              </div>
+              <div class="kx-kv-row">
+                <span class="kx-kv-label">{{ MSG.SETTINGS_PROFIL_LAST_LOGIN }}</span>
+                <span class="kx-kv-value kx-mono">{{ user.last_login[:16] if user.last_login else '—' }}</span>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        {# Kartu Ganti Password #}
+        <article class="kx-card">
+          <div class="kx-card-head">
+            <h3 class="kx-card-title">{{ MSG.SETTINGS_PASSWORD_TITLE }}</h3>
+          </div>
+          <div class="kx-card-body">
+            <form method="POST" action="{{ url_for('settings.change_password') }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+              <div class="kx-field">
+                <label class="kx-label" for="settings-current-password">Password Saat Ini</label>
+                <div class="kx-sandi" data-kx-sandi>
+                  <input type="password" id="settings-current-password" name="current_password"
+                         class="kx-input" required autocomplete="current-password">
+                </div>
+              </div>
+
+              <div class="kx-field">
+                <label class="kx-label" for="settings-new-password">Password Baru</label>
+                <div class="kx-sandi" data-kx-sandi>
+                  <input type="password" id="settings-new-password" name="new_password"
+                         class="kx-input" required minlength="12" autocomplete="new-password">
+                </div>
+                <div class="kx-meter" data-kx-meter data-kx-meter-input="#settings-new-password"></div>
+                <small class="kx-help">{{ MSG.SETTINGS_PASSWORD_HINT_12 }}</small>
+              </div>
+
+              <div class="kx-field">
+                <label class="kx-label" for="settings-confirm-password">Konfirmasi Password Baru</label>
+                <div class="kx-sandi" data-kx-sandi>
+                  <input type="password" id="settings-confirm-password" name="confirm_password"
+                         class="kx-input" required autocomplete="new-password">
+                </div>
+              </div>
+
+              <div class="kx-card-actions">
+                <button type="submit" class="kx-btn kx-btn-primary" data-reauth="settings.change">
+                  {{ ikon('lock', 16) }}
+                  <span>{{ MSG.SETTINGS_PASSWORD_TITLE }}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </article>
+
       </div>
-    </div>
-    <div class="settings-recovery-body">
-      <div class="alert alert-warning settings-recovery-alert">
-        Simpan kunci ini sekarang. Kunci hanya ditampilkan satu kali dan tidak
-        dapat dilihat lagi setelah halaman ditutup.
+
+      {# Kolom Kanan: Ringkasan Perangkat & Biometrik #}
+      <div class="kx-settings-col-stack">
+        <article class="kx-card">
+          <div class="kx-card-head">
+            <h3 class="kx-card-title">{{ MSG.SETTINGS_DEVICES_TITLE }}</h3>
+            <button type="button" class="kx-btn kx-btn-ghost kx-btn-sm" data-goto-tab="biometrik">
+              <span>{{ MSG.SETTINGS_DEVICES_MANAGE }}</span>
+              {{ ikon('chevron-down', 14) }}
+            </button>
+          </div>
+          <div class="kx-card-body">
+            <div class="kx-settings-summary-list">
+
+              <div class="kx-settings-summary-item">
+                <div class="kx-settings-summary-head">
+                  {{ ikon('usb', 18) }}
+                  <strong>USB Token</strong>
+                </div>
+                <div class="kx-settings-summary-badges">
+                  {% if user.usb_token_id %}
+                    <span class="kx-badge kx-badge-ok">{{ ikon('check', 12) }} Terdaftar</span>
+                  {% else %}
+                    <span class="kx-badge kx-badge-warn">{{ ikon('alert-triangle', 12) }} Belum terdaftar</span>
+                  {% endif %}
+                  {% if dongle_terpasang %}
+                    <span class="kx-badge kx-badge-ok">Terpasang</span>
+                  {% else %}
+                    <span class="kx-badge kx-badge-danger">Tidak terpasang</span>
+                  {% endif %}
+                </div>
+              </div>
+
+              <div class="kx-settings-summary-item">
+                <div class="kx-settings-summary-head">
+                  {{ ikon('fingerprint', 18) }}
+                  <strong>WebAuthn</strong>
+                </div>
+                <div class="kx-settings-summary-badges">
+                  <span class="kx-badge {% if kredensial %}kx-badge-ok{% else %}kx-badge-warn{% endif %}">
+                    {{ kredensial|length }} kredensial
+                  </span>
+                </div>
+              </div>
+
+              <div class="kx-settings-summary-item">
+                <div class="kx-settings-summary-head">
+                  {{ ikon('scan-face', 18) }}
+                  <strong>Face Recognition</strong>
+                </div>
+                <div class="kx-settings-summary-badges">
+                  {% if wajah_terdaftar %}
+                    <span class="kx-badge kx-badge-ok">{{ ikon('check', 12) }} Template tersimpan</span>
+                  {% else %}
+                    <span class="kx-badge kx-badge-warn">{{ ikon('alert-triangle', 12) }} Belum didaftarkan</span>
+                  {% endif %}
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </article>
       </div>
-      <code class="settings-key mono">{{ recovery_key_baru }}</code>
-      <p class="settings-recovery-note">
-        Kunci pemulihan membuka data yang sama dengan kata sandi dan dongle.
-        Jangan bagikan kunci ini kepada siapa pun.
-      </p>
     </div>
   </section>
-  {% endif %}
 
-  <div class="settings-layout">
-    <aside class="settings-nav" aria-label="Navigasi pengaturan">
-      <p class="settings-nav-title">Bagian Pengaturan</p>
-      <nav class="settings-nav-list">
-        <a class="settings-nav-item is-active" href="#settings-account" data-settings-nav="settings-account" aria-current="true">
-          <span class="settings-nav-icon" aria-hidden="true">{{ icon_user() }}</span>
-          <span class="settings-nav-label">Akun &amp; Keamanan</span>
-        </a>
-        <a class="settings-nav-item" href="#settings-devices" data-settings-nav="settings-devices">
-          <span class="settings-nav-icon" aria-hidden="true">{{ icon_devices() }}</span>
-          <span class="settings-nav-label">Perangkat &amp; Sesi</span>
-        </a>
-        <a class="settings-nav-item" href="#settings-biometrics" data-settings-nav="settings-biometrics">
-          <span class="settings-nav-icon" aria-hidden="true">{{ icon_biometrics() }}</span>
-          <span class="settings-nav-label">Autentikasi Biometrik</span>
-        </a>
-        <a class="settings-nav-item" href="#settings-danger" data-settings-nav="settings-danger">
-          <span class="settings-nav-icon" aria-hidden="true">{{ icon_alert() }}</span>
-          <span class="settings-nav-label">Zona Berbahaya</span>
-        </a>
-      </nav>
-    </aside>
+  {# ── PANE 2: KEAMANAN ── #}
+  <section class="kx-tab-pane" id="pane-keamanan" role="tabpanel" aria-labelledby="tab-keamanan" hidden>
 
-    <div class="settings-main">
-
-      <section class="settings-panel" id="settings-account" aria-labelledby="settings-account-title">
-        <header class="settings-panel-head">
-          <span class="settings-panel-icon" aria-hidden="true">{{ icon_user() }}</span>
-          <div class="settings-panel-heading">
-            <h2 class="settings-panel-title" id="settings-account-title">Profil &amp; Keamanan</h2>
-            <p class="settings-panel-sub">Informasi akun dan pembaruan kata sandi.</p>
-          </div>
-        </header>
-        <div class="settings-panel-body">
-
-          <div class="settings-block">
-            <div class="settings-block-head">
-              <div>
-                <h4 class="settings-block-title">Informasi Akun</h4>
-                <p class="settings-block-sub">Data akun yang tercatat pada perangkat ini.</p>
-              </div>
-              <span class="badge badge-success">{{ icon_check() }}Aktif</span>
-            </div>
-            <div class="settings-meta-grid">
-              <div class="settings-meta">
-                <span class="settings-meta-label">Username</span>
-                <span class="settings-meta-value">{{ user.username }}</span>
-              </div>
-              <div class="settings-meta">
-                <span class="settings-meta-label">Email</span>
-                <span class="settings-meta-value settings-meta-email">{{ user.email }}</span>
-              </div>
-              <div class="settings-meta">
-                <span class="settings-meta-label">Bergabung</span>
-                <span class="settings-meta-value mono">{{ user.created_at[:16] }}</span>
-              </div>
-              <div class="settings-meta">
-                <span class="settings-meta-label">Login Terakhir</span>
-                <span class="settings-meta-value mono">{{ user.last_login[:16] if user.last_login else '—' }}</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="settings-block">
-            <div class="settings-block-head">
-              <div>
-                <h4 class="settings-block-title">Ubah Email</h4>
-                <p class="settings-block-sub">Username tetap; hanya surel yang dapat diubah.</p>
-              </div>
-              <span class="settings-block-icon" aria-hidden="true">{{ icon_user() }}</span>
-            </div>
-            <form method="POST" action="{{ url_for('settings.change_email') }}" class="settings-form">
-              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-              <div class="form-group">
-                <label for="settings-email">Email</label>
-                <input type="email" id="settings-email" name="email" class="form-control"
-                       value="{{ user.email }}" required autocomplete="email" />
-                <small class="form-hint">{{ MSG.SETTINGS_USERNAME_READONLY }}</small>
-              </div>
-              <div class="form-group">
-                <label for="email-current-password">Password Saat Ini</label>
-                <input type="password" id="email-current-password" name="current_password"
-                       class="form-control" required autocomplete="current-password" />
-              </div>
-              <div class="settings-actions">
-                <button type="submit" class="btn btn-secondary btn-sm" data-reauth="settings.change">
-                  Simpan Email
-                </button>
-              </div>
-            </form>
-          </div>
-
-          <div class="settings-block">
-            <div class="settings-block-head">
-              <div>
-                <h4 class="settings-block-title">Ganti Password</h4>
-                <p class="settings-block-sub">Perbarui kata sandi akun dan bungkus ulang kunci data Anda.</p>
-              </div>
-              <span class="settings-block-icon" aria-hidden="true">{{ icon_lock() }}</span>
-            </div>
-            <form method="POST" action="{{ url_for('settings.change_password') }}" class="settings-form">
-              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-              <div class="form-group">
-                <label for="settings-current-password">Password Saat Ini</label>
-                <input type="password" id="settings-current-password" name="current_password"
-                       class="form-control" required autocomplete="current-password" />
-              </div>
-              <div class="form-grid-2">
-                <div class="form-group">
-                  <label for="settings-new-password">Password Baru</label>
-                  <input type="password" id="settings-new-password" name="new_password"
-                         class="form-control" required minlength="12" autocomplete="new-password" />
-                </div>
-                <div class="form-group">
-                  <label for="settings-confirm-password">Konfirmasi Password Baru</label>
-                  <input type="password" id="settings-confirm-password" name="confirm_password"
-                         class="form-control" required autocomplete="new-password" />
-                </div>
-              </div>
-              <p class="form-hint">
-                Minimal 12 karakter, memuat 3 dari 4 jenis karakter (huruf kecil,
-                huruf besar, angka, simbol), tanpa nama pengguna.
-              </p>
-              <div class="settings-actions">
-                <button type="submit" class="btn btn-primary" data-reauth="settings.change">
-                  <span class="settings-btn-icon" aria-hidden="true">{{ icon_lock() }}</span>
-                  Ganti Password
-                </button>
-              </div>
-            </form>
-          </div>
-
+    {# Kartu USB Token / Dongle #}
+    <article class="kx-card">
+      <div class="kx-card-head">
+        <h3 class="kx-card-title">{{ MSG.SETTINGS_USB_CARD_TITLE }}</h3>
+      </div>
+      <div class="kx-card-body">
+        <div class="kx-settings-status-row" aria-label="Status dongle">
+          <span class="kx-settings-status-label">Status</span>
+          {% if user.usb_token_id %}
+            <span class="kx-badge kx-badge-ok">{{ ikon('check', 12) }} Terdaftar</span>
+          {% else %}
+            <span class="kx-badge kx-badge-warn">{{ ikon('alert-triangle', 12) }} Belum terdaftar</span>
+          {% endif %}
+          {% if dongle_terpasang %}
+            <span class="kx-badge kx-badge-ok">Terpasang</span>
+          {% else %}
+            <span class="kx-badge kx-badge-danger">Tidak terpasang</span>
+          {% endif %}
         </div>
-      </section>
 
-      <section class="settings-panel" id="settings-devices" aria-labelledby="settings-devices-title">
-        <header class="settings-panel-head">
-          <span class="settings-panel-icon" aria-hidden="true">{{ icon_devices() }}</span>
-          <div class="settings-panel-heading">
-            <h2 class="settings-panel-title" id="settings-devices-title">Perangkat &amp; Sesi</h2>
-            <p class="settings-panel-sub">Dongle, kunci pemulihan, dan batas diam sesi.</p>
-          </div>
-        </header>
-        <div class="settings-panel-body">
+        <form method="POST" action="{{ url_for('settings.register_usb') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-          <div class="settings-block">
-            <div class="settings-block-head">
-              <div>
-                <h4 class="settings-block-title">USB Token / Dongle</h4>
-                <p class="settings-block-sub">Dongle fisik yang membuka kunci data akun ini.</p>
-              </div>
-              <span class="settings-block-icon" aria-hidden="true">{{ icon_usb() }}</span>
+          <div class="kx-field">
+            <label class="kx-label" for="dongle-password">Password Saat Ini</label>
+            <div class="kx-sandi" data-kx-sandi>
+              <input type="password" id="dongle-password" name="current_password"
+                     class="kx-input" required autocomplete="current-password">
             </div>
-            <div class="settings-status-row" aria-label="Status dongle">
-              <span class="settings-status-label">Status</span>
-              {% if user.usb_token_id %}
-                <span class="badge badge-success">{{ icon_check() }}Terdaftar</span>
-              {% else %}
-                <span class="badge badge-warning">{{ icon_alert() }}Belum terdaftar</span>
+            <small class="kx-help">Diperlukan untuk membungkus ulang kunci data dengan dongle baru.</small>
+          </div>
+
+          <div class="kx-field">
+            <label class="kx-label" for="dongle-mountpoint">Dongle Tujuan</label>
+            <select id="dongle-mountpoint" name="mountpoint" class="kx-select" {% if drives %}required{% endif %}>
+              {% if not drives %}
+                <option value="">Tidak ada dongle terdeteksi</option>
+              {% elif drives|length > 1 %}
+                <option value="">Pilih dongle tujuan</option>
               {% endif %}
-              {% if dongle_terpasang %}
-                <span class="badge badge-success">{{ icon_check() }}Terpasang</span>
-              {% else %}
-                <span class="badge badge-danger">{{ icon_alert() }}Tidak terpasang</span>
-              {% endif %}
-            </div>
-            <form method="POST" action="{{ url_for('settings.register_usb') }}" class="settings-form">
-              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-              <div class="form-group">
-                <label for="dongle-password">Password Saat Ini</label>
-                <input type="password" id="dongle-password" name="current_password"
-                       class="form-control" required autocomplete="current-password" />
-                <small class="form-hint">
-                  Diperlukan untuk membungkus ulang kunci data dengan dongle baru.
-                </small>
-              </div>
-              <div class="form-group">
-                <label for="dongle-mountpoint">Dongle Tujuan</label>
-                <select id="dongle-mountpoint" name="mountpoint"
-                        class="form-control" {% if drives %}required{% endif %}>
-                  {% if not drives %}
-                    <option value="">Tidak ada dongle terdeteksi</option>
-                  {% elif drives|length > 1 %}
-                    <option value="">Pilih dongle tujuan</option>
-                  {% endif %}
-                  {% for drive in drives %}
-                    <option value="{{ drive.mountpoint }}"
-                            {% if drives|length == 1 %}selected{% endif %}>
-                      {{ drive.mountpoint }}{% if drive.volume_serial %} — {{ drive.volume_serial }}{% endif %}
-                    </option>
-                  {% endfor %}
-                </select>
-                <small class="form-hint">{{ MSG.USB_REREGISTER_HINT }}</small>
-              </div>
-              <div class="settings-actions">
-                <button type="submit" class="btn btn-secondary btn-sm" data-reauth="settings.change">
-                  <span class="settings-btn-icon" aria-hidden="true">{{ icon_usb() }}</span>
-                  Daftar Ulang Dongle
-                </button>
-              </div>
-            </form>
-            <p class="settings-note">
-              {{ MSG.USB_REREGISTER_HINT }} Kunci data, berkas, dan template
-              biometrik tidak berubah.
-            </p>
-          </div>
-
-          <div class="settings-block">
-            <div class="settings-block-head">
-              <div>
-                <h4 class="settings-block-title">Kunci Pemulihan</h4>
-                <p class="settings-block-sub">Terbitkan kunci pemulihan baru untuk kunci data yang sama.</p>
-              </div>
-              <span class="settings-block-icon" aria-hidden="true">{{ icon_key() }}</span>
-            </div>
-            <p class="settings-note settings-note-spaced">
-              Kunci lama langsung tidak berlaku; kunci baru hanya tampil satu kali.
-            </p>
-            <form method="POST" action="{{ url_for('settings.regenerate_recovery_key') }}" class="settings-form">
-              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-              <div class="settings-actions">
-                <button type="submit" class="btn btn-secondary btn-sm" data-reauth="settings.change">
-                  <span class="settings-btn-icon" aria-hidden="true">{{ icon_key() }}</span>
-                  Terbitkan Kunci Pemulihan Baru
-                </button>
-              </div>
-            </form>
-          </div>
-
-          <div class="settings-block">
-            <div class="settings-block-head">
-              <div>
-                <h4 class="settings-block-title">Batas Diam Sesi</h4>
-                <p class="settings-block-sub">Keluar otomatis setelah tidak ada aktivitas.</p>
-              </div>
-              <span class="settings-block-icon" aria-hidden="true">{{ icon_clock() }}</span>
-            </div>
-            <form method="POST" action="{{ url_for('settings.session_timeout') }}" class="settings-form">
-              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-              <div class="form-group">
-                <label for="session-timeout">Keluar otomatis setelah tidak aktif</label>
-                <select id="session-timeout" name="session_timeout_minutes" class="form-control">
-                  {% for menit in session_timeout_pilihan %}
-                  <option value="{{ menit }}" {% if menit == session_timeout %}selected{% endif %}>
-                    {{ menit }} menit
-                  </option>
-                  {% endfor %}
-                </select>
-              </div>
-              <div class="settings-actions">
-                <button type="submit" class="btn btn-secondary btn-sm" data-reauth="settings.change">
-                  <span class="settings-btn-icon" aria-hidden="true">{{ icon_clock() }}</span>
-                  Simpan Batas Sesi
-                </button>
-              </div>
-            </form>
-            <p class="settings-note">Berlaku pada sesi ini dan sesi berikutnya.</p>
-          </div>
-
-        </div>
-      </section>
-
-      <section class="settings-panel" id="settings-biometrics" aria-labelledby="settings-biometrics-title">
-        <header class="settings-panel-head">
-          <span class="settings-panel-icon" aria-hidden="true">{{ icon_biometrics() }}</span>
-          <div class="settings-panel-heading">
-            <h2 class="settings-panel-title" id="settings-biometrics-title">Autentikasi Biometrik</h2>
-            <p class="settings-panel-sub">Metode biometrik yang dapat dipakai saat masuk.</p>
-          </div>
-        </header>
-        <div class="settings-panel-body">
-
-          <div class="settings-block">
-            <div class="settings-block-head">
-              <div>
-                <h4 class="settings-block-title">Face Recognition</h4>
-                <p class="settings-block-sub">Template wajah terenkripsi untuk verifikasi saat masuk.</p>
-              </div>
-              <span class="settings-block-icon" aria-hidden="true">{{ icon_face() }}</span>
-            </div>
-            <div class="settings-status-row" aria-label="Status Face Recognition">
-              <span class="settings-status-label">Status</span>
-              {% if wajah_terdaftar %}
-                <span class="badge badge-success">{{ icon_check() }}Template tersimpan</span>
-              {% else %}
-                <span class="badge badge-warning">{{ icon_alert() }}Belum didaftarkan</span>
-              {% endif %}
-            </div>
-            <div class="settings-camera">
-              <video id="settings-video" class="settings-video" autoplay playsinline></video>
-              <canvas id="settings-canvas" class="settings-canvas"></canvas>
-              <button type="button" class="btn btn-secondary btn-sm"
-                      data-settings-action="face-enroll"
-                      data-reauth="biometric.manage">
-                <span class="settings-btn-icon" aria-hidden="true">{{ icon_face() }}</span>
-                Daftar Ulang Wajah
-              </button>
-            </div>
-            <p id="settings-face-status" class="settings-status-text" role="status" aria-live="polite"></p>
-          </div>
-
-          <div class="settings-block">
-            <div class="settings-block-head">
-              <div>
-                <h4>WebAuthn</h4>
-                <p class="settings-block-sub">Kredensial platform seperti sidik jari atau Windows Hello.</p>
-              </div>
-              <span class="settings-block-icon" aria-hidden="true">{{ icon_fingerprint() }}</span>
-            </div>
-            <div class="settings-status-row" aria-label="Status WebAuthn">
-              <span class="settings-status-label">Status</span>
-              {% if webauthn_terdaftar %}
-                <span class="badge badge-success">{{ icon_check() }}Terdaftar</span>
-              {% else %}
-                <span class="badge badge-warning">{{ icon_alert() }}Belum didaftarkan</span>
-              {% endif %}
-            </div>
-
-            {% if kredensial %}
-            <div class="settings-credential-list">
-              {% for kredensial_item in kredensial %}
-              <article class="settings-credential">
-                <div class="settings-credential-main">
-                  <p class="settings-credential-name">{{ kredensial_item.nama or '(tanpa nama)' }}</p>
-                  <p class="settings-credential-meta">
-                    Ditambahkan
-                    <span class="mono">{{ kredensial_item.dibuat[:16] if kredensial_item.dibuat else '—' }}</span>
-                  </p>
-                </div>
-                <form method="POST" action="{{ url_for('settings.delete_webauthn') }}" class="settings-credential-delete">
-                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-                  <input type="hidden" name="credential_id" value="{{ kredensial_item.credential_id }}" />
-                  <button type="submit" class="btn btn-outline-danger btn-sm"
-                          data-reauth="biometric.manage"
-                          aria-label="Hapus kredensial {{ kredensial_item.nama or 'tanpa nama' }}">
-                    Hapus
-                  </button>
-                </form>
-              </article>
+              {% for drive in drives %}
+                <option value="{{ drive.mountpoint }}" {% if drives|length == 1 %}selected{% endif %}>
+                  {{ drive.mountpoint }}{% if drive.volume_serial %} — {{ drive.volume_serial }}{% endif %}
+                </option>
               {% endfor %}
-            </div>
-            {% else %}
-            <div class="settings-empty">
-              <span class="settings-empty-icon" aria-hidden="true">{{ icon_fingerprint() }}</span>
-              <p class="settings-empty-title">Belum ada kredensial WebAuthn</p>
-              <p class="settings-empty-text">Tambahkan kredensial untuk memakai autentikator platform perangkat ini.</p>
-            </div>
-            {% endif %}
-
-            <div class="settings-form settings-webauthn-form">
-              <div class="form-group">
-                <label for="webauthn-nama">Nama Kredensial</label>
-                <input type="text" id="webauthn-nama" class="form-control"
-                       maxlength="64" placeholder="mis. Laptop kantor" autocomplete="off" />
-              </div>
-              <div class="settings-actions">
-                <button type="button" class="btn btn-secondary btn-sm"
-                        data-settings-action="webauthn-add"
-                        data-reauth="biometric.manage">
-                  <span class="settings-btn-icon" aria-hidden="true">{{ icon_lock() }}</span>
-                  Tambah WebAuthn
-                </button>
-              </div>
-            </div>
-            <p id="settings-webauthn-status" class="settings-status-text" role="status" aria-live="polite"></p>
-            <p class="settings-note">
-              Memakai autentikator platform perangkat ini (sidik jari atau Windows
-              Hello). Minimal satu biometrik harus tetap terdaftar.
-            </p>
+            </select>
+            <small class="kx-help">{{ MSG.USB_REREGISTER_HINT }}</small>
           </div>
 
+          <div class="kx-card-actions">
+            <button type="submit" class="kx-btn kx-btn-secondary" data-reauth="settings.change">
+              {{ ikon('usb', 16) }}
+              <span>Daftar Ulang Dongle</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </article>
+
+    {# Kartu Kunci Pemulihan #}
+    <article class="kx-card">
+      <div class="kx-card-head">
+        <h3 class="kx-card-title">{{ MSG.SETTINGS_RECOVERY_CARD_TITLE }}</h3>
+      </div>
+      <div class="kx-card-body">
+        <div class="kx-infobox kx-infobox-warn">
+          {{ ikon('alert-triangle', 18) }}
+          <div>{{ MSG.SETTINGS_RECOVERY_WARN }}</div>
         </div>
-      </section>
 
-      <section class="settings-panel" id="settings-danger" aria-labelledby="settings-danger-title">
-        <header class="settings-panel-head">
-          <span class="settings-panel-icon" aria-hidden="true">{{ icon_alert() }}</span>
-          <div class="settings-panel-heading">
-            <h2 class="settings-panel-title" id="settings-danger-title">Zona Berbahaya</h2>
-            <p class="settings-panel-sub">Tindakan permanen yang memerlukan autentikasi ulang.</p>
+        {% if recovery_key_baru %}
+        <div class="kx-settings-new-recovery" id="box-recovery-key-baru">
+          <p class="kx-settings-recovery-lead">Kunci pemulihan baru Anda:</p>
+          <div class="kx-code-wrap">
+            <pre class="kx-code"><code id="settings-recovery-val" class="kx-mono">{{ recovery_key_baru }}</code></pre>
           </div>
-        </header>
-        <div class="settings-panel-body">
-
-          <div class="settings-block">
-            <div class="settings-block-head">
-              <div>
-                <h4 class="settings-block-title">Reset Data Akun</h4>
-                <p class="settings-block-sub">Hapus berkas, media, kredensial, catatan, koleksi, dan gambar stego. Akun, kunci, dongle, dan biometrik tetap tersimpan.</p>
-              </div>
-            </div>
-            <form method="POST" action="{{ url_for('settings.reset_data') }}" class="settings-form">
-              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-              <div class="form-group">
-                <label for="reset-current-password">Password Saat Ini</label>
-                <input type="password" id="reset-current-password" name="current_password"
-                       class="form-control" required autocomplete="current-password" />
-              </div>
-              <div class="form-group">
-                <label for="reset-confirm-username">Ketik Ulang Username</label>
-                <input type="text" id="reset-confirm-username" name="confirm_username"
-                       class="form-control" required autocomplete="off"
-                       placeholder="{{ user.username }}" />
-                <small class="form-hint">Ketik <strong>{{ user.username }}</strong> persis untuk mengonfirmasi.</small>
-              </div>
-              <div class="settings-actions">
-                <button type="submit" class="btn btn-outline-danger" data-reauth="account.danger">
-                  Reset Data Akun
-                </button>
-              </div>
-            </form>
+          <div class="kx-settings-recovery-actions">
+            <button type="button" class="kx-btn kx-btn-secondary kx-btn-sm"
+                    data-kx-salin="{{ recovery_key_baru }}">
+              {{ ikon('copy', 14) }}
+              <span>Salin</span>
+            </button>
+            <button type="button" class="kx-btn kx-btn-secondary kx-btn-sm"
+                    id="btn-download-settings-recovery">
+              {{ ikon('download', 14) }}
+              <span>Unduh .txt</span>
+            </button>
           </div>
-
-          <div class="settings-block">
-            <div class="settings-block-head">
-              <div>
-                <h4 class="settings-block-title">Hapus Akun</h4>
-                <p class="settings-block-sub">Hapus akun beserta seluruh data, biometrik, kunci pemulihan, dan sesi. Dongle dibebaskan untuk didaftarkan ulang.</p>
-              </div>
-            </div>
-            <form method="POST" action="{{ url_for('settings.delete_account') }}" class="settings-form">
-              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-              <div class="form-group">
-                <label for="delete-current-password">Password Saat Ini</label>
-                <input type="password" id="delete-current-password" name="current_password"
-                       class="form-control" required autocomplete="current-password" />
-              </div>
-              <div class="form-group">
-                <label for="delete-confirm-username">Ketik Ulang Username</label>
-                <input type="text" id="delete-confirm-username" name="confirm_username"
-                       class="form-control" required autocomplete="off"
-                       placeholder="{{ user.username }}" />
-                <small class="form-hint">Ketik <strong>{{ user.username }}</strong> persis untuk mengonfirmasi.</small>
-              </div>
-              <div class="settings-actions">
-                <button type="submit" class="btn btn-outline-danger" data-reauth="account.danger">
-                  Hapus Akun Permanen
-                </button>
-              </div>
-            </form>
-          </div>
-
+          <label class="kx-checkbox kx-settings-saved-check">
+            <input type="checkbox" id="check-saved-recovery">
+            <span>{{ MSG.SETTINGS_RECOVERY_SAVED_CHECKBOX }}</span>
+          </label>
         </div>
-      </section>
+        {% endif %}
+
+        <div class="kx-card-actions">
+          <button type="button" class="kx-btn kx-btn-secondary"
+                  data-buka-modal="#modal-konfirmasi-recovery">
+            {{ ikon('key', 16) }}
+            <span>{{ MSG.SETTINGS_RECOVERY_GENERATE_BTN }}</span>
+          </button>
+        </div>
+      </div>
+    </article>
+
+  </section>
+
+  {# ── PANE 3: BIOMETRIK ── #}
+  <section class="kx-tab-pane" id="pane-biometrik" role="tabpanel" aria-labelledby="tab-biometrik" hidden>
+
+    {# Kartu Face Recognition #}
+    <article class="kx-card">
+      <div class="kx-card-head">
+        <h3 class="kx-card-title">{{ MSG.SETTINGS_FACE_CARD_TITLE }}</h3>
+      </div>
+      <div class="kx-card-body">
+        <div class="kx-settings-status-row" aria-label="Status Face Recognition">
+          <span class="kx-settings-status-label">Status</span>
+          {% if wajah_terdaftar %}
+            <span class="kx-badge kx-badge-ok">{{ ikon('check', 12) }} Template tersimpan</span>
+          {% else %}
+            <span class="kx-badge kx-badge-warn">{{ ikon('alert-triangle', 12) }} Belum didaftarkan</span>
+          {% endif %}
+        </div>
+
+        <p class="kx-settings-guidance">{{ MSG.SETTINGS_FACE_GUIDANCE }}</p>
+
+        <div class="kx-settings-camera">
+          <video id="settings-video" class="kx-settings-video" autoplay playsinline></video>
+          <canvas id="settings-canvas" class="kx-settings-canvas"></canvas>
+        </div>
+
+        <div class="kx-card-actions">
+          <button type="button" class="kx-btn kx-btn-secondary"
+                  data-settings-action="face-enroll"
+                  data-reauth="biometric.manage">
+            {{ ikon('scan-face', 16) }}
+            <span>{{ MSG.SETTINGS_FACE_REREGISTER_BTN }}</span>
+          </button>
+        </div>
+
+        <p id="settings-face-status" class="kx-settings-status-text" role="status" aria-live="polite"></p>
+      </div>
+    </article>
+
+    {# Kartu WebAuthn #}
+    <article class="kx-card">
+      <div class="kx-card-head">
+        <h3 class="kx-card-title">{{ MSG.SETTINGS_WEBAUTHN_CARD_TITLE }}</h3>
+      </div>
+      <div class="kx-card-body">
+        <div class="kx-settings-status-row" aria-label="Status WebAuthn">
+          <span class="kx-settings-status-label">Status</span>
+          {% if webauthn_terdaftar %}
+            <span class="kx-badge kx-badge-ok">{{ ikon('check', 12) }} Terdaftar</span>
+          {% else %}
+            <span class="kx-badge kx-badge-warn">{{ ikon('alert-triangle', 12) }} Belum didaftarkan</span>
+          {% endif %}
+        </div>
+
+        {% if kredensial %}
+        <div class="kx-table-wrap">
+          <table class="kx-table">
+            <thead>
+              <tr>
+                <th>Nama</th>
+                <th>Ditambahkan</th>
+                <th class="kx-cell-actions">Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for kredensial_item in kredensial %}
+              <tr>
+                <td><strong>{{ kredensial_item.nama or '(tanpa nama)' }}</strong></td>
+                <td class="kx-mono">{{ kredensial_item.dibuat[:16] if kredensial_item.dibuat else '—' }}</td>
+                <td class="kx-cell-actions">
+                  <form method="POST" action="{{ url_for('settings.delete_webauthn') }}" class="settings-credential-delete">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="credential_id" value="{{ kredensial_item.credential_id }}">
+                    <button type="submit" class="kx-btn kx-btn-danger kx-btn-sm js-hapus-kredensial"
+                            data-reauth="biometric.manage"
+                            data-cred-name="{{ kredensial_item.nama or 'tanpa nama' }}"
+                            aria-label="Hapus kredensial {{ kredensial_item.nama or 'tanpa nama' }}">
+                      Hapus
+                    </button>
+                  </form>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="kx-empty">
+          <span class="kx-empty-icon">{{ ikon('fingerprint', 32) }}</span>
+          <p class="kx-empty-title">Belum ada kredensial WebAuthn</p>
+          <p class="kx-empty-text">Tambahkan kredensial untuk memakai autentikator platform perangkat ini.</p>
+        </div>
+        {% endif %}
+
+        <div class="kx-settings-webauthn-add">
+          <div class="kx-field">
+            <label class="kx-label" for="webauthn-nama">Nama Kredensial</label>
+            <input type="text" id="webauthn-nama" class="kx-input"
+                   maxlength="64" placeholder="mis. Laptop kantor" autocomplete="off">
+          </div>
+          <button type="button" class="kx-btn kx-btn-secondary"
+                  data-settings-action="webauthn-add"
+                  data-reauth="biometric.manage">
+            {{ ikon('plus', 16) }}
+            <span>{{ MSG.SETTINGS_WEBAUTHN_ADD_BTN }}</span>
+          </button>
+        </div>
+
+        <p id="settings-webauthn-status" class="kx-settings-status-text" role="status" aria-live="polite"></p>
+        <p class="kx-help">{{ MSG.SETTINGS_WEBAUTHN_NOTE }}</p>
+      </div>
+    </article>
+
+  </section>
+
+  {# ── PANE 4: SESI ── #}
+  <section class="kx-tab-pane" id="pane-sesi" role="tabpanel" aria-labelledby="tab-sesi" hidden>
+    <article class="kx-card">
+      <div class="kx-card-head">
+        <h3 class="kx-card-title">{{ MSG.SETTINGS_SESSION_CARD_TITLE }}</h3>
+      </div>
+      <div class="kx-card-body">
+        <form method="POST" action="{{ url_for('settings.session_timeout') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+          <div class="kx-field">
+            <label class="kx-label" for="session-timeout">Keluar otomatis setelah tidak aktif</label>
+            <select id="session-timeout" name="session_timeout_minutes" class="kx-select">
+              {% for menit in session_timeout_pilihan %}
+              <option value="{{ menit }}" {% if menit == session_timeout %}selected{% endif %}>
+                {{ menit }} menit
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="kx-card-actions">
+            <button type="submit" class="kx-btn kx-btn-secondary" data-reauth="settings.change">
+              {{ ikon('clock', 16) }}
+              <span>{{ MSG.SETTINGS_SESSION_SAVE_BTN }}</span>
+            </button>
+          </div>
+        </form>
+        <p class="kx-help">{{ MSG.SETTINGS_SESSION_NOTE }}</p>
+      </div>
+    </article>
+  </section>
+
+  {# ── PANE 5: AKUN (ZONA BAHAYA) ── #}
+  <section class="kx-tab-pane" id="pane-akun" role="tabpanel" aria-labelledby="tab-akun" hidden>
+    <div class="kx-settings-danger-grid">
+
+      {# Kartu Reset Data #}
+      <article class="kx-card kx-card-danger">
+        <div class="kx-card-head">
+          <h3 class="kx-card-title">{{ MSG.SETTINGS_DANGER_RESET_TITLE }}</h3>
+        </div>
+        <div class="kx-card-body">
+          <p>{{ MSG.SETTINGS_DANGER_RESET_DESC }}</p>
+        </div>
+        <div class="kx-card-foot">
+          <button type="button" class="kx-btn kx-btn-danger" data-buka-modal="#modal-reset-data">
+            <span>Reset Data Akun</span>
+          </button>
+        </div>
+      </article>
+
+      {# Kartu Hapus Akun #}
+      <article class="kx-card kx-card-danger">
+        <div class="kx-card-head">
+          <h3 class="kx-card-title">{{ MSG.SETTINGS_DANGER_DELETE_TITLE }}</h3>
+        </div>
+        <div class="kx-card-body">
+          <p>{{ MSG.SETTINGS_DANGER_DELETE_DESC }}</p>
+        </div>
+        <div class="kx-card-foot">
+          <button type="button" class="kx-btn kx-btn-danger" data-buka-modal="#modal-hapus-akun">
+            <span>Hapus Akun Permanen</span>
+          </button>
+        </div>
+      </article>
 
     </div>
+  </section>
+
+</div>
+
+{# ── MODAL: UBAH EMAIL ── #}
+<div class="kx-modal-overlay" id="modal-ubah-email" aria-hidden="true">
+  <div class="kx-modal" role="dialog" aria-modal="true" aria-labelledby="judul-modal-email">
+    <div class="kx-modal-head">
+      <h2 class="kx-modal-title" id="judul-modal-email">Ubah Email</h2>
+      <button type="button" class="kx-btn kx-btn-icon" data-kx-tutup aria-label="Tutup">&times;</button>
+    </div>
+    <form method="POST" action="{{ url_for('settings.change_email') }}">
+      <div class="kx-modal-body">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="kx-field">
+          <label class="kx-label" for="settings-email">Email Baru</label>
+          <input type="email" id="settings-email" name="email" class="kx-input"
+                 value="{{ user.email }}" required autocomplete="email">
+          <small class="kx-help">{{ MSG.SETTINGS_USERNAME_READONLY }}</small>
+        </div>
+
+        <div class="kx-field">
+          <label class="kx-label" for="email-current-password">Password Saat Ini</label>
+          <div class="kx-sandi" data-kx-sandi>
+            <input type="password" id="email-current-password" name="current_password"
+                   class="kx-input" required autocomplete="current-password">
+          </div>
+        </div>
+      </div>
+      <div class="kx-modal-foot">
+        <button type="button" class="kx-btn kx-btn-secondary" data-kx-tutup>Batal</button>
+        <button type="submit" class="kx-btn kx-btn-primary" data-reauth="settings.change">
+          Simpan Email
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{# ── MODAL: KONFIRMASI TERBITKAN KUNCI PEMULIHAN ── #}
+<div class="kx-modal-overlay" id="modal-konfirmasi-recovery" aria-hidden="true">
+  <div class="kx-modal" role="dialog" aria-modal="true" aria-labelledby="judul-modal-recovery">
+    <div class="kx-modal-head">
+      <h2 class="kx-modal-title" id="judul-modal-recovery">Terbitkan Kunci Pemulihan Baru?</h2>
+      <button type="button" class="kx-btn kx-btn-icon" data-kx-tutup aria-label="Tutup">&times;</button>
+    </div>
+    <form method="POST" action="{{ url_for('settings.regenerate_recovery_key') }}">
+      <div class="kx-modal-body">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <p class="kx-danger-text">Kunci pemulihan lama Anda akan langsung tidak berlaku dan tidak dapat digunakan lagi.</p>
+        <p>Kunci pemulihan baru hanya akan ditampilkan satu kali pada layar ini. Pastikan Anda siap menyalin atau mengunduhnya.</p>
+      </div>
+      <div class="kx-modal-foot">
+        <button type="button" class="kx-btn kx-btn-secondary" data-kx-tutup>Batal</button>
+        <button type="submit" class="kx-btn kx-btn-danger" data-reauth="settings.change">
+          Terbitkan Kunci Baru
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{# ── MODAL: RESET DATA ── #}
+<div class="kx-modal-overlay" id="modal-reset-data" aria-hidden="true">
+  <div class="kx-modal" role="dialog" aria-modal="true" aria-labelledby="judul-modal-reset">
+    <div class="kx-modal-head">
+      <h2 class="kx-modal-title" id="judul-modal-reset">Konfirmasi Reset Data</h2>
+      <button type="button" class="kx-btn kx-btn-icon" data-kx-tutup aria-label="Tutup">&times;</button>
+    </div>
+    <form method="POST" action="{{ url_for('settings.reset_data') }}" id="form-reset-data">
+      <div class="kx-modal-body">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="kx-infobox kx-infobox-warn">
+          {{ ikon('alert-triangle', 18) }}
+          <div>{{ MSG.SETTINGS_DANGER_CONSEQUENCE_RESET }}</div>
+        </div>
+
+        <div class="kx-field">
+          <label class="kx-label" for="reset-current-password">Password Saat Ini</label>
+          <div class="kx-sandi" data-kx-sandi>
+            <input type="password" id="reset-current-password" name="current_password"
+                   class="kx-input" required autocomplete="current-password">
+          </div>
+        </div>
+
+        <div class="kx-field">
+          <label class="kx-label" for="reset-confirm-username">Ketik Ulang Username</label>
+          <input type="text" id="reset-confirm-username" name="confirm_username"
+                 class="kx-input js-confirm-username" required autocomplete="off"
+                 placeholder="{{ user.username }}" data-target-username="{{ user.username }}"
+                 data-submit-target="#btn-submit-reset">
+          <small class="kx-help">Ketik <strong>{{ user.username }}</strong> persis untuk mengonfirmasi.</small>
+        </div>
+      </div>
+      <div class="kx-modal-foot">
+        <button type="button" class="kx-btn kx-btn-secondary" data-kx-tutup>Batal</button>
+        <button type="submit" id="btn-submit-reset" class="kx-btn kx-btn-danger-solid"
+                data-reauth="account.danger" disabled>
+          Reset Data Akun
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{# ── MODAL: HAPUS AKUN ── #}
+<div class="kx-modal-overlay" id="modal-hapus-akun" aria-hidden="true">
+  <div class="kx-modal" role="dialog" aria-modal="true" aria-labelledby="judul-modal-hapus">
+    <div class="kx-modal-head">
+      <h2 class="kx-modal-title" id="judul-modal-hapus">Konfirmasi Hapus Akun</h2>
+      <button type="button" class="kx-btn kx-btn-icon" data-kx-tutup aria-label="Tutup">&times;</button>
+    </div>
+    <form method="POST" action="{{ url_for('settings.delete_account') }}" id="form-delete-account">
+      <div class="kx-modal-body">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="kx-infobox kx-infobox-warn">
+          {{ ikon('alert-triangle', 18) }}
+          <div>{{ MSG.SETTINGS_DANGER_CONSEQUENCE_DELETE }}</div>
+        </div>
+
+        <div class="kx-field">
+          <label class="kx-label" for="delete-current-password">Password Saat Ini</label>
+          <div class="kx-sandi" data-kx-sandi>
+            <input type="password" id="delete-current-password" name="current_password"
+                   class="kx-input" required autocomplete="current-password">
+          </div>
+        </div>
+
+        <div class="kx-field">
+          <label class="kx-label" for="delete-confirm-username">Ketik Ulang Username</label>
+          <input type="text" id="delete-confirm-username" name="confirm_username"
+                 class="kx-input js-confirm-username" required autocomplete="off"
+                 placeholder="{{ user.username }}" data-target-username="{{ user.username }}"
+                 data-submit-target="#btn-submit-delete">
+          <small class="kx-help">Ketik <strong>{{ user.username }}</strong> persis untuk mengonfirmasi.</small>
+        </div>
+      </div>
+      <div class="kx-modal-foot">
+        <button type="button" class="kx-btn kx-btn-secondary" data-kx-tutup>Batal</button>
+        <button type="submit" id="btn-submit-delete" class="kx-btn kx-btn-danger-solid"
+                data-reauth="account.danger" disabled>
+          Hapus Akun Permanen
+        </button>
+      </div>
+    </form>
   </div>
 </div>
 {% endblock %}

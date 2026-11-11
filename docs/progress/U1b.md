@@ -1,6 +1,8 @@
-# U1b — Security Center
+# U1b — Security Center & Settings
 
-## Ringkasan
+## Bagian 1: Security Center (P1)
+
+### Ringkasan
 
 Sesi U1b menyelesaikan modernisasi antarmuka Security Center (`templates/security_center.html`, rute `GET /security-center` dan `POST /security-center/verify`) sesuai panduan `docs/desain/spesifikasi-ui.txt` §117–120, katalog fondasi U0 (`docs/progress/U0.md`), serta instruksi kerja:
 
@@ -11,7 +13,7 @@ Sesi U1b menyelesaikan modernisasi antarmuka Security Center (`templates/securit
 
 ---
 
-## Audit Elemen Lama (Sebelum → Sesudah)
+### Audit Elemen Lama (Sebelum → Sesudah)
 
 | Elemen / Fitur | Sebelum | Sesudah | Status | Alasan |
 |---|---|---|---|---|
@@ -27,11 +29,11 @@ Sesi U1b menyelesaikan modernisasi antarmuka Security Center (`templates/securit
 | Tombol Ekspor CSV | Tidak ada / diminta pada spesifikasi | Tidak disediakan | Ditiadakan | Backend tidak menyediakan endpoint ekspor CSV; dicatat sebagai keterbatasan. |
 | Tabel log aktivitas | Kartu list artikel dengan layout custom | Tabel `.kx-table` terstruktur dengan kolom Nomor, Waktu, Aksi, Asset hash, Block hash | Diubah | Spesifikasi §120: format tabel terstandarisasi. |
 | Pemotongan hash dan salin | Teks hash panjang tanpa tombol salin otomatis | Komponen `.kx-hash` dengan pemotongan 16 karakter dan tombol Salin otomatis | Diubah | Standar U0 untuk seluruh sel hash di aplikasi. |
-| Emoji status dan badge | Menggunakan emoji `✅`, `⚠`, `🗂`, `❔` | Badge teks bersih (`kx-badge-ok`, `kx-badge-danger`, `kx-badge-warn`, `kx-badge-info`) dengan ikon SVG sprite | Diubah | Aturan bebas emoji di seluruh antarmuka. |
+| Emoji status dan badge | Menggunakan emoji | Badge teks bersih (`kx-badge-ok`, `kx-badge-danger`, `kx-badge-warn`, `kx-badge-info`) dengan ikon SVG sprite | Diubah | Aturan bebas emoji di seluruh antarmuka. |
 
 ---
 
-## Tabel Kepatuhan Spesifikasi
+### Tabel Kepatuhan Spesifikasi (P1)
 
 | Kebutuhan Spesifikasi / Prompt | Realisasi pada Sesi U1b | Status |
 |---|---|---|
@@ -53,24 +55,100 @@ Sesi U1b menyelesaikan modernisasi antarmuka Security Center (`templates/securit
 
 ---
 
-## Keputusan Desain
+## Bagian 2: Settings (P2)
 
-1. **Penempatan Tombol Verifikasi**: Tombol "Verifikasi integritas" dipindahkan dari topbar ke header kartu Integritas Blockchain (`kx-card-head`), merapikan topbar dan memusatkan kontrol langsung pada kartu yang relevan.
-2. **Penyaringan Chip Dinamis**: Filter chip dihasilkan dari kumpulan aksi yang benar-benar ada pada data blok pengguna, sehingga tidak membingungkan pengguna dengan filter kosong yang tidak memiliki catatan.
-3. **Penyelarasan Warna Visual Rantai**: Warna blok visual rantai memprioritaskan indikator kerusakan (merah jika tampered), kemudian kebaruan (teal jika indeks terakhir), keabsahan (hijau jika terverifikasi valid), dan abu-abu jika belum diperiksa.
-4. **Pembaruan Pengujian Tanpa Emoji**: String pencocokan emoji pada pengujian lama (`✅ OK`, `⚠ DIUBAH`, `🗂 HILANG`, `❔ TANPA CATATAN`) diselaraskan dengan teks lencana murni (`OK`, `DIUBAH`, `HILANG`, `TANPA CATATAN`) untuk menegakkan aturan anti-emoji tanpa melemahkan pengujian.
+### Ringkasan
+
+Sesi U1b menyelesaikan redesain antarmuka Settings (`templates/settings.html`, `static/js/settings.js`, `static/css/halaman/settings.css`, dan rute terkait di `routes/settings_routes.py`) sesuai panduan spesifikasi dan aturan proyek:
+
+1. **Struktur 5 Tab Pill**:
+   - Tab pill di bagian atas: **Profil**, **Keamanan**, **Biometrik**, **Sesi**, dan **Akun**.
+   - Navigasi tab berjalan di sisi klien tanpa muat ulang halaman (`no reload`).
+   - Tab aktif tersinkronisasi dua arah dengan hash URL (`#profil`, `#keamanan`, `#biometrik`, `#sesi`, `#akun`). Jika terdapat respons pembuatan kunci pemulihan baru (`recovery_key_baru`), tab aktif secara otomatis diarahkan ke tab `keamanan`.
+2. **Tab Profil**:
+   - Kolom kiri memuat kartu Profil dengan avatar inisial (kapital nama pengguna), Username read-only (JetBrains Mono), Email (JetBrains Mono) beserta tombol "Ubah email" yang membuka modal ubah surel, serta tanggal Bergabung dan Login Terakhir rata kanan dalam format mono.
+   - Kartu Ganti Password memuat kolom password saat ini (toggle satu mata), password baru (meter kekuatan 4 segmen + petunjuk 12 karakter), dan konfirmasi password dengan tombol teal `Ganti Password` (`POST /settings/change-password` ber-grant `settings.change`).
+   - Kolom kanan memuat kartu ringkasan Perangkat & Biometrik (status USB token Terdaftar/Belum terdaftar & Terpasang/Tidak terpasang, jumlah kredensial WebAuthn, status template Face Recognition) dengan tautan "Kelola" yang mengalihkan tab ke Biometrik.
+3. **Tab Keamanan**:
+   - Kartu USB Token / Dongle: status badge, dropdown drive tujuan (`<select name="mountpoint">`) dari data drive yang dikirim backend, kolom password saat ini, petunjuk pendaftaran ulang, dan tombol "Daftar Ulang Dongle" (`POST /settings/register-usb`).
+   - Kartu Kunci Pemulihan: kotak peringatan kuning (`.kx-infobox.kx-infobox-warn`) yang menegaskan kunci lama langsung tidak berlaku dan kunci baru hanya tampil sekali. Tombol "Terbitkan kunci pemulihan baru" membuka modal konfirmasi. Saat kunci baru terbit (`recovery_key_baru`), ditampilkan dalam blok kode mono dengan tombol Salin (`data-kx-salin`), tombol Unduh berkas `.txt`, dan kotak centang "Sudah saya simpan".
+4. **Tab Biometrik**:
+   - Kartu Face Recognition: badge status, bimbingan posisi wajah ("Hadap kamera dengan mata terbuka"), tampilan kamera video dan canvas, serta tombol "Daftar Ulang Wajah" (`data-settings-action="face-enroll"` ber-grant `biometric.manage`). Alur `face.js` dipertahankan utuh.
+   - Kartu WebAuthn: badge status, tabel kredensial (kolom Nama, Ditambahkan, tombol Hapus outline merah), input nama kredensial baru, tombol "Tambah WebAuthn" (`data-settings-action="webauthn-add"` ber-grant `biometric.manage`), dan catatan minimal satu biometrik harus tetap terdaftar. Penghapusan kredensial meminta konfirmasi via `KX.konfirmasiHapus`.
+5. **Tab Sesi**:
+   - Kartu Batas Diam Sesi: dropdown pilihan menit (`<select id="session-timeout" name="session_timeout_minutes">`), tombol "Simpan Batas Sesi" (`POST /settings/session-timeout`), dan keterangan berlakunya batas waktu.
+6. **Tab Akun (Zona Bahaya)**:
+   - Dua kartu bahaya dengan outline merah (`.kx-card-danger`): "Reset data" (`POST /settings/reset-data`) dan "Hapus akun" (`POST /settings/delete-account`).
+   - Modal konfirmasi masing-masing kartu memuat penjelasan konsekuensi jujur, kolom kata sandi saat ini, dan kolom ketik ulang nama pengguna persis (`data-target-username`). Tombol merah solid hanya aktif jika nama pengguna yang diketik cocok persis. Alur form tetap memakai grant `account.danger`.
+7. **Gaya dan Skrip**:
+   - Gaya diisolasi di `static/css/halaman/settings.css` tanpa mengubah `style.css`.
+   - Logika tab, modal, konfirmasi username bahaya, unduh kunci pemulihan, dan biometrik diisolasi di `static/js/settings.js` tanpa JavaScript inline (CSP compliant).
+   - Seluruh teks antarmuka berbahasa Indonesia formal dari `modules/strings.py` tanpa emoji.
 
 ---
 
-## Keterbatasan
+### Audit Elemen Lama (Sebelum → Sesudah) — Settings
 
-1. **Ekspor CSV**: Tombol "Ekspor CSV" tidak diimplementasikan pada antarmuka karena backend rute `/security-center` saat ini tidak menyediakan endpoint maupun handler untuk pembuatan berkas CSV log aktivitas blockchain.
+| Elemen / Fitur | Sebelum | Sesudah | Status | Alasan |
+|---|---|---|---|---|
+| Navigasi halaman | Sidebar vertikal 4 link scrollspy | 5 Tab pill horizontal (Profil, Keamanan, Biometrik, Sesi, Akun) di atas konten | Diubah | Spesifikasi UI §128–134 dan instruksi prompt redesain 5 tab pill. |
+| Subjudul halaman | Paragraf di `page_subtitle` | Dihapus | Dibuang | Keputusan yang mengalahkan spesifikasi: tanpa subjudul/deskripsi umum. |
+| Ubah Email | Form inline terbuka di tab profil | Tombol "Ubah email" di samping surel yang membuka modal dialog `#modal-ubah-email` | Diubah | Merapikan layout kartu profil sesuai spesifikasi §130. |
+| Avatar pengguna | Belum ada elemen avatar | Avatar inisial huruf kapital di samping username/email dengan font display | Diubah | Spesifikasi §130: avatar inisial pengguna. |
+| Ringkasan Perangkat & Biometrik | Belum ada kartu ringkasan terpadu | Kartu terpisah di kolom kanan dengan status token, WebAuthn, wajah, dan tombol "Kelola" ke tab Biometrik | Diubah | Spesifikasi §130: kolom kanan ringkasan perangkat dan biometrik. |
+| Kunci Pemulihan Baru | Section alert di atas seluruh panel halaman | Terintegrasi di kartu Kunci Pemulihan pada tab Keamanan dengan tombol Salin, Unduh .txt, dan centang "Sudah saya simpan" | Diubah | Spesifikasi §131: alur terpadu di dalam kartu kunci pemulihan. |
+| Modal Konfirmasi Kunci Pemulihan | Form tombol submit langsung | Tombol membuka modal konfirmasi sebelum POST ke `/settings/recovery-key` | Diubah | Spesifikasi §131: modal konfirmasi sebelum menerbitkan kunci baru. |
+| Hapus Kredensial WebAuthn | Submit form langsung dengan data-reauth | Konfirmasi melalui `KX.konfirmasiHapus` menyebut nama kredensial sebelum langkah reauth | Diubah | Spesifikasi §132 dan standar dialog hapus aplikasi. |
+| Zona Bahaya (Reset & Hapus) | Form inline dengan tombol outline merah biasa | Dua kartu zona bahaya ber-outline merah di tab Akun, masing-masing membuka modal dengan proteksi ketik username persis | Diubah | Spesifikasi zona bahaya dan instruksi prompt untuk mencegah tindakan tidak sengaja. |
+| Teks UI dan Emoji | Campuran teks dan ikon SVG inline | Menggunakan makro `ikon()` dari sprite SVG dan teks Indonesia formal via `modules/strings.py` | Diubah | Standar U0 dan aturan ketat anti-emoji. |
 
 ---
 
-## Hasil Pengujian
+### Tabel Kepatuhan Spesifikasi (P2)
 
-Pengujian terarah dan penuh dijalankan menggunakan `pytest` di dalam lingkungan virtual Python:
+| Kebutuhan Spesifikasi / Prompt | Realisasi pada Sesi U1b | Status |
+|---|---|---|
+| Lima tab pill: Profil, Keamanan, Biometrik, Sesi, Akun | Elemen `.kx-tabs.kx-settings-tabs` dengan 5 tombol tab dan 5 panel terkait | sesuai |
+| Pindah tab tanpa reload, tersimpan di hash URL | Logika tab di `settings.js` sinkron dengan `window.location.hash` dan event `hashchange` | sesuai |
+| Profil: avatar inisial, Username read-only mono, Email mono + tombol Ubah Email | Kartu profil memuat avatar, nilai dalam font mono JetBrains, dan modal ubah email | sesuai |
+| Profil: Bergabung dan Login Terakhir mono rata kanan | Timestamp dalam kelas mono dan format tanggal yang rapi | sesuai |
+| Profil: kartu Ganti Password (password saat ini, baru + meter 4 segmen, konfirmasi) | Form `POST /settings/change-password` dengan meter kekuatan 4 segmen dan toggle mata | sesuai |
+| Profil: ringkasan Perangkat & Biometrik dengan tautan "Kelola" ke tab Biometrik | Kartu ringkasan memuat status USB, WebAuthn, wajah, dan tautan `data-goto-tab="biometrik"` | sesuai |
+| Keamanan: kartu USB token (status, mountpoint drives, password, daftar ulang, petunjuk) | Kartu USB lengkap dengan dropdown drives backend dan teks petunjuk `USB_REREGISTER_HINT` | sesuai |
+| Keamanan: kartu Kunci Pemulihan (peringatan kuning, modal konfirmasi, blok kode mono + Copy + Unduh + kotak "Sudah saya simpan") | Kartu kunci pemulihan dengan infobox peringatan, modal konfirmasi, blok kode, tombol salin, unduh .txt, dan checkbox | sesuai |
+| Biometrik: kartu Face Recognition (badge status, daftar ulang wajah, bimbingan hadap kamera) | Kartu memuat elemen video, canvas, bimbingan, status text, dan tombol pendaftaran ulang | sesuai |
+| Biometrik: kartu WebAuthn (tabel Nama/Ditambahkan/Hapus via KX.konfirmasiHapus, input nama + Tambah) | Tabel kredensial terstruktur dengan konfirmasi hapus KX dan form penambahan kredensial baru | sesuai |
+| Sesi: dropdown batas diam sesi + tombol Simpan batas sesi | Dropdown batas waktu sesi dengan nilai bawaan dari backend dan form simpan | sesuai |
+| Akun: dua kartu zona bahaya (merah outline) Reset data dan Hapus akun | Dua kartu `.kx-card-danger` bergaris tepi merah untuk Reset Data dan Hapus Akun | sesuai |
+| Akun: modal tiap kartu dengan akibat jujur, password, ketik username persis, tombol submit aktif hanya jika cocok | Modal `#modal-reset-data` dan `#modal-hapus-akun` dengan validasi ketik username persis | sesuai |
+| Tanpa inline JavaScript (CSP ketat) | Seluruh logika UI diisolasi di `static/js/settings.js` | sesuai |
+| Gaya halaman khusus di `static/css/halaman/settings.css` | Seluruh style halaman diisolasi; `static/css/style.css` tidak diubah | sesuai |
+| Teks UI bahasa Indonesia formal via `modules/strings.py`, tanpa emoji | Ditambahkan konstanta `SETTINGS_*` di `modules/strings.py`; tanpa kata terlarang dan tanpa emoji | sesuai |
+| Responsif tiga lebar (desktop, tablet, mobile) | Media query breakpoint 900px dan 640px di `settings.css` | sesuai |
+| Rute backend, nama field form, dan scope grant tidak diubah | Form tetap memakai `settings.change`, `biometric.manage`, dan `account.danger` sesuai backend | sesuai |
+
+---
+
+### Keputusan Desain
+
+1. **Aktivasi Tab Otomatis saat Kunci Pemulihan Terbit**: Saat rute `/settings/recovery-key` mengembalikan respons dengan `recovery_key_baru`, halaman secara otomatis mengaktifkan tab `keamanan` agar pengguna langsung melihat kunci baru tanpa harus berpindah tab secara manual.
+2. **Pencegahan Klik Prematur pada Hapus Kredensial**: Tombol Hapus pada daftar kredensial WebAuthn memanfaatkan event listener pada fase *capturing* untuk memunculkan dialog `KX.konfirmasiHapus` terlebih dahulu. Setelah pengguna mengonfirmasi, event klik dipicu kembali untuk dilanjutkan ke alur autentikasi ulang `reauth.js`.
+3. **Pemberian Hak Akses Zona Bahaya**: Tombol kirim form Reset Data dan Hapus Akun di dalam modal dialog diberi status `disabled` sejak awal. Skrip `settings.js` secara dinamis membandingkan input dengan nilai atribut `data-target-username` sebelum mengaktifkan tombol, sehingga mematuhi prinsip kehati-hatian ganda bersama grant `account.danger`.
+
+---
+
+### Keterbatasan
+
+1. **Ekspor CSV**: Tombol Ekspor CSV pada Security Center tetap ditiadakan karena rute backend tidak menyediakannya.
+2. **Batas Sesi di Sisi Server**: Pengubahan batas waktu sesi diterapkan pada sesi aktif dan database pengguna, namun tidak memengaruhi sesi perangkat lain yang sedang berjalan secara bersamaan.
+
+---
+
+### Hasil Pengujian
+
+Pengujian terarah dan suite penuh dijalankan menggunakan `pytest` di dalam lingkungan virtual Python:
+- `tests/test_settings.py`: 22 passed.
+- `tests/test_account_management.py`: 15 passed.
+- `tests/test_password_change.py`: 6 passed.
 - `tests/test_security_center.py`: 5 passed.
-- `tests/test_u0_shell.py`, `tests/test_dashboard.py`, `tests/test_u3_ui.py`: 28 passed.
-- Suite pengujian lengkap (`pytest -q`): seluruh item lulus tanpa galat.
+- Suite lengkap (`python -m pytest -q`): seluruh 748 pengujian passed tanpa kegagalan.

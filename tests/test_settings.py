@@ -165,6 +165,88 @@ class TestHalamanSettings:
         assert "Laptop kantor" in body
         assert "Hapus" in body
 
+    def test_lima_tab_dan_panel_tersedia(self, app, client):
+        _masuk(client, app)
+        body = client.get("/settings").get_data(as_text=True)
+
+        for tab_id in ("tab-profil", "tab-keamanan", "tab-biometrik", "tab-sesi", "tab-akun"):
+            assert f'id="{tab_id}"' in body
+
+        for pane_id in ("pane-profil", "pane-keamanan", "pane-biometrik", "pane-sesi", "pane-akun"):
+            assert f'id="{pane_id}"' in body
+
+        assert 'data-tab-target="profil"' in body
+        assert 'data-tab-target="keamanan"' in body
+        assert 'data-tab-target="biometrik"' in body
+        assert 'data-tab-target="sesi"' in body
+        assert 'data-tab-target="akun"' in body
+        assert 'data-goto-tab="biometrik"' in body
+
+    def test_avatar_dan_informasi_profil(self, app, client):
+        _masuk(client, app)
+        body = client.get("/settings").get_data(as_text=True)
+
+        assert 'class="kx-settings-avatar"' in body
+        assert USERNAME[0].upper() in body
+        assert USERNAME in body
+        assert EMAIL in body
+        assert "data-buka-modal=\"#modal-ubah-email\"" in body
+
+    def test_struktur_modal_dan_target_username_bahaya(self, app, client):
+        _masuk(client, app)
+        body = client.get("/settings").get_data(as_text=True)
+
+        assert 'id="modal-ubah-email"' in body
+        assert 'id="modal-konfirmasi-recovery"' in body
+        assert 'id="modal-reset-data"' in body
+        assert 'id="modal-hapus-akun"' in body
+
+        assert f'data-target-username="{USERNAME}"' in body
+        assert 'data-submit-target="#btn-submit-reset"' in body
+        assert 'data-submit-target="#btn-submit-delete"' in body
+        assert 'id="btn-submit-reset"' in body
+        assert 'id="btn-submit-delete"' in body
+        assert 'data-reauth="account.danger"' in body
+
+    def test_kunci_pemulihan_baru_memuat_tombol_salin_unduh_dan_centang(self, app, client):
+        _masuk(client, app)
+        grant = _grant(client, scope="settings.change")
+        resp = client.post(
+            "/settings/recovery-key",
+            data={
+                "csrf_token": _csrf(client),
+                "reauth_grant": grant,
+            },
+        )
+        assert resp.status_code == 200
+        body = resp.get_data(as_text=True)
+
+        assert 'id="box-recovery-key-baru"' in body
+        assert 'id="settings-recovery-val"' in body
+        assert 'id="btn-download-settings-recovery"' in body
+        assert 'id="check-saved-recovery"' in body
+        assert 'data-kx-salin="' in body
+        assert MSG.SETTINGS_RECOVERY_SAVED_CHECKBOX in body
+
+    def test_tanpa_kata_terlarang_pada_halaman_dan_skrip(self):
+        kata_terlarang = [
+            "sem" + "ester",
+            "U" + "AS",
+            "U" + "TS",
+            "maha" + "siswa",
+            "do" + "sen",
+        ]
+        berkas_diperiksa = [
+            "templates/settings.html",
+            "static/css/halaman/settings.css",
+            "static/js/settings.js",
+        ]
+        for jalur in berkas_diperiksa:
+            with open(jalur, "r", encoding="utf-8") as handle:
+                konten = handle.read().lower()
+            for kata in kata_terlarang:
+                assert kata.lower() not in konten, f"Kata terlarang '{kata}' ditemukan di {jalur}"
+
 
 class TestDongle:
     def test_daftar_ulang_tanpa_grant_ditolak(self, app, client):
