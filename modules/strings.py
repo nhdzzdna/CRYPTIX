@@ -309,6 +309,13 @@ class MSG:
     ITEM_VIEW_ONCE            = "Lihat sekali"
     ITEM_LOCK_CANCEL          = "Batal"
     MEDIA_MENU                = "Media"
+    # --- UB: pratinjau dokumen ------------------------------------------------
+    DOC_PREVIEW_TITLE         = "Pratinjau"
+    DOC_PREVIEW_BUTTON        = "Pratinjau"
+    DOC_PREVIEW_TEXT_LABEL    = "Isi teks"
+    DOC_PREVIEW_UNSUPPORTED   = "Jenis berkas ini tidak dapat dipratinjau."
+    DOC_PREVIEW_FAILED        = "Pratinjau gagal dimuat."
+    DOC_PREVIEW_CLOSE         = "Tutup"
     # --- UB: sampah (soft delete), pulihkan, hapus permanen ------------------
     TRASH_TITLE               = "Sampah"
     TRASH_PAGE_SUBTITLE       = "Item yang dihapus disimpan di sini sebelum dihapus permanen."
