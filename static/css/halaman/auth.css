@@ -1,0 +1,286 @@
+/* static/css/halaman/auth.css - Halaman autentikasi KOSYAK */
+
+.authx-page {
+  margin: 0;
+  background: var(--kx-bg);
+}
+
+.authx-shell {
+  display: grid;
+  grid-template-columns: minmax(320px, 44%) 1fr;
+  min-height: 100vh;
+}
+
+/* ── Panel merek ────────────────────────────────────────────────────────── */
+.authx-brand {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-right: 1px solid var(--kx-border);
+  background: var(--kx-surface);
+}
+
+.authx-brand-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(to right, rgba(45, 212, 191, .07) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(45, 212, 191, .07) 1px, transparent 1px);
+  background-size: 88px 88px;
+  mask-image: radial-gradient(circle at 50% 45%, #000 0%, transparent 72%);
+  -webkit-mask-image: radial-gradient(circle at 50% 45%, #000 0%, transparent 72%);
+}
+
+.authx-brand-grid::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(circle at 44px 44px, rgba(45, 212, 191, .22) 2px, transparent 2.5px),
+    radial-gradient(circle at 44px 56px, rgba(45, 212, 191, .12) 1.5px, transparent 2px);
+  background-size: 88px 88px;
+}
+
+.authx-brand-inner {
+  position: relative;
+  z-index: 1;
+  padding: var(--kx-space-5);
+}
+
+.authx-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.authx-logo-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--kx-radius-input);
+  background: var(--kx-accent);
+  color: #04231F;
+}
+
+.authx-logo-icon .kx-icon { width: 24px; height: 24px; stroke-width: 2; }
+
+.authx-brand-name {
+  color: var(--kx-text);
+  font-family: var(--kx-font-display);
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: .04em;
+}
+
+/* ── Panel formulir ─────────────────────────────────────────────────────── */
+.authx-main {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--kx-space-5) var(--kx-space-3);
+}
+
+.authx-card {
+  width: min(440px, 100%);
+  padding: 28px;
+  border: 1px solid var(--kx-border);
+  border-radius: var(--kx-radius-card);
+  background: var(--kx-surface);
+}
+
+.authx-card-head { margin-bottom: var(--kx-space-4); }
+
+.authx-title {
+  font-size: var(--kx-fs-title);
+  line-height: 1.2;
+}
+
+.authx-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kx-space-3);
+}
+
+.authx-help {
+  color: var(--kx-text-2);
+  font-size: var(--kx-fs-help);
+  line-height: 1.5;
+}
+
+.authx-status.is-warning { color: var(--kx-warn); }
+
+.authx-error {
+  display: none;
+  color: var(--kx-danger);
+  font-size: var(--kx-fs-help);
+  line-height: 1.5;
+}
+
+.authx-error.visible { display: block; }
+
+.authx-dongle {
+  display: flex;
+  align-items: center;
+  gap: var(--kx-space-2);
+  padding: 9px 12px;
+  border: 1px solid var(--kx-border);
+  border-radius: var(--kx-radius-input);
+  background: var(--kx-surface-2);
+  color: var(--kx-text-2);
+  font-size: var(--kx-fs-help);
+}
+
+.authx-dongle .kx-icon { color: currentColor; }
+.authx-dongle.is-ok {
+  border-color: rgba(34, 197, 94, .35);
+  background: var(--kx-ok-soft);
+  color: var(--kx-ok);
+}
+.authx-dongle.is-off {
+  border-color: rgba(234, 179, 8, .35);
+  background: var(--kx-warn-soft);
+  color: var(--kx-warn);
+}
+
+.authx-links {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: var(--kx-text-2);
+  font-size: var(--kx-fs-help);
+  text-align: center;
+}
+
+.authx-links a { color: var(--kx-accent); }
+
+.authx-dongle-row {
+  display: flex;
+  align-items: center;
+  gap: var(--kx-space-2);
+}
+
+.authx-dongle-row .kx-select { flex: 1 1 auto; min-width: 0; }
+.authx-dongle-row .kx-btn { flex: 0 0 auto; }
+
+.authx-mono { font-family: var(--kx-font-mono); }
+
+/* ── Tahap biometrik ────────────────────────────────────────────────────── */
+.authx-stage {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kx-space-3);
+}
+.authx-stage[hidden] { display: none !important; }
+
+.authx-stage-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.authx-stage-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: var(--kx-radius-input);
+  background: var(--kx-accent-soft);
+  color: var(--kx-accent);
+}
+
+.authx-stage-title {
+  font-size: var(--kx-fs-subtitle);
+}
+
+.authx-method-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kx-space-2);
+}
+
+.authx-method-list .kx-icon { color: var(--kx-accent); }
+
+/* ── Halaman kunci pemulihan ────────────────────────────────────────────── */
+.authx-infobox { margin-bottom: var(--kx-space-3); }
+
+.authx-key-wrap { position: relative; }
+
+.authx-key {
+  display: block;
+  padding-right: 90px;
+  letter-spacing: .02em;
+}
+
+.authx-key-copy {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+}
+
+.authx-key-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--kx-space-2);
+}
+
+/* ── Penyiapan ──────────────────────────────────────────────────────────── */
+.authx-stepper { gap: 0; }
+
+.authx-setup-card { margin-top: var(--kx-space-2); }
+
+.authx-setup-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.authx-setup-body .authx-help { width: 100%; }
+
+.authx-video {
+  display: none;
+  width: 100%;
+  border-radius: var(--kx-radius-input);
+}
+
+.authx-canvas { display: none; }
+
+.authx-progress {
+  width: 100%;
+  height: 8px;
+  border: 0;
+  border-radius: var(--kx-radius-pill);
+  background: var(--kx-border);
+  overflow: hidden;
+  accent-color: var(--kx-accent);
+}
+
+.authx-error-page { gap: var(--kx-space-3); }
+.authx-error-page .kx-icon { color: var(--kx-danger); }
+
+/* ── Responsif ──────────────────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .authx-shell { grid-template-columns: 1fr; }
+  .authx-brand {
+    min-height: 132px;
+    border-right: 0;
+    border-bottom: 1px solid var(--kx-border);
+  }
+  .authx-brand-inner { padding: var(--kx-space-4); }
+  .authx-main { align-items: flex-start; padding-top: var(--kx-space-4); }
+}
+
+@media (max-width: 560px) {
+  .authx-card { padding: 20px; }
+  .authx-dongle-row { flex-direction: column; align-items: stretch; }
+  .authx-key { padding-right: 16px; }
+  .authx-key-copy {
+    position: static;
+    margin-top: var(--kx-space-2);
+  }
+}

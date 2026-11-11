@@ -1,8 +1,9 @@
 {% extends "base.html" %}
+{% from "_ikon.html" import ikon %}
 {% block title %}Dashboard — KOSYAK{% endblock %}
-{% block page_title %}Dashboard{% endblock %}
-{% block page_subtitle %}
-<p class="page-subtitle">Ringkasan aset terenkripsi, status keamanan, dan jejak audit akun Anda.</p>
+{% block judul_halaman %}Dashboard{% endblock %}
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/halaman/dashboard.css') }}" />
 {% endblock %}
 
 {% block content %}
@@ -10,284 +11,130 @@
 {% set chain_valid = chain_tercatat and last_verified.valid %}
 {% set chain_rusak = chain_tercatat and not last_verified.valid %}
 {% set hash_kepala = last_verified.head_hash if last_verified else head.head_hash if head else None %}
+{% set indeks_jangkar = chain_stats.last_index if chain_stats.last_index is not none else ('—' if not head else head.block_index) %}
+{% set blok_tampil = recent_blocks[:6]|reverse|list %}
 
-<div class="dash-page">
-
-  <section class="dash-stats" aria-label="Ringkasan aset">
-    <article class="dash-stat">
-      <div class="dash-stat-top">
-        <span class="dash-stat-label">Total File</span>
-        <span class="dash-stat-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
-        </span>
+<div class="kx-dash">
+  <section class="kx-dash-stats" aria-label="Ringkasan aset">
+    <article class="kx-card kx-dash-stat">
+      <div class="kx-card-body">
+        <span class="kx-dash-stat-icon" aria-hidden="true">{{ ikon('file', 18) }}</span>
+        <p class="kx-dash-stat-label">{{ MSG.DASH_TOTAL_FILES }}</p>
+        <p class="kx-dash-value">{{ file_count }}</p>
       </div>
-      <div class="dash-stat-value">{{ file_count }}</div>
-      <div class="dash-stat-meta">Berkas terenkripsi di brankas</div>
     </article>
-
-    <article class="dash-stat">
-      <div class="dash-stat-top">
-        <span class="dash-stat-label">Kredensial</span>
-        <span class="dash-stat-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="15.5" r="4.5"/><path d="M10.7 12.3 21 2"/><path d="M17 6l2 2"/><path d="M14 9l2 2"/></svg>
-        </span>
+    <article class="kx-card kx-dash-stat">
+      <div class="kx-card-body">
+        <span class="kx-dash-stat-icon" aria-hidden="true">{{ ikon('key', 18) }}</span>
+        <p class="kx-dash-stat-label">{{ MSG.DASH_CREDENTIALS }}</p>
+        <p class="kx-dash-value">{{ account_count }}</p>
       </div>
-      <div class="dash-stat-value">{{ account_count }}</div>
-      <div class="dash-stat-meta">Akun tersimpan di Account Vault</div>
     </article>
-
-    <article class="dash-stat">
-      <div class="dash-stat-top">
-        <span class="dash-stat-label">Catatan Aman</span>
-        <span class="dash-stat-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
-        </span>
+    <article class="kx-card kx-dash-stat">
+      <div class="kx-card-body">
+        <span class="kx-dash-stat-icon" aria-hidden="true">{{ ikon('file-text', 18) }}</span>
+        <p class="kx-dash-stat-label">{{ MSG.DASH_NOTES }}</p>
+        <p class="kx-dash-value">{{ note_count }}</p>
       </div>
-      <div class="dash-stat-value">{{ note_count }}</div>
-      <div class="dash-stat-meta">Catatan pribadi terenkripsi</div>
     </article>
-
-    <article class="dash-stat">
-      <div class="dash-stat-top">
-        <span class="dash-stat-label">Gambar Steganografi</span>
-        <span class="dash-stat-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2.5"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
-        </span>
+    <article class="kx-card kx-dash-stat">
+      <div class="kx-card-body">
+        <span class="kx-dash-stat-icon" aria-hidden="true">{{ ikon('image', 18) }}</span>
+        <p class="kx-dash-stat-label">{{ MSG.DASH_STEGO }}</p>
+        <p class="kx-dash-value">{{ stego_count }}</p>
       </div>
-      <div class="dash-stat-value">{{ stego_count }}</div>
-      <div class="dash-stat-meta">Gambar berisi pesan tersembunyi</div>
     </article>
   </section>
 
-  <div class="dash-split">
-    <section class="dash-panel dash-storage" aria-labelledby="dash-storage-title">
-      <header class="dash-panel-head">
-        <h2 class="dash-panel-title" id="dash-storage-title">Penggunaan Penyimpanan</h2>
-        <span class="dash-panel-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg>
-        </span>
-      </header>
-      <div class="dash-panel-body">
-        <div class="dash-storage-value">{{ "%.1f"|format(total_bytes / 1024 / 1024) }}<span>MB</span></div>
-        <p class="dash-muted">Total ukuran berkas terenkripsi yang tersimpan pada penyimpanan lokal.</p>
-
-        <div class="dash-storage-row">
-          <span>Batas penyimpanan</span>
-          <span class="dash-storage-limit">Belum ditetapkan</span>
-        </div>
-        <div class="dash-progress is-unknown" aria-hidden="true"><span class="dash-progress-fill"></span></div>
-        <p class="dash-note">Persentase penggunaan belum dapat dihitung karena kapasitas penyimpanan belum ditetapkan.</p>
-      </div>
-    </section>
-
-    <section class="dash-panel" aria-labelledby="dash-security-title">
-      <header class="dash-panel-head">
-        <h2 class="dash-panel-title" id="dash-security-title">Ringkasan Keamanan</h2>
-        <span class="dash-panel-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
-        </span>
-      </header>
-      <div class="dash-panel-body">
-        <div class="dash-status-list">
-          <div class="dash-status-row">
-            <div class="dash-status-main">
-              <span class="dash-dot {{ 'is-success' if dongle_connected else 'is-muted' }}" aria-hidden="true"></span>
-              <span class="dash-status-name">USB Token</span>
-            </div>
-            <span class="dash-status-value">{{ 'Terhubung' if dongle_connected else 'Tidak Terpasang' }}</span>
-          </div>
-
-          <div class="dash-status-row">
-            <div class="dash-status-main">
-              <span class="dash-dot {{ 'is-success' if webauthn_credentials else 'is-muted' }}" aria-hidden="true"></span>
-              <span class="dash-status-name">WebAuthn</span>
-            </div>
-            <span class="dash-status-value">{{ webauthn_credentials }} kredensial</span>
-          </div>
-
-          <div class="dash-status-row">
-            <div class="dash-status-main">
-              <span class="dash-dot {{ 'is-success' if face_enrolled else 'is-muted' }}" aria-hidden="true"></span>
-              <span class="dash-status-name">Face Recognition</span>
-            </div>
-            <span class="dash-status-value">{{ 'Terdaftar' if face_enrolled else 'Belum Dikonfigurasi' }}</span>
-          </div>
-
-          <div class="dash-status-row">
-            <div class="dash-status-main">
-              <span class="dash-dot {{ 'is-success' if chain_valid else 'is-danger' if chain_rusak else 'is-warning' }}" aria-hidden="true"></span>
-              <span class="dash-status-name">Blockchain Integrity</span>
-            </div>
-            <span class="dash-status-value">
-              {% if chain_valid %}Rantai Utuh
-              {% elif chain_rusak %}Rantai Rusak
-              {% else %}Belum Diverifikasi{% endif %}
-            </span>
-          </div>
-        </div>
-      </div>
-    </section>
-  </div>
-
-  <section class="dash-detail-grid" aria-label="Detail status keamanan">
-    <article class="dash-detail">
-      <div class="dash-detail-head">
-        <div class="dash-detail-title">
-          <span class="dash-detail-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2v6"/><path d="M15 2v6"/><path d="M6 8h12v3a6 6 0 0 1-12 0z"/><path d="M12 17v5"/></svg>
-          </span>
-          USB Token
-        </div>
-        <span class="badge {{ 'badge-success' if dongle_connected else 'badge-secondary' }}">
-          {{ 'Terhubung' if dongle_connected else 'Tidak Terpasang' }}
-        </span>
-      </div>
-      <p class="dash-detail-desc">
-        {% if dongle_connected %}
-        Perangkat token keamanan terdeteksi dan siap digunakan untuk faktor autentikasi kedua.
-        {% else %}
-        Perangkat token keamanan tidak terdeteksi. Hubungkan dongle terdaftar untuk faktor autentikasi kedua.
-        {% endif %}
+  <section class="kx-card kx-dash-storage" aria-labelledby="dash-storage-title">
+    <div class="kx-card-head">
+      <h2 class="kx-card-title" id="dash-storage-title">{{ MSG.DASH_STORAGE_TITLE }}</h2>
+      <span aria-hidden="true">{{ ikon('layers', 18) }}</span>
+    </div>
+    <div class="kx-card-body">
+      <p class="kx-dash-storage-value">
+        {{ "%.1f"|format(total_bytes / 1024 / 1024) }}<span>MB</span>
       </p>
-      <div class="dash-detail-meta">
-        <span>Status perangkat: {{ 'tersedia' if dongle_connected else 'tidak tersedia' }}</span>
+      <div class="kx-dash-storage-bar" role="img"
+           aria-label="{{ MSG.DASH_STORAGE_TITLE }}">
+        <span class="kx-dash-storage-seg is-dokumen"></span>
       </div>
-    </article>
-
-    <article class="dash-detail">
-      <div class="dash-detail-head">
-        <div class="dash-detail-title">
-          <span class="dash-detail-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a5 5 0 0 0-5 5v2"/><path d="M17 9V7a5 5 0 0 0-10 0v2"/><rect x="5" y="9" width="14" height="12" rx="2"/><path d="M12 13v4"/></svg>
-          </span>
-          WebAuthn
-        </div>
-        <span class="badge {{ 'badge-success' if webauthn_credentials else 'badge-secondary' }}">
-          {{ 'Terdaftar' if webauthn_credentials else 'Belum Dikonfigurasi' }}
-        </span>
-      </div>
-      <p class="dash-detail-desc">Kredensial perangkat untuk autentikasi biometrik atau kunci keamanan.</p>
-      <div class="dash-detail-meta">
-        <span class="mono">WebAuthn: {{ webauthn_credentials }} kredensial</span>
-        {% if biometric_methods %}
-        <span>Metode terdaftar:
-          {% for metode in biometric_methods %}{{ metode.label }}{% if not loop.last %}, {% endif %}{% endfor %}
-        </span>
-        {% else %}
-        <span>Belum ada metode biometrik terdaftar.</span>
-        {% endif %}
-      </div>
-    </article>
-
-    <article class="dash-detail">
-      <div class="dash-detail-head">
-        <div class="dash-detail-title">
-          <span class="dash-detail-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V5a2 2 0 0 1 2-2h3"/><path d="M16 3h3a2 2 0 0 1 2 2v3"/><path d="M20 16v3a2 2 0 0 1-2 2h-3"/><path d="M8 21H5a2 2 0 0 1-2-2v-3"/><circle cx="12" cy="10" r="3"/><path d="M7 19c.8-2.2 2.6-3.5 5-3.5s4.2 1.3 5 3.5"/></svg>
-          </span>
-          Face Recognition
-        </div>
-        <span class="badge {{ 'badge-success' if face_enrolled else 'badge-secondary' }}">
-          {{ 'Terdaftar' if face_enrolled else 'Belum Dikonfigurasi' }}
-        </span>
-      </div>
-      <p class="dash-detail-desc">Template biometrik wajah tersimpan secara lokal untuk verifikasi ulang.</p>
-      <div class="dash-detail-meta">
-        <span class="mono">Wajah: {{ 'terdaftar' if face_enrolled else 'belum terdaftar' }}</span>
-        <span>Status: {{ 'aktif' if face_enrolled else 'tidak tersedia' }}</span>
-      </div>
-    </article>
+      <ul class="kx-dash-legend">
+        <li><span class="kx-dash-dot is-dokumen"></span>{{ MSG.DASH_DOCUMENTS }}</li>
+        <li><span class="kx-dash-dot is-media"></span>{{ MSG.DASH_MEDIA }}</li>
+        <li><span class="kx-dash-dot is-audio"></span>{{ MSG.DASH_AUDIO }}</li>
+        <li><span class="kx-dash-dot is-stego"></span>{{ MSG.DASH_STEGO_LEGEND }}</li>
+      </ul>
+      <p class="kx-help">{{ MSG.DASH_STORAGE_EMPTY }}</p>
+    </div>
   </section>
 
-  <section class="dash-panel dash-chain" aria-labelledby="dash-chain-title">
-    <header class="dash-panel-head">
-      <h2 class="dash-panel-title" id="dash-chain-title">Integritas Blockchain</h2>
-      <span class="badge {{ 'badge-success' if chain_valid else 'badge-danger' if chain_rusak else 'badge-warning' }}">
-        {% if chain_valid %}Rantai Utuh
-        {% elif chain_rusak %}Rantai Rusak
-        {% else %}Belum Diverifikasi{% endif %}
+  <section class="kx-card kx-dash-chain" aria-labelledby="dash-chain-title">
+    <div class="kx-card-head">
+      <h2 class="kx-card-title" id="dash-chain-title">{{ MSG.DASH_BLOCKCHAIN }}</h2>
+      <span class="kx-badge {{ 'kx-badge-ok' if chain_valid else 'kx-badge-danger' if chain_rusak else 'kx-badge-warn' }}"
+            data-kx-chain-status>
+        {% if chain_valid %}{{ MSG.DASH_CHAIN_VALID }}
+        {% elif chain_rusak %}{{ MSG.DASH_CHAIN_BROKEN }}
+        {% else %}{{ MSG.DASH_CHAIN_UNVERIFIED }}{% endif %}
       </span>
-    </header>
-    <div class="dash-panel-body">
-      <div class="dash-chain-metrics">
-        <div class="dash-metric">
-          <div class="dash-metric-label">Total Blok</div>
-          <div class="dash-metric-value">{{ chain_stats.total_blocks or 0 }}</div>
-        </div>
-        <div class="dash-metric">
-          <div class="dash-metric-label">Blok Rusak</div>
-          <div class="dash-metric-value">{{ last_verified.tampered_blocks if last_verified else '—' }}</div>
-        </div>
-        <div class="dash-metric">
-          <div class="dash-metric-label">Pemeriksaan Terakhir</div>
-          <div class="dash-metric-value mono">
-            {% if last_verified %}{{ last_verified.timestamp[:19]|replace('T', ' ') }} UTC{% else %}Belum ada{% endif %}
-          </div>
-        </div>
-      </div>
+    </div>
+    <div class="kx-card-body">
+      <p class="kx-dash-chain-count">
+        <span class="kx-dash-chain-number">{{ chain_stats.total_blocks or 0 }}</span>
+        {{ MSG.DASH_BLOCKS_UNIT }}
+      </p>
 
-      <div class="dash-hash-row">
-        {% if hash_kepala %}
-        <span class="dash-hash" title="{{ hash_kepala }}">Jangkar kepala: {{ hash_kepala[:16] }}…</span>
-        {% else %}
-        <span class="dash-hash-label">Jangkar kepala: belum tersedia</span>
-        {% endif %}
+      {% if blok_tampil %}
+      <div class="kx-dash-blocks" aria-label="{{ MSG.DASH_BLOCKCHAIN }}">
+        {% for blk in blok_tampil %}
+        <span class="kx-dash-block{% if loop.last %} is-latest{% endif %}">#{{ blk.block_index }}</span>
+        {% endfor %}
       </div>
+      {% else %}
+      <div class="kx-empty kx-dash-chain-empty">
+        {{ ikon('layers', 24) }}
+        <p class="kx-help">{{ MSG.DASH_ACTIVITY_EMPTY }}</p>
+      </div>
+      {% endif %}
 
-      {% if last_verified %}
-      <p class="dash-note">
-        Hasil verifikasi memeriksa {{ last_verified.total_blocks }} blok dengan
-        {{ last_verified.tampered_blocks }} blok rusak.
+      {% if hash_kepala %}
+      <p class="kx-dash-anchor">
+        <span>{{ MSG.DASH_ANCHOR }} #{{ indeks_jangkar }} ·</span>
+        <span class="kx-hash" data-kx-hash="{{ hash_kepala }}"></span>
       </p>
       {% else %}
-      <p class="dash-note">Jalankan verifikasi di Security Center untuk mencatat pemeriksaan integritas pertama.</p>
+      <p class="kx-dash-anchor">{{ MSG.DASH_ANCHOR_NONE }}</p>
       {% endif %}
     </div>
   </section>
 
-  <section class="dash-panel" aria-labelledby="dash-activity-title">
-    <header class="dash-panel-head">
-      <h2 class="dash-panel-title" id="dash-activity-title">Aktivitas Terbaru</h2>
-      {% if recent_blocks %}
-      <span class="dash-panel-count">{{ recent_blocks|length }} entri terakhir</span>
-      {% endif %}
-    </header>
+  <section class="kx-card kx-dash-activity" aria-labelledby="dash-activity-title">
+    <div class="kx-card-head">
+      <h2 class="kx-card-title" id="dash-activity-title">{{ MSG.DASH_ACTIVITY }}</h2>
+      <a class="kx-btn kx-btn-ghost kx-btn-sm" href="{{ url_for('security.index') }}">
+        {{ MSG.DASH_VIEW_ALL }}
+      </a>
+    </div>
 
     {% if recent_blocks %}
-    <div class="dash-table-wrap">
-      <table class="table">
-        <thead>
-          <tr>
-            <th scope="col">#</th>
-            <th scope="col">Waktu</th>
-            <th scope="col">Aksi</th>
-            <th scope="col">Asset Hash</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for blk in recent_blocks %}
-          <tr>
-            <td class="mono">{{ blk.block_index }}</td>
-            <td class="mono">{{ blk.timestamp[:19]|replace('T', ' ') }}</td>
-            <td>
-              <span class="badge badge-{{ 'success' if blk.action == 'UPLOAD' else ('danger' if blk.action == 'DELETE' else 'info') }}">{{ blk.action }}</span>
-            </td>
-            <td class="mono text-truncate" title="{{ blk.asset_hash }}">{{ blk.asset_hash[:16] }}…</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
+    <ul class="kx-dash-activity-list">
+      {% for blk in recent_blocks %}
+      <li class="kx-dash-activity-row">
+        <span class="kx-dash-activity-index">{{ blk.block_index }}</span>
+        <span class="kx-dash-activity-time">{{ blk.timestamp[:19]|replace('T', ' ') }}</span>
+        <span class="kx-badge {{ 'kx-badge-ok' if blk.action == 'UPLOAD' else ('kx-badge-danger' if blk.action == 'DELETE' else 'kx-badge-info') }}">{{ blk.action }}</span>
+        <span class="kx-hash" data-kx-hash="{{ blk.asset_hash }}"></span>
+      </li>
+      {% endfor %}
+    </ul>
     {% else %}
-    <div class="dash-empty">
-      <span class="dash-empty-icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/><path d="M12 8v4l3 2"/></svg>
-      </span>
-      <p class="dash-empty-title">Belum ada aktivitas</p>
-      <p class="dash-empty-text">Setiap unggahan, penghapusan, dan peristiwa keamanan akan tercatat di sini.</p>
+    <div class="kx-empty">
+      {{ ikon('clock', 28) }}
+      <p class="kx-empty-title">{{ MSG.DASH_ACTIVITY_EMPTY }}</p>
+      <p class="kx-help">{{ MSG.DASH_ACTIVITY_EMPTY_TEXT }}</p>
     </div>
     {% endif %}
   </section>
-
 </div>
 {% endblock %}

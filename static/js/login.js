@@ -33,6 +33,34 @@ document.addEventListener("DOMContentLoaded", function () {
     return cadangan;
   }
 
+  function teksDongle(nama) {
+    return statusDongle && statusDongle.dataset ? statusDongle.dataset[nama] : "";
+  }
+
+  function alamatSprite() {
+    var contoh = document.querySelector("use[href*='sprite.svg']");
+    if (contoh) {
+      return (contoh.getAttribute("href") || "").split("#")[0];
+    }
+    return "/static/icons/sprite.svg";
+  }
+
+  function labelMetode(metode) {
+    if (metode.nama === "wajah") {
+      return teksPanel("labelFace", metode.label);
+    }
+    if (metode.nama === "webauthn") {
+      return teksPanel("labelWebauthn", metode.label);
+    }
+    return metode.label;
+  }
+
+  function ikonMetode(nama) {
+    if (nama === "wajah") return "scan-face";
+    if (nama === "webauthn") return "fingerprint";
+    return "shield";
+  }
+
   function tampilkanGalat(el, pesan) {
     el.textContent = pesan || "";
     el.classList.toggle("visible", Boolean(pesan));
@@ -71,16 +99,16 @@ document.addEventListener("DOMContentLoaded", function () {
     .then(function (r) { return r.json(); })
     .then(function (data) {
       if (data.detected) {
-        aturStatusDongle("Dongle terdeteksi.", "is-ok");
+        aturStatusDongle(teksDongle("msgOk"), "is-ok");
       } else {
         aturStatusDongle(
-          "Dongle tidak terdeteksi — colokkan dongle lalu muat ulang halaman.",
+          teksDongle("msgOff") + " — " + teksDongle("msgOffHint"),
           "is-off"
         );
       }
     })
     .catch(function () {
-      aturStatusDongle("Status dongle tidak dapat diperiksa.", null);
+      aturStatusDongle(teksDongle("msgUnknown"), null);
     });
 
   // ── Tahap 1 ───────────────────────────────────────────────────────────────
@@ -99,7 +127,7 @@ document.addEventListener("DOMContentLoaded", function () {
       .then(function (data) {
         document.getElementById("password").value = "";
         if (!data.success) {
-          tampilkanGalat(galat1, data.error || "Login gagal.");
+          tampilkanGalat(galat1, data.error || teksPanel("msgRequestFailed", ""));
           return;
         }
         tahap = data;
@@ -116,18 +144,19 @@ document.addEventListener("DOMContentLoaded", function () {
           }
           tampilkanGalat(
             galat2,
-            teksPanel(
-              "msgNone",
-              "Belum ada metode biometrik terdaftar untuk akun ini."
-            )
+            teksPanel("msgNone", "")
           );
           return;
         }
         metode.forEach(function (m) {
           const tombol = document.createElement("button");
           tombol.type = "button";
-          tombol.className = "btn btn-primary btn-full";
-          tombol.textContent = m.label;
+          tombol.className = "kx-btn kx-btn-secondary kx-btn-block";
+          tombol.innerHTML =
+            '<svg class="kx-icon" width="18" height="18" aria-hidden="true" focusable="false">' +
+            '<use href="' + alamatSprite() + "#" + ikonMetode(m.nama) +
+            '"></use></svg><span></span>';
+          tombol.querySelector("span").textContent = labelMetode(m);
           tombol.dataset.metode = m.nama;
           tombol.addEventListener("click", function () {
             jalankanMetode(m);
@@ -135,10 +164,7 @@ document.addEventListener("DOMContentLoaded", function () {
           daftarMetode.appendChild(tombol);
         });
         if (hint2) {
-          hint2.textContent = teksPanel(
-            "msgChoose",
-            "Pilih satu metode biometrik untuk melanjutkan."
-          );
+          hint2.textContent = teksPanel("msgChoose", "");
         }
         // Satu metode langsung dijalankan; dua metode atau lebih menunggu
         // pilihan pengguna lewat tombol.
@@ -147,7 +173,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
       })
       .catch(function () {
-        tampilkanGalat(galat1, "Permintaan gagal dikirim. Coba lagi.");
+        tampilkanGalat(galat1, teksPanel("msgRequestFailed", ""));
       });
   });
 
@@ -160,18 +186,15 @@ document.addEventListener("DOMContentLoaded", function () {
     if (!penangan) {
       tampilkanGalat(
         galat2,
-        teksPanel(
-          "msgUnsupported",
-          "Metode biometrik ini belum didukung peramban. Pilih metode lain."
-        )
+        teksPanel("msgUnsupported", "")
       );
       return;
     }
 
     tampilkanGalat(galat2, "");
     aturStatus(
-      teksPanel("msgVerifying", "Memverifikasi {metode}...")
-        .replace("{metode}", metode.label)
+      teksPanel("msgVerifying", "")
+        .replace("{metode}", labelMetode(metode))
     );
     sedangVerifikasi = true;
     nonaktifkanTombol(true);
@@ -194,7 +217,7 @@ document.addEventListener("DOMContentLoaded", function () {
       })
       .then(function (data) {
         if (!data.success) {
-          tampilkanGalat(galat2, data.error || "Verifikasi biometrik gagal.");
+          tampilkanGalat(galat2, data.error || teksPanel("msgFailed", ""));
           aturStatus("");
           sedangVerifikasi = false;
           nonaktifkanTombol(false);
@@ -203,7 +226,7 @@ document.addEventListener("DOMContentLoaded", function () {
         window.location.href = data.redirect || "/dashboard";
       })
       .catch(function (err) {
-        tampilkanGalat(galat2, err.message || "Verifikasi biometrik gagal.");
+        tampilkanGalat(galat2, err.message || teksPanel("msgFailed", ""));
         aturStatus("");
         sedangVerifikasi = false;
         nonaktifkanTombol(false);

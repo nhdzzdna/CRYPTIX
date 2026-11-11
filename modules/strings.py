@@ -34,6 +34,100 @@ class MSG:
     SETUP_BIOMETRIC_REQUIRED = "Daftarkan setidaknya satu biometrik (wajah atau sidik jari) untuk menyelesaikan penyiapan."
     SETUP_COMPLETE          = "Penyiapan keamanan selesai. Anda dapat mulai menggunakan KOSYAK."
 
+    # ── Antarmuka autentikasi dan Dashboard ───────────────────────────────
+    AUTH_BRAND_NAME          = "KOSYAK"
+    AUTH_USERNAME_LABEL      = "Username"
+    AUTH_PASSWORD_LABEL      = "Kata sandi"
+    AUTH_CONFIRM_LABEL       = "Konfirmasi kata sandi"
+    AUTH_EMAIL_LABEL         = "Email"
+    AUTH_DONGLE_LABEL        = "Dongle USB"
+    AUTH_LOGIN_TITLE         = "Masuk ke akun Anda"
+    AUTH_LOGIN_SUBMIT        = "Masuk"
+    AUTH_NO_ACCOUNT          = "Belum punya akun?"
+    AUTH_REGISTER_LINK       = "Daftar"
+    AUTH_RECOVERY_QUESTION   = "Dongle hilang atau lupa kata sandi?"
+    AUTH_RECOVERY_LINK       = "Pulihkan akun"
+    AUTH_DONGLE_CHECKING     = "Memeriksa dongle..."
+    AUTH_DONGLE_OK           = "Dongle terdeteksi"
+    AUTH_DONGLE_OFF          = "Dongle tidak terdeteksi"
+    AUTH_DONGLE_OFF_HINT     = "Colokkan dongle lalu muat ulang halaman."
+    AUTH_LOGIN_ERROR_DEFAULT = "Login gagal."
+    AUTH_REQUEST_FAILED      = "Permintaan gagal dikirim. Coba lagi."
+    AUTH_BIOMETRIC_TITLE     = "Verifikasi biometrik"
+    AUTH_BIOMETRIC_RESTART   = "Mulai dari awal"
+    AUTH_METHOD_FACE         = "Wajah"
+    AUTH_METHOD_WEBAUTHN     = "Sidik jari / WebAuthn"
+    AUTH_REGISTER_TITLE      = "Buat akun baru"
+    AUTH_REGISTER_SUBMIT     = "Daftar"
+    AUTH_HAVE_ACCOUNT        = "Sudah punya akun?"
+    AUTH_LOGIN_LINK          = "Masuk"
+    AUTH_PASSWORD_HINT       = (
+        "Minimal 12 karakter, memuat 3 dari 4 jenis karakter "
+        "(huruf kecil, huruf besar, angka, simbol), tanpa nama pengguna."
+    )
+    AUTH_DONGLE_RELOAD       = "Muat ulang daftar dongle"
+    AUTH_DONGLE_NONE         = "Tidak ada dongle terdeteksi"
+    AUTH_DONGLE_REGISTER_HINT = (
+        "Token keamanan ditulis ke dongle terpilih dan menjadi kunci fisik "
+        "untuk membuka brankas. Pendaftaran ditolak bila tidak ada dongle "
+        "yang terpasang."
+    )
+    AUTH_RECOVERY_TITLE      = "Pemulihan akun"
+    AUTH_RECOVERY_INTRO      = (
+        "Gunakan kunci pemulihan bila dongle hilang atau rusak, atau bila lupa "
+        "kata sandi. Kunci pemulihan tidak dapat dipulihkan jika hilang."
+    )
+    AUTH_RECOVERY_KEY_LABEL  = "Kunci pemulihan"
+    AUTH_NEW_PASSWORD_LABEL  = "Kata sandi baru"
+    AUTH_CONFIRM_NEW_LABEL   = "Konfirmasi kata sandi baru"
+    AUTH_NEW_DONGLE_LABEL    = "Dongle baru"
+    AUTH_RECOVERY_SUBMIT     = "Pulihkan akun"
+    AUTH_BACK_LOGIN          = "Kembali ke halaman masuk"
+    AUTH_RECOVERY_KEY_HINT   = (
+        "Salin kunci persis seperti saat ditampilkan, termasuk tanda hubung."
+    )
+    AUTH_RECOVERY_DONGLE_HINT = (
+        "Colokkan dongle baru, lalu muat ulang halaman ini bila daftar belum muncul."
+    )
+    AUTH_SETUP_TITLE         = "Penyiapan Keamanan"
+    AUTH_SETUP_STEP_KEY      = "Kunci pemulihan tersimpan"
+    AUTH_SETUP_STEP_BIOMETRIC = "Pendaftaran biometrik"
+    AUTH_SETUP_STEP_DONE     = "Selesai"
+    AUTH_SETUP_KEY_DONE      = "Kunci pemulihan sudah dikonfirmasi pada langkah sebelumnya."
+    AUTH_SETUP_DONE_HINT     = "Penyiapan selesai setelah satu metode biometrik terdaftar."
+    AUTH_SETUP_FACE_TITLE    = "Pendaftaran wajah"
+    AUTH_SETUP_WEBAUTHN_TITLE = "WebAuthn"
+    AUTH_SETUP_WEBAUTHN_HINT = (
+        "Daftarkan autentikator platform perangkat ini, seperti sidik jari "
+        "terintegrasi atau Windows Hello."
+    )
+    AUTH_ERROR_BACK          = "Kembali ke halaman masuk"
+
+    DASH_TOTAL_FILES         = "Total file"
+    DASH_CREDENTIALS         = "Kredensial"
+    DASH_NOTES               = "Catatan"
+    DASH_STEGO               = "Stego image"
+    DASH_STORAGE_TITLE       = "Storage terpakai"
+    DASH_STORAGE_EMPTY       = "Rincian ukuran per jenis belum tersedia."
+    DASH_DOCUMENTS           = "Dokumen"
+    DASH_MEDIA               = "Media"
+    DASH_AUDIO               = "Audio"
+    DASH_STEGO_LEGEND        = "Stego"
+    DASH_BLOCKCHAIN          = "Blockchain"
+    DASH_ANCHOR              = "Jangkar"
+    DASH_ACTIVITY            = "Aktivitas terbaru"
+    DASH_VIEW_ALL            = "Lihat semua"
+    DASH_ACTIVITY_EMPTY      = "Belum ada aktivitas"
+    DASH_ACTIVITY_EMPTY_TEXT = (
+        "Setiap unggahan dan peristiwa keamanan akan tercatat di sini."
+    )
+    DASH_CHAIN_VALID         = "Rantai Utuh"
+    DASH_CHAIN_BROKEN        = "Rantai Rusak"
+    DASH_CHAIN_UNVERIFIED    = "Belum Diverifikasi"
+    DASH_BLOCKS_UNIT         = "blok"
+    DASH_ANCHOR_NONE         = "Jangkar belum tersedia"
+    DASH_BLOCK_LAST          = "Terbaru"
+
     LOGIN_FAILED            = "{error}"   # error string comes from auth module
     LOGIN_SUCCESS           = "Selamat datang, {username}!"
     LOGOUT_SUCCESS          = "Anda telah keluar dari sistem."
