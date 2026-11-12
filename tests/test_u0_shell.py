@@ -104,3 +104,24 @@ def test_nav_melewati_endpoint_yang_belum_ada(app):
             assert "Settings" not in label
         finally:
             app.view_functions["settings.index"] = simpan
+
+
+def test_base_css_memuat_aturan_hidden_global():
+    base_css_path = os.path.join(os.path.dirname(__file__), "..", "static", "css", "base.css")
+    with open(base_css_path, "r", encoding="utf-8") as f:
+        isi = f.read()
+    # Pastikan [hidden] diatur display: none !important
+    pola = re.compile(r"\[hidden\][^{]*\{[^}]*display\s*:\s*none\s*!important", re.IGNORECASE)
+    assert pola.search(isi), "base.css harus memuat aturan [hidden] { display: none !important; }"
+
+
+def test_base_html_memuat_base_css(client):
+    html = client.get("/dashboard").get_data(as_text=True)
+    assert "css/base.css" in html
+    assert "css/tokens.css" in html
+    assert "css/components.css" in html
+    pos_tokens = html.find("css/tokens.css")
+    pos_base = html.find("css/base.css")
+    pos_comp = html.find("css/components.css")
+    assert pos_tokens < pos_base < pos_comp, "base.css harus dimuat setelah tokens.css dan sebelum components.css"
+
