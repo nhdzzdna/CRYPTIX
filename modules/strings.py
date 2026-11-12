@@ -211,10 +211,6 @@ class MSG:
         "Untuk cipher modern, teks diturunkan menjadi kunci 32 byte; "
         "64 digit heksadesimal dipakai langsung."
     )
-    CRYPTO_MODERN_KEY_HINT = (
-        "Untuk cipher modern, teks diturunkan menjadi kunci 32 byte; "
-        "64 digit heksadesimal dipakai langsung."
-    )
     CRYPTO_UNKNOWN_CIPHER      = "Algoritma tidak dikenal."
     CRYPTO_OPERATION_FAILED    = "Operasi kriptografi gagal; periksa kembali input Anda."
     CRYPTO_PROCESSING          = "Memproses…"

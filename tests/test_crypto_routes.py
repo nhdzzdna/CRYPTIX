@@ -77,6 +77,12 @@ class TestCryptoToolsForm:
         assert 'name="show_steps"' in body
         assert "Tampilkan tahapan" in body
 
+    def test_hint_vigenere_dan_pbkdf2_tersembunyi_bawaan(self, client):
+        body = client.get("/crypto-tools").get_data(as_text=True)
+        assert re.search(r'data-hint-vigenere[^>]*\bhidden\b', body)
+        assert re.search(r'data-hint-kunci[^>]*\bhidden\b', body)
+        assert re.search(r'id="ct-passphrase-field"[^>]*\bhidden\b', body)
+
     def test_post_without_csrf_rejected(self, client):
         page = client.post("/crypto-tools", data={
             "cipher": "super", "action": "encrypt",

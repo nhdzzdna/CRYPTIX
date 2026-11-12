@@ -6,6 +6,10 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/halaman/audio.css') }}" />
 {% endblock %}
 
+{% macro nama_folder(cid) -%}
+  {%- for a in folders -%}{%- if a.id == cid -%}{{ a.name }}{%- endif -%}{%- endfor -%}
+{%- endmacro %}
+
 {% macro track_row(f) %}
 <tr class="kx-audio-tr music-track{% if f.state == 'locked' %} item-terkunci{% endif %}"
     data-track
@@ -34,7 +38,7 @@
     <span class="kx-audio-track-meta audio-track-meta">{{ f.extension|upper }}</span>
   </td>
   <td class="kx-audio-cell-mono">
-    <span>{{ f.folder_name or 'Tanpa folder' }}</span>
+    <span data-folder-badge>{{ nama_folder(f.collection_id) or 'Tanpa folder' }}</span>
   </td>
   <td class="kx-audio-cell-mono">
     <span>-</span>
@@ -314,8 +318,9 @@
               </tbody>
             </table>
           </div>
-          {% elif semua %}
-          <div class="kx-empty">
+          {% endif %}
+          {% if semua %}
+          <div id="audio-unfiled-empty" class="kx-empty"{% if unfiled %} hidden{% endif %}>
             <div class="kx-empty-icon" aria-hidden="true">{{ ikon('headphones', 32) }}</div>
             <p class="kx-empty-title">{{ msg.unfiled_empty }}</p>
             <p class="kx-empty-text">Unggah audio atau pindahkan berkas dari folder.</p>

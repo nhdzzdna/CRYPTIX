@@ -338,6 +338,32 @@
         if (sisa.length === 0 && kosong) {
           kosong.hidden = false;
         }
+        var namaAlbum = targetPindah && targetPindah.options && targetPindah.selectedIndex >= 0
+          ? targetPindah.options[targetPindah.selectedIndex].text : '';
+        ids.forEach(function (id) {
+          var itemSemua = document.querySelector('#all-items [data-file-id="' + id + '"]');
+          if (!itemSemua) {
+            return;
+          }
+          itemSemua.setAttribute('data-collection-id', target);
+          var lencana = itemSemua.querySelector('.kx-media-folder-badge');
+          if (lencana && namaAlbum) {
+            lencana.textContent = namaAlbum;
+          } else if (namaAlbum) {
+            var meta = itemSemua.querySelector('.kx-media-card-meta');
+            if (meta) {
+              var pemisah = document.createElement('span');
+              pemisah.setAttribute('aria-hidden', 'true');
+              pemisah.textContent = '·';
+              var baru = document.createElement('span');
+              baru.className = 'kx-badge kx-media-folder-badge';
+              baru.setAttribute('data-folder-badge', '');
+              baru.textContent = namaAlbum;
+              meta.appendChild(pemisah);
+              meta.appendChild(baru);
+            }
+          }
+        });
         var bilah = document.getElementById('selection-bar');
         if (bilah) bilah.hidden = true;
         document.querySelectorAll('[data-select-file]:checked').forEach(function (cb) { cb.checked = false; });

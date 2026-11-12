@@ -70,7 +70,8 @@ def client(app):
     return c
 
 
-def _unggah_media_db(nama: str, state: str = "normal", locked_album: bool = False):
+def _unggah_media_db(nama: str, state: str = "normal", locked_album: bool = False,
+                     album: bool = False):
     db_key = purpose_key(DEK, "database")
     fkey = purpose_key(DEK, "file")
     stored = generate_stored_name()
@@ -91,8 +92,9 @@ def _unggah_media_db(nama: str, state: str = "normal", locked_album: bool = Fals
             (1, name_token, stored, "image", len(raw), enc_res["sha256_plaintext"], enc_res["sha256_ciphertext"]),
         )
         fid = cur.lastrowid
-        if state == "locked" or locked_album:
-            col_name_enc = encrypt_field("Album Liburan", db_key, field_aad(1, "collections", "name_enc"))
+        if state == "locked" or locked_album or album:
+            nama_album = "Album Dokumentasi" if album else "Album Liburan"
+            col_name_enc = encrypt_field(nama_album, db_key, field_aad(1, "collections", "name_enc"))
             cur_col = db.execute(
                 "INSERT INTO collections (user_id, name_enc, kind, locked) VALUES (?, ?, ?, ?)",
                 (1, col_name_enc, "album", 1 if locked_album else 0),
@@ -171,6 +173,17 @@ def test_halaman_media_status_terkunci(client):
     assert "arsip_terkunci.png" in html
     assert 'data-locked="1"' in html
     assert "Terkunci" in html
+
+
+def test_halaman_media_badge_album_di_semua(client):
+    _unggah_media_db("foto_album_terbuka.png", album=True)
+    resp = client.get("/media-vault")
+    assert resp.status_code == 200
+    html = resp.get_data(as_text=True)
+
+    assert "foto_album_terbuka.png" in html
+    assert "kx-media-folder-badge" in html
+    assert "Album Dokumentasi" in html
 
 
 def test_halaman_media_album_terkunci_tidak_tampil_di_semua(client):

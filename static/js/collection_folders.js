@@ -435,11 +435,30 @@
         var namaFolder = targetPindah.options && targetPindah.selectedIndex >= 0 ? targetPindah.options[targetPindah.selectedIndex].text : '';
         ids.forEach(function (id) {
           var itemSemua = document.querySelector('#all-items [data-file-id="' + id + '"]');
-          if (itemSemua) {
-            itemSemua.setAttribute('data-collection-id', target);
-            var selFolder = itemSemua.querySelector('.kx-audio-cell-mono span, .kx-doc-folder-badge');
-            if (selFolder && namaFolder) {
-              selFolder.textContent = namaFolder;
+          if (!itemSemua) {
+            return;
+          }
+          itemSemua.setAttribute('data-collection-id', target);
+          var selFolder = itemSemua.querySelector('.kx-audio-cell-mono span');
+          var lencanaFolder = itemSemua.querySelector('.kx-doc-folder-badge');
+          if (selFolder && namaFolder) {
+            selFolder.textContent = namaFolder;
+          }
+          if (lencanaFolder && namaFolder) {
+            lencanaFolder.textContent = namaFolder;
+          } else if (itemSemua.hasAttribute('data-doc-item') && namaFolder) {
+            var meta = itemSemua.querySelector('.kx-doc-row-meta');
+            if (meta) {
+              var pemisah = document.createElement('span');
+              pemisah.className = 'kx-doc-row-meta-sep';
+              pemisah.setAttribute('aria-hidden', 'true');
+              pemisah.textContent = '·';
+              var lencana = document.createElement('span');
+              lencana.className = 'kx-badge kx-doc-folder-badge';
+              lencana.setAttribute('data-folder-badge', '');
+              lencana.textContent = namaFolder;
+              meta.appendChild(pemisah);
+              meta.appendChild(lencana);
             }
           }
         });
