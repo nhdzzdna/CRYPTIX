@@ -1,94 +1,184 @@
 {% extends "base.html" %}
+{% from "_ikon.html" import ikon %}
 {% block title %}{{ MSG.TRASH_TITLE }} — KOSYAK{% endblock %}
-{% block page_title %}{{ MSG.TRASH_TITLE }}{% endblock %}
-{% block page_subtitle %}
-<p class="page-subtitle">{{ MSG.TRASH_PAGE_SUBTITLE }}</p>
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/halaman/sampah.css') }}" />
 {% endblock %}
 
-{% macro icon_trash() %}
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/><path d="M10 11v5M14 11v5"/></svg>
-{% endmacro %}
-
-{% macro icon_restore() %}
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
-{% endmacro %}
-
 {% block content %}
-<div class="trash-page" id="trash-page"
+<div class="kx-trash-page trash-page" id="trash-page"
+     data-csrf="{{ csrf_token() }}"
      data-msg-select-required="{{ MSG.TRASH_SELECT_REQUIRED }}"
      data-msg-purge-confirm="{{ MSG.TRASH_PURGE_CONFIRM }}"
-     data-msg-empty-confirm="{{ MSG.TRASH_EMPTY_CONFIRM }}">
-  <section class="trash-panel" aria-labelledby="trash-list-title">
-    <header class="trash-panel-head">
-      <div class="trash-panel-heading">
-        <h2 class="trash-panel-title" id="trash-list-title">{{ MSG.TRASH_TITLE }}</h2>
-        <p class="trash-panel-sub">{{ MSG.TRASH_RETENTION_NOTE.format(days=retention_days) }}</p>
-      </div>
-      <span class="trash-panel-count">{{ items|length }}</span>
-    </header>
+     data-msg-empty-confirm="{{ MSG.TRASH_EMPTY_CONFIRM }}"
+     data-msg-purge-title="{{ MSG.TRASH_ACTION_PURGE_TITLE }}"
+     data-msg-purge-msg="{{ MSG.TRASH_ACTION_PURGE_MSG }}"
+     data-msg-empty-title="{{ MSG.TRASH_ACTION_EMPTY_TITLE }}"
+     data-msg-empty-msg="{{ MSG.TRASH_ACTION_EMPTY_MSG }}">
 
-    {% if items %}
-    <div class="trash-actions">
-      <form method="POST" action="{{ url_for('trash.pulihkan') }}" class="trash-form" id="trash-restore-form">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-        <input type="hidden" name="items" id="trash-items-restore" value="[]" />
-        <button type="submit" class="btn btn-sm btn-success" id="trash-restore-button"
-                data-trash-select>
-          {{ icon_restore() }}<span>{{ MSG.TRASH_RESTORE_BUTTON }}</span>
-        </button>
-      </form>
-      <form method="POST" action="{{ url_for('trash.hapus_permanen') }}" class="trash-form" id="trash-purge-form">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-        <input type="hidden" name="items" id="trash-items-purge" value="[]" />
-        <button type="button" class="btn btn-sm btn-danger" id="trash-purge-button"
-                data-reauth="trash.purge"
-                data-trash-select>
-          {{ icon_trash() }}<span>{{ MSG.TRASH_PURGE_BUTTON }}</span>
-        </button>
-      </form>
-      <form method="POST" action="{{ url_for('trash.kosongkan') }}" class="trash-form" id="trash-empty-form">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-        <button type="button" class="btn btn-sm btn-outline-danger" id="trash-empty-button"
-                data-reauth="trash.purge">
-          {{ icon_trash() }}<span>{{ MSG.TRASH_EMPTY_BUTTON }}</span>
-        </button>
-      </form>
+  <!-- ── Header Halaman tanpa subjudul ── -->
+  <header class="kx-trash-header">
+    <div class="kx-trash-title-wrap">
+      <h1 class="kx-trash-title" id="trash-list-title">{{ MSG.TRASH_TITLE }}</h1>
+      <span class="kx-trash-badge-count trash-panel-count" aria-label="Total item di sampah">{{ items|length }}</span>
     </div>
 
-    <div class="trash-table-wrap">
-      <table class="table trash-table" id="trash-table">
+    <div class="kx-trash-actions-top">
+      {% if items %}
+      <form method="POST" action="{{ url_for('trash.kosongkan') }}" class="trash-form" id="trash-empty-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        <button type="button" class="kx-btn kx-btn-danger" id="trash-empty-button"
+                data-reauth="trash.purge">
+          {{ ikon('trash', 16) }}<span>{{ MSG.TRASH_EMPTY_BUTTON }}</span>
+        </button>
+      </form>
+      {% endif %}
+    </div>
+  </header>
+
+  <!-- ── Infobox Jujur ── -->
+  <div class="kx-infobox" role="note">
+    <div class="kx-infobox-icon" aria-hidden="true">{{ ikon('info', 18) }}</div>
+    <div class="kx-infobox-text">
+      {{ MSG.TRASH_INFOBOX_TEXT }}
+    </div>
+  </div>
+
+  <!-- ── Chip Filter Jenis ── -->
+  {% if items %}
+  <nav class="kx-trash-filters" aria-label="Filter jenis sampah">
+    <button type="button" class="kx-trash-chip is-active" data-trash-filter="all" aria-pressed="true">
+      {{ ikon('layers', 14) }}<span>{{ MSG.TRASH_FILTER_ALL }}</span>
+    </button>
+    <button type="button" class="kx-trash-chip" data-trash-filter="file" aria-pressed="false">
+      {{ ikon('file-text', 14) }}<span>{{ MSG.TRASH_FILTER_DOC }}</span>
+    </button>
+    <button type="button" class="kx-trash-chip" data-trash-filter="note" aria-pressed="false">
+      {{ ikon('file-text', 14) }}<span>{{ MSG.TRASH_FILTER_NOTE }}</span>
+    </button>
+    <button type="button" class="kx-trash-chip" data-trash-filter="cred" aria-pressed="false">
+      {{ ikon('key', 14) }}<span>{{ MSG.TRASH_FILTER_CRED }}</span>
+    </button>
+    <button type="button" class="kx-trash-chip" data-trash-filter="stego" aria-pressed="false">
+      {{ ikon('image', 14) }}<span>{{ MSG.TRASH_FILTER_STEGO }}</span>
+    </button>
+  </nav>
+
+  <!-- ── Form Tersembunyi untuk Kompatibilitas Submit Form Biasa ── -->
+  <div class="trash-actions" hidden aria-hidden="true">
+    <form method="POST" action="{{ url_for('trash.pulihkan') }}" class="trash-form" id="trash-restore-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+      <input type="hidden" name="items" id="trash-items-restore" value="[]" />
+      <button type="submit" id="trash-restore-button" data-trash-select disabled>
+        <span>{{ MSG.TRASH_RESTORE_BUTTON }}</span>
+      </button>
+    </form>
+    <form method="POST" action="{{ url_for('trash.hapus_permanen') }}" class="trash-form" id="trash-purge-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+      <input type="hidden" name="items" id="trash-items-purge" value="[]" />
+      <button type="button" id="trash-purge-button" data-reauth="trash.purge" data-trash-select disabled>
+        <span>{{ MSG.TRASH_PURGE_BUTTON }}</span>
+      </button>
+    </form>
+  </div>
+
+  <!-- ── Tabel Item Sampah ── -->
+  <section class="kx-card kx-trash-table-card trash-panel" aria-labelledby="trash-list-title">
+    <div class="kx-table-wrap trash-table-wrap">
+      <table class="kx-table trash-table" id="trash-table">
         <thead>
           <tr>
-            <th>{{ MSG.TRASH_COL_SELECT }}</th>
+            <th style="width: 44px;">
+              <input type="checkbox" id="trash-select-all" aria-label="Pilih semua item" />
+            </th>
             <th>{{ MSG.TRASH_COL_NAME }}</th>
             <th>{{ MSG.TRASH_COL_KIND }}</th>
             <th>{{ MSG.TRASH_COL_DELETED }}</th>
             <th>{{ MSG.TRASH_COL_REMAINING }}</th>
+            <th style="text-align: right;">Aksi</th>
           </tr>
         </thead>
         <tbody>
           {% for item in items %}
-          <tr data-trash-item data-jenis="{{ item.jenis }}" data-id="{{ item.id }}">
+          <tr data-trash-item data-jenis="{{ item.jenis }}" data-id="{{ item.id }}" class="kx-trash-row">
             <td>
-              <input type="checkbox" data-trash-select-item value="{{ item.id }}"
-                     data-jenis="{{ item.jenis }}" aria-label="{{ MSG.TRASH_COL_SELECT }} {{ item.nama }}" />
+              <input type="checkbox" data-trash-select-item data-kx-pilih value="{{ item.id }}"
+                     data-jenis="{{ item.jenis }}" data-nama="{{ item.nama }}" aria-label="{{ MSG.TRASH_COL_SELECT }} {{ item.nama }}" />
             </td>
-            <td>{{ item.nama }}</td>
-            <td>{{ item.label }}</td>
-            <td class="mono">{{ item.deleted_at[:16] }}</td>
-            <td class="mono">{{ item.sisa_hari }}</td>
+            <td>
+              <div class="kx-trash-item-name">
+                <span class="kx-trash-item-icon" aria-hidden="true">
+                  {% if item.jenis == 'file' %}
+                    {{ ikon('file-text', 16) }}
+                  {% elif item.jenis == 'note' %}
+                    {{ ikon('file-text', 16) }}
+                  {% elif item.jenis == 'cred' %}
+                    {{ ikon('key', 16) }}
+                  {% elif item.jenis == 'stego' %}
+                    {{ ikon('image', 16) }}
+                  {% else %}
+                    {{ ikon('trash', 16) }}
+                  {% endif %}
+                </span>
+                <span class="item-name-text" title="{{ item.nama }}">{{ item.nama }}</span>
+              </div>
+            </td>
+            <td>
+              <span class="kx-badge kx-badge-info kx-trash-item-jenis">{{ item.label }}</span>
+            </td>
+            <td class="mono kx-text-muted">{{ item.deleted_at[:16] }}</td>
+            <td>
+              <span class="kx-trash-item-days {{ 'is-urgent' if item.sisa_hari <= 5 else '' }}">
+                {{ item.sisa_hari }} hari
+              </span>
+            </td>
+            <td>
+              <div class="kx-trash-row-actions">
+                <button type="button" class="kx-btn kx-btn-secondary kx-trash-row-restore"
+                        data-action="restore" data-id="{{ item.id }}" data-jenis="{{ item.jenis }}" data-nama="{{ item.nama }}"
+                        title="Pulihkan item ke tempat asal">
+                  {{ ikon('rotate-ccw', 14) }}<span>{{ MSG.TRASH_RESTORE_BUTTON }}</span>
+                </button>
+                <button type="button" class="kx-btn kx-btn-danger kx-trash-row-purge"
+                        data-action="purge" data-id="{{ item.id }}" data-jenis="{{ item.jenis }}" data-nama="{{ item.nama }}"
+                        title="Hapus permanen sekarang">
+                  {{ ikon('trash', 14) }}<span>{{ MSG.TRASH_PURGE_BUTTON }}</span>
+                </button>
+              </div>
+            </td>
           </tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
-    {% else %}
-    <div class="trash-empty">
-      <span class="trash-empty-icon" aria-hidden="true">{{ icon_trash() }}</span>
-      <p class="trash-empty-title">{{ MSG.TRASH_EMPTY }}</p>
-    </div>
-    {% endif %}
   </section>
+
+  <!-- ── Bar Aksi Mengambang Massal (KX.aksiMengambang) ── -->
+  <aside class="kx-aksi-mengambang" id="trash-floating-actions" aria-label="Aksi massal sampah">
+    <div class="kx-aksi-mengambang-info">
+      <span class="kx-aksi-mengambang-jumlah" data-kx-jumlah>0</span>
+      <span>item terpilih</span>
+    </div>
+    <div class="kx-aksi-mengambang-tombol">
+      <button type="button" class="kx-btn kx-btn-secondary" id="trash-bulk-restore">
+        {{ ikon('rotate-ccw', 16) }}<span>{{ MSG.TRASH_RESTORE_BUTTON }} Terpilih</span>
+      </button>
+      <button type="button" class="kx-btn kx-btn-danger" id="trash-bulk-purge">
+        {{ ikon('trash', 16) }}<span>{{ MSG.TRASH_PURGE_BUTTON }} Terpilih</span>
+      </button>
+    </div>
+  </aside>
+
+  {% else %}
+  <!-- ── Tampilan Kosong ── -->
+  <div class="kx-empty trash-empty">
+    <div class="kx-empty-icon" aria-hidden="true">{{ ikon('trash', 32) }}</div>
+    <p class="kx-empty-title trash-empty-title">{{ MSG.TRASH_EMPTY }}</p>
+    <p class="kx-empty-text">Tidak ada berkas, catatan, atau kredensial yang sedang berada di dalam Sampah.</p>
+  </div>
+  {% endif %}
+
 </div>
 {% endblock %}
 

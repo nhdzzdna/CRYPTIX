@@ -631,3 +631,17 @@ class MSG:
     MEDIA_VIEWER_TITLE       = "Penampil Media"
     MEDIA_VIEWER_CLOSE       = "Tutup"
     MEDIA_VIEWER_RENAME      = "Ganti nama berkas"
+
+    # ── U2c: Sampah ───────────────────────────────────────────────────────────
+    TRASH_INFOBOX_TEXT       = "Item di Sampah akan dihapus permanen secara otomatis setelah 30 hari. Tindakan Hapus Permanen bersifat final dan tidak dapat dibatalkan."
+    TRASH_FILTER_ALL         = "Semua"
+    TRASH_FILTER_DOC         = "Berkas"
+    TRASH_FILTER_NOTE        = "Catatan"
+    TRASH_FILTER_CRED        = "Kredensial"
+    TRASH_FILTER_STEGO       = "Steganografi"
+    TRASH_ACTION_PURGE_TITLE = "Hapus permanen item?"
+    TRASH_ACTION_PURGE_MSG   = "Item {nama} akan dimusnahkan secara permanen dari server dan penyimpanan terenkripsi. Tindakan ini tidak dapat dibatalkan."
+    TRASH_ACTION_EMPTY_TITLE = "Kosongkan seluruh sampah?"
+    TRASH_ACTION_EMPTY_MSG   = "Seluruh item di dalam Sampah akan dimusnahkan secara permanen. Tindakan ini tidak dapat dibatalkan."
+    TRASH_RESTORE_SUCCESS    = '"{nama}" berhasil dipulihkan.'
+    TRASH_DAYS_LEFT_LABEL    = "{days} hari tersisa"
