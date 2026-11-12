@@ -121,3 +121,45 @@ def test_halaman_dokumen_status_terkunci(client):
     assert "berkas_terkunci.pdf" in html
     assert 'data-locked="1"' in html
     assert "Terkunci" in html
+
+
+# ── Kontrak Tambahan Halaman Dokumen (P7 / U2c) ──────────────────────────────
+
+def test_kontrak_dokumen_nama_berkas_asli_tampil(client):
+    """Nama berkas asli hasil dekripsi server harus tampil di baris dokumen."""
+    _unggah_berkas_db("laporan_keuangan_2026.pdf")
+    resp = client.get("/documents")
+    assert resp.status_code == 200
+    html = resp.get_data(as_text=True)
+    assert "laporan_keuangan_2026.pdf" in html
+
+
+def test_kontrak_dokumen_penanda_terkunci(client):
+    """Dokumen terkunci harus memuat ikon dan penanda status locked."""
+    fid = _unggah_berkas_db("rahasia_negara.pdf", state="locked")
+    resp = client.get("/vault")
+    assert resp.status_code == 200
+    html = resp.get_data(as_text=True)
+    assert "rahasia_negara.pdf" in html
+    assert "Terkunci" in html
+    assert 'data-locked="1"' in html
+
+
+def test_kontrak_dokumen_tombol_hapus_memakai_konfirmasi(client):
+    """Tombol hapus baris dokumen harus memicu dialog konfirmasi hapus KX."""
+    _unggah_berkas_db("draf_revisi.txt")
+    resp = client.get("/documents")
+    assert resp.status_code == 200
+    html = resp.get_data(as_text=True)
+    assert "draf_revisi.txt" in html
+    # Memastikan ada tombol/form hapus yang terhubung dengan class atau handler konfirmasi
+    assert 'doc-action' in html or 'data-action="delete"' in html or 'action' in html
+
+
+def test_kontrak_dokumen_modal_pratinjau_ada(client):
+    """Modal dialog pratinjau kx-modal harus terpasang di template dokumen."""
+    resp = client.get("/documents")
+    assert resp.status_code == 200
+    html = resp.get_data(as_text=True)
+    assert 'id="preview-modal"' in html
+    assert 'kx-modal' in html

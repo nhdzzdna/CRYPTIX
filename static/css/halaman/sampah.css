@@ -1,0 +1,160 @@
+/* static/css/halaman/sampah.css - Tata letak khusus Halaman Sampah (U2c) */
+
+.kx-trash-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kx-sp-5);
+  padding-bottom: var(--kx-sp-8);
+}
+
+.kx-trash-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--kx-sp-4);
+  flex-wrap: wrap;
+}
+
+.kx-trash-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: var(--kx-sp-3);
+}
+
+.kx-trash-title {
+  font-size: var(--kx-fs-2xl);
+  font-weight: 700;
+  color: var(--kx-text);
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+.kx-trash-badge-count {
+  font-family: var(--kx-font-mono);
+  font-size: var(--kx-fs-xs);
+  padding: 2px 8px;
+  border-radius: var(--kx-r-full);
+  background: var(--kx-surface-2);
+  color: var(--kx-text-muted);
+  border: 1px solid var(--kx-border);
+}
+
+.kx-trash-filters {
+  display: flex;
+  gap: var(--kx-sp-2);
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: var(--kx-sp-1);
+}
+
+.kx-trash-chip {
+  appearance: none;
+  background: var(--kx-surface);
+  border: 1px solid var(--kx-border);
+  color: var(--kx-text-muted);
+  border-radius: var(--kx-r-full);
+  padding: 6px 14px;
+  font-size: var(--kx-fs-xs);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.kx-trash-chip:hover {
+  background: var(--kx-surface-2);
+  color: var(--kx-text);
+  border-color: var(--kx-border-strong);
+}
+
+.kx-trash-chip.is-active,
+.kx-trash-chip[aria-pressed="true"] {
+  background: rgba(13, 148, 136, 0.15);
+  color: var(--kx-teal);
+  border-color: var(--kx-teal);
+  font-weight: 600;
+}
+
+.kx-trash-table-card {
+  overflow: hidden;
+}
+
+.kx-trash-item-name {
+  font-weight: 500;
+  color: var(--kx-text);
+  display: flex;
+  align-items: center;
+  gap: var(--kx-sp-2);
+}
+
+.kx-trash-item-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--kx-text-muted);
+  flex-shrink: 0;
+}
+
+.kx-trash-item-jenis {
+  display: inline-block;
+  font-size: var(--kx-fs-xs);
+  color: var(--kx-text-muted);
+}
+
+.kx-trash-item-days {
+  font-family: var(--kx-font-mono);
+  font-size: var(--kx-fs-xs);
+  color: var(--kx-text-muted);
+  white-space: nowrap;
+}
+
+.kx-trash-item-days.is-urgent {
+  color: var(--kx-rose);
+  font-weight: 600;
+}
+
+.kx-trash-row-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--kx-sp-2);
+  justify-content: flex-end;
+}
+
+.kx-trash-row-actions .kx-btn {
+  padding: 4px 8px;
+  font-size: var(--kx-fs-xs);
+}
+
+.kx-trash-actions-top {
+  display: flex;
+  align-items: center;
+  gap: var(--kx-sp-2);
+}
+
+/* Responsif: Tiga lebar breakpoint */
+@media (max-width: 900px) {
+  .kx-trash-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 640px) {
+  .kx-trash-row-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .kx-trash-filters {
+    overflow-x: auto;
+    padding-bottom: var(--kx-sp-1);
+    width: 100%;
+  }
+
+  .kx-trash-chip {
+    white-space: nowrap;
+  }
+}
+
