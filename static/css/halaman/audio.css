@@ -294,7 +294,7 @@
   right: 0;
   top: 100%;
   z-index: 50;
-  background: var(--kx-surface-card, #1e293b);
+  background: var(--kx-surface-2);
   border: 1px solid var(--kx-border);
   border-radius: var(--kx-radius-card);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
@@ -342,7 +342,7 @@
   left: 0;
   right: 0;
   z-index: 100;
-  background: var(--kx-surface-card, #0f172a);
+  background: var(--kx-surface);
   border-top: 1px solid var(--kx-border);
   box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.4);
   padding: 10px var(--kx-space-4);
