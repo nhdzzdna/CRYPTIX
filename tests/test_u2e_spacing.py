@@ -52,6 +52,15 @@ def test_aksi_item_account_vault_berjarak():
         assert "gap: var(--kx-space-2)" in isi
 
 
+def test_security_center_responsif_memakai_selektor_markup():
+    css = _baca(CSS_HALAMAN / "security_center.css")
+    assert ".kx-sc-page .kx-card-head" in css
+    assert ".kx-sc-card-head" not in css
+
+    template = _baca(AKAR / "templates" / "security_center.html")
+    assert 'class="kx-card-head"' in template
+
+
 def test_keadaan_awal_tersembunyi():
     stego = _baca(AKAR / "templates" / "steganography.html")
     assert re.search(r'id="sg-berkas-field"[^>]*\bhidden\b', stego)
