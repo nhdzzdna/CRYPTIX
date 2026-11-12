@@ -6,6 +6,10 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/halaman/documents.css') }}" />
 {% endblock %}
 
+{% macro nama_folder(cid) -%}
+  {%- for a in folders -%}{%- if a.id == cid -%}{{ a.name }}{%- endif -%}{%- endfor -%}
+{%- endmacro %}
+
 {% macro doc_item(f) %}
 <div class="kx-doc-row collection-item doc-file-row{% if f.state == 'locked' %} item-terkunci{% endif %}"
      data-doc-item
@@ -39,6 +43,10 @@
         {% else %}
         <span class="kx-doc-row-meta-sep" aria-hidden="true">·</span>
         <span class="kx-badge kx-badge-ok">Terenkripsi</span>
+        {% endif %}
+        {% if f.collection_id %}
+        <span class="kx-doc-row-meta-sep" aria-hidden="true">·</span>
+        <span class="kx-badge kx-doc-folder-badge" data-folder-badge>{{ nama_folder(f.collection_id) }}</span>
         {% endif %}
       </div>
     </div>
@@ -251,8 +259,8 @@
             {% for f in unfiled %}{{ doc_item(f) }}{% endfor %}
           {% endif %}
         </div>
-        {% if not unfiled %}
-        <div id="documents-empty" class="kx-empty">
+        {% if semua %}
+        <div id="documents-empty" class="kx-empty"{% if unfiled %} hidden{% endif %}>
           <div class="kx-empty-icon" aria-hidden="true">{{ ikon('file-text', 32) }}</div>
           <p class="kx-empty-title">{{ msg.unfiled_empty }}</p>
           <p class="kx-empty-text">Unggah dokumen atau pindahkan berkas dari folder.</p>

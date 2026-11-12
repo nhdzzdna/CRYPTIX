@@ -97,10 +97,12 @@
       chip.setAttribute('aria-pressed', 'true');
 
       var baris = document.querySelectorAll('.kx-trash-row');
+      var adaYangTampil = false;
       Array.prototype.forEach.call(baris, function (tr) {
         var barisJenis = tr.getAttribute('data-jenis');
         if (jenis === 'all' || barisJenis === jenis) {
           tr.hidden = false;
+          adaYangTampil = true;
         } else {
           tr.hidden = true;
           var kotak = tr.querySelector('[data-trash-select-item]');
@@ -109,6 +111,14 @@
           }
         }
       });
+      var pesanTakAda = document.getElementById('trash-no-results');
+      var wadahTabel = document.querySelector('.kx-trash-table-wrap');
+      if (pesanTakAda) {
+        pesanTakAda.hidden = adaYangTampil;
+      }
+      if (wadahTabel) {
+        wadahTabel.hidden = !adaYangTampil;
+      }
       perbaruiPilihan();
     });
   });

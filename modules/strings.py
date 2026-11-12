@@ -208,8 +208,8 @@ class MSG:
     CRYPTO_PASSPHRASE_REQUIRED = "Isi kata sandi untuk Super Encryption."
     CRYPTO_VIGENERE_KEY_INVALID = "Kunci Vigenere hanya boleh huruf A-Z"
     CRYPTO_KEY_HINT = (
-        "Vigenere: kunci hanya huruf A-Z. Untuk cipher modern, teks diturunkan "
-        "menjadi kunci 32 byte; 64 digit heksadesimal dipakai langsung."
+        "Untuk cipher modern, teks diturunkan menjadi kunci 32 byte; "
+        "64 digit heksadesimal dipakai langsung."
     )
     CRYPTO_UNKNOWN_CIPHER      = "Algoritma tidak dikenal."
     CRYPTO_OPERATION_FAILED    = "Operasi kriptografi gagal; periksa kembali input Anda."

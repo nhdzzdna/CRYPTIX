@@ -123,4 +123,7 @@ select:-webkit-autofill {
 .kx-row { display: flex; align-items: center; gap: var(--kx-space-2); }
 .kx-row-between { display: flex; align-items: center; justify-content: space-between; gap: var(--kx-space-2); }
 .kx-grow { flex: 1 1 auto; min-width: 0; }
-.kx-hidden { display: none !important; }
+[hidden],
+.kx-hidden {
+  display: none !important;
+}

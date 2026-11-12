@@ -213,9 +213,13 @@
         tr.hidden = !cocok;
       });
       var pesanTakAda = document.getElementById('audio-no-results');
+      var tabelWrap = document.querySelector('.kx-card-body > .kx-table-wrap');
       if (pesanTakAda) {
         var adaYangTampil = Array.prototype.some.call(barisList, function (tr) { return !tr.hidden; });
         pesanTakAda.hidden = barisList.length === 0 || adaYangTampil;
+        if (tabelWrap && barisList.length > 0) {
+          tabelWrap.hidden = !adaYangTampil;
+        }
       }
     });
   }
@@ -235,6 +239,14 @@
   }
 
   // ── Menu titik tiga (⋯) ──────────────────────────────────────────────────
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+      document.querySelectorAll('[data-menu-dropdown]').forEach(function (d) {
+        d.hidden = true;
+      });
+    }
+  });
+
   document.addEventListener('click', function (event) {
     var tombolMenu = event.target.closest('[data-menu-toggle]');
     var semuaMenu = document.querySelectorAll('[data-menu-dropdown]');
@@ -245,7 +257,17 @@
       var dropdown = wrap ? wrap.querySelector('[data-menu-dropdown]') : null;
       var isOpen = dropdown && !dropdown.hidden;
       semuaMenu.forEach(function (d) { d.hidden = true; });
-      if (dropdown) dropdown.hidden = isOpen;
+      if (dropdown) {
+        dropdown.hidden = isOpen;
+        if (!isOpen) {
+          dropdown.classList.remove('kx-audio-menu-atas');
+          var rect = dropdown.getBoundingClientRect();
+          var batasBawah = (window.innerHeight || document.documentElement.clientHeight) - 16;
+          if (rect.bottom > batasBawah) {
+            dropdown.classList.add('kx-audio-menu-atas');
+          }
+        }
+      }
       return;
     }
 

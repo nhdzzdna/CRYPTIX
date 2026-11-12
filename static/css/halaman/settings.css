@@ -51,6 +51,22 @@
   font-weight: 600;
 }
 
+/* ── Jarak formulir dan deretan aksi ─────────────────────────────────────── */
+.kx-settings-page .kx-card-body > form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kx-space-3);
+}
+.kx-settings-page .kx-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--kx-space-2);
+}
+.kx-settings-page .kx-card-body > .kx-card-actions {
+  margin-top: var(--kx-space-3);
+}
+
 /* ── Tab Panes ───────────────────────────────────────────────────────────── */
 .kx-tab-pane {
   display: flex;
@@ -183,7 +199,7 @@
 .kx-settings-summary-badges {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--kx-space-2);
   flex-wrap: wrap;
 }
 

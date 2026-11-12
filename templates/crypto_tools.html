@@ -90,17 +90,17 @@
             <label class="kx-label" for="ct-kunci">Kunci</label>
             <input type="text" class="kx-input kx-ct-kunci" id="ct-kunci" name="key"
                    autocomplete="off" placeholder="Kunci teks atau 64 digit heksadesimal" />
-            <p class="kx-ct-hint" data-hint-kunci>{{ MSG.CRYPTO_KEY_HINT }}</p>
+            <p class="kx-ct-hint" data-hint-kunci hidden>{{ MSG.CRYPTO_KEY_HINT }}</p>
             <p class="kx-ct-hint" data-hint-vigenere hidden>{{ MSG.CRYPTO_VIGENERE_KEY_HINT }}</p>
           </div>
 
-          <div class="kx-field" id="ct-passphrase-field">
+          <div class="kx-field" id="ct-passphrase-field" hidden>
             <label class="kx-label" for="ct-passphrase">Kunci rahasia</label>
             <div class="kx-sandi" data-kx-sandi>
               <input type="password" class="kx-input" id="ct-passphrase" name="passphrase"
                      autocomplete="off" />
             </div>
-            <p class="kx-ct-hint">{{ MSG.CRYPTO_SUPER_KEY_HINT }}</p>
+            <p class="kx-ct-hint" data-hint-passphrase>{{ MSG.CRYPTO_SUPER_KEY_HINT }}</p>
           </div>
 
           <label class="kx-checkbox kx-ct-steps" id="ct-steps-field">

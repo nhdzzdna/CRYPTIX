@@ -371,6 +371,12 @@
   transform: translateX(-50%);
 }
 .kx-aksi-mengambang.is-visible { display: flex; }
+.kx-aksi-mengambang-tombol {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--kx-space-2);
+}
 .kx-aksi-mengambang .kx-count {
   padding: 0 6px;
   color: var(--kx-text-2);

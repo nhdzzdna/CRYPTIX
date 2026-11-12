@@ -64,11 +64,22 @@
 
     input.addEventListener("change", tampilkan);
 
-    hapus.addEventListener("click", function () {
+    hapus.addEventListener("click", function (e) {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
       input.value = "";
       tampilkan();
       input.dispatchEvent(new Event("change", { bubbles: true }));
     });
+
+    var form = input.form || root.closest("form");
+    if (form) {
+      form.addEventListener("reset", function () {
+        setTimeout(tampilkan, 0);
+      });
+    }
 
     ["dragenter", "dragover"].forEach(function (ev) {
       root.addEventListener(ev, function (e) {

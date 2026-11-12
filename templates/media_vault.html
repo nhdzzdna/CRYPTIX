@@ -6,6 +6,10 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/halaman/media.css') }}" />
 {% endblock %}
 
+{% macro nama_folder(cid) -%}
+  {%- for a in albums -%}{%- if a.id == cid -%}{{ a.name }}{%- endif -%}{%- endfor -%}
+{%- endmacro %}
+
 {% macro media_card(f) %}
 <div class="kx-media-card media-item{% if f.state == 'locked' %} item-terkunci{% endif %}"
      data-media-item
@@ -47,6 +51,10 @@
       {% else %}
       <span aria-hidden="true">·</span>
       <span class="kx-badge kx-badge-ok">Terenkripsi</span>
+      {% endif %}
+      {% if f.collection_id %}
+      <span aria-hidden="true">·</span>
+      <span class="kx-badge kx-media-folder-badge" data-folder-badge>{{ nama_folder(f.collection_id) }}</span>
       {% endif %}
     </div>
     <div class="kx-media-card-actions">
@@ -222,7 +230,7 @@
           </div>
 
           {% if semua %}
-          <div class="kx-media-grid media-grid">
+          <div id="all-items" class="kx-media-grid media-grid">
             {% for f in semua %}{{ media_card(f) }}{% endfor %}
           </div>
           {% else %}
@@ -249,11 +257,12 @@
         </div>
         <div class="kx-card-body">
           {% if unfiled %}
-          <div class="kx-media-grid media-grid">
+          <div id="unfiled-grid" class="kx-media-grid media-grid">
             {% for f in unfiled %}{{ media_card(f) }}{% endfor %}
           </div>
-          {% else %}
-          <div class="kx-empty">
+          {% endif %}
+          {% if semua %}
+          <div id="media-unfiled-empty" class="kx-empty"{% if unfiled %} hidden{% endif %}>
             <div class="kx-empty-icon" aria-hidden="true">{{ ikon('image', 32) }}</div>
             <p class="kx-empty-title">Tidak ada berkas di luar album</p>
             <p class="kx-empty-text">Unggah foto atau video, lalu atur media ke dalam album.</p>

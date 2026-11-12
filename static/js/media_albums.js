@@ -326,7 +326,53 @@
       file_ids: ids,
       collection_id: target || null
     }, grant).then(function () {
-      window.location.reload();
+      if (target) {
+        ids.forEach(function (id) {
+          var el = document.querySelector('#unfiled-grid [data-file-id="' + id + '"]');
+          if (el) {
+            el.remove();
+          }
+        });
+        var sisa = document.querySelectorAll('#unfiled-grid [data-media-item]');
+        var kosong = document.getElementById('media-unfiled-empty');
+        if (sisa.length === 0 && kosong) {
+          kosong.hidden = false;
+        }
+        var namaAlbum = targetPindah && targetPindah.options && targetPindah.selectedIndex >= 0
+          ? targetPindah.options[targetPindah.selectedIndex].text : '';
+        ids.forEach(function (id) {
+          var itemSemua = document.querySelector('#all-items [data-file-id="' + id + '"]');
+          if (!itemSemua) {
+            return;
+          }
+          itemSemua.setAttribute('data-collection-id', target);
+          var lencana = itemSemua.querySelector('.kx-media-folder-badge');
+          if (lencana && namaAlbum) {
+            lencana.textContent = namaAlbum;
+          } else if (namaAlbum) {
+            var meta = itemSemua.querySelector('.kx-media-card-meta');
+            if (meta) {
+              var pemisah = document.createElement('span');
+              pemisah.setAttribute('aria-hidden', 'true');
+              pemisah.textContent = '·';
+              var baru = document.createElement('span');
+              baru.className = 'kx-badge kx-media-folder-badge';
+              baru.setAttribute('data-folder-badge', '');
+              baru.textContent = namaAlbum;
+              meta.appendChild(pemisah);
+              meta.appendChild(baru);
+            }
+          }
+        });
+        var bilah = document.getElementById('selection-bar');
+        if (bilah) bilah.hidden = true;
+        document.querySelectorAll('[data-select-file]:checked').forEach(function (cb) { cb.checked = false; });
+        if (window.KX && KX.toast) {
+          KX.toast('Media berhasil dipindahkan ke album.', 'ok');
+        }
+      } else {
+        window.location.reload();
+      }
     }).catch(function (err) {
       tampilkanGalat(err.message);
     });
@@ -429,6 +475,14 @@
   }
 
   // ── Event Listener ───────────────────────────────────────────────────────
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+      document.querySelectorAll('[data-menu-dropdown]').forEach(function (m) {
+        m.hidden = true;
+      });
+    }
+  });
+
   document.addEventListener('click', function (event) {
     // Menu titik tiga (⋯)
     var btnMenu = event.target.closest('[data-menu-toggle]');
@@ -439,7 +493,17 @@
       var dd = wrap ? wrap.querySelector('[data-menu-dropdown]') : null;
       var isOpen = dd && !dd.hidden;
       semuaMenu.forEach(function (m) { m.hidden = true; });
-      if (dd) dd.hidden = isOpen;
+      if (dd) {
+        dd.hidden = isOpen;
+        if (!isOpen) {
+          dd.classList.remove('kx-media-menu-atas');
+          var rect = dd.getBoundingClientRect();
+          var batasBawah = (window.innerHeight || document.documentElement.clientHeight) - 16;
+          if (rect.bottom > batasBawah) {
+            dd.classList.add('kx-media-menu-atas');
+          }
+        }
+      }
       return;
     }
     semuaMenu.forEach(function (m) { m.hidden = true; });
@@ -557,9 +621,13 @@
         card.hidden = !cocok;
       });
       var pesanTakAda = document.getElementById('media-no-results');
+      var gridSemua = document.querySelector('.kx-card-body > .kx-media-grid');
       if (pesanTakAda) {
         var adaYangTampil = Array.prototype.some.call(kartuList, function (c) { return !c.hidden; });
         pesanTakAda.hidden = kartuList.length === 0 || adaYangTampil;
+        if (gridSemua && kartuList.length > 0) {
+          gridSemua.hidden = !adaYangTampil;
+        }
       }
     });
   }

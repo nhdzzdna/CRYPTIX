@@ -8,7 +8,8 @@
   display: flex;
   flex-direction: column;
   gap: var(--kx-space-4);
-  padding-bottom: 96px; /* Memberikan ruang agar konten tidak tertutup pemutar tetap */
+  padding-bottom: 96px;
+  /* Memberikan ruang agar konten tidak tertutup pemutar tetap */
 }
 
 .kx-audio-layout {
@@ -99,6 +100,7 @@
   background: var(--kx-surface-2);
   outline: none;
 }
+
 .kx-audio-folder-btn:focus-visible {
   box-shadow: 0 0 0 2px var(--kx-accent);
 }
@@ -107,6 +109,7 @@
   flex: 0 0 auto;
   color: var(--kx-accent);
 }
+
 .kx-audio-folder-icon.is-locked {
   color: var(--kx-warn);
 }
@@ -158,9 +161,11 @@
 .kx-audio-breadcrumb-root {
   color: var(--kx-text-2);
 }
+
 .kx-audio-breadcrumb-sep {
   color: var(--kx-text-3);
 }
+
 .kx-audio-breadcrumb-name {
   color: var(--kx-text);
   overflow: hidden;
@@ -280,12 +285,16 @@
   display: inline-block;
 }
 
+.kx-card-body>.kx-table-wrap {
+  overflow: visible;
+}
+
 .kx-audio-menu-dropdown {
   position: absolute;
   right: 0;
   top: 100%;
   z-index: 50;
-  background: var(--kx-surface-card, #1e293b);
+  background: var(--kx-surface-2);
   border: 1px solid var(--kx-border);
   border-radius: var(--kx-radius-card);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
@@ -294,6 +303,11 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
+}
+
+.kx-audio-menu-dropdown.kx-audio-menu-atas {
+  top: auto;
+  bottom: 100%;
 }
 
 .kx-audio-menu-item {
@@ -328,7 +342,7 @@
   left: 0;
   right: 0;
   z-index: 100;
-  background: var(--kx-surface-card, #0f172a);
+  background: var(--kx-surface);
   border-top: 1px solid var(--kx-border);
   box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.4);
   padding: 10px var(--kx-space-4);
@@ -458,9 +472,11 @@
   .kx-audio-layout {
     grid-template-columns: 1fr;
   }
+
   .kx-audio-player-bar {
     grid-template-columns: 1fr auto;
   }
+
   .kx-audio-player-progress-wrap {
     display: none;
   }
@@ -470,12 +486,14 @@
   .kx-audio-player-right {
     display: none;
   }
+
   .kx-audio-player-bar {
     grid-template-columns: 1fr auto;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
+
   .kx-audio-folder-btn,
   .kx-audio-tr,
   .kx-audio-play-circle,
@@ -483,4 +501,3 @@
     transition: none;
   }
 }
-

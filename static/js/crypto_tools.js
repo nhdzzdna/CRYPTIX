@@ -53,22 +53,23 @@
   function perbaruiForm() {
     var cipher = inputCipher.value;
     var aksi = inputAksi.value;
+    var isSuper = cipher === 'super';
+    var isVigenere = cipher === 'vigenere';
 
     if (fieldKunci) {
-      fieldKunci.hidden = cipher === 'super';
+      fieldKunci.hidden = isSuper;
     }
     if (fieldPassphrase) {
-      fieldPassphrase.hidden = cipher !== 'super';
+      fieldPassphrase.hidden = !isSuper;
     }
     if (fieldSteps) {
-      fieldSteps.hidden = !(cipher === 'super' && aksi === 'encrypt');
+      fieldSteps.hidden = !(isSuper && aksi === 'encrypt');
     }
-    var vigenere = cipher === 'vigenere';
     if (hintKunci) {
-      hintKunci.hidden = vigenere;
+      hintKunci.hidden = isVigenere || isSuper;
     }
     if (hintVigenere) {
-      hintVigenere.hidden = !vigenere;
+      hintVigenere.hidden = !isVigenere;
     }
     filterVigenereKey();
   }

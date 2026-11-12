@@ -112,6 +112,16 @@ def test_halaman_dokumen_markup_kx(client):
     assert "kontrak_rahasia.pdf" in html
 
 
+def test_halaman_dokumen_badge_folder_di_semua(client):
+    _unggah_berkas_db("laporan_folder.pdf", state="locked")
+    resp = client.get("/vault")
+    assert resp.status_code == 200
+    html = resp.get_data(as_text=True)
+
+    assert 'kx-doc-folder-badge' in html
+    assert "Folder Kunci" in html
+
+
 def test_halaman_dokumen_status_terkunci(client):
     _unggah_berkas_db("berkas_terkunci.pdf", state="locked")
     resp = client.get("/vault")

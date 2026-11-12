@@ -500,6 +500,14 @@
     tutupSemuaMenu();
     menu.hidden = !buka;
     tombol.setAttribute('aria-expanded', buka ? 'true' : 'false');
+    if (buka) {
+      menu.classList.remove('kx-sg-menu-atas');
+      var rect = menu.getBoundingClientRect();
+      var batasBawah = (window.innerHeight || document.documentElement.clientHeight) - 16;
+      if (rect.bottom > batasBawah) {
+        menu.classList.add('kx-sg-menu-atas');
+      }
+    }
   }
 
   function tutupModalEkstrak() {
@@ -525,6 +533,12 @@
       KX.modal.buka(modalEkstrak);
     }
   }
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+      tutupSemuaMenu();
+    }
+  });
 
   document.addEventListener('click', function (event) {
     var tombolMenu = event.target.closest('[data-sg-menu]');
