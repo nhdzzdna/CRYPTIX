@@ -251,7 +251,7 @@
             {% for f in unfiled %}{{ doc_item(f) }}{% endfor %}
           {% endif %}
         </div>
-        {% if not unfiled %}
+        {% if not unfiled and semua %}
         <div id="documents-empty" class="kx-empty">
           <div class="kx-empty-icon" aria-hidden="true">{{ ikon('file-text', 32) }}</div>
           <p class="kx-empty-title">{{ msg.unfiled_empty }}</p>

@@ -429,6 +429,14 @@
   }
 
   // ── Event Listener ───────────────────────────────────────────────────────
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+      document.querySelectorAll('[data-menu-dropdown]').forEach(function (m) {
+        m.hidden = true;
+      });
+    }
+  });
+
   document.addEventListener('click', function (event) {
     // Menu titik tiga (⋯)
     var btnMenu = event.target.closest('[data-menu-toggle]');
@@ -439,7 +447,17 @@
       var dd = wrap ? wrap.querySelector('[data-menu-dropdown]') : null;
       var isOpen = dd && !dd.hidden;
       semuaMenu.forEach(function (m) { m.hidden = true; });
-      if (dd) dd.hidden = isOpen;
+      if (dd) {
+        dd.hidden = isOpen;
+        if (!isOpen) {
+          dd.classList.remove('kx-media-menu-atas');
+          var rect = dd.getBoundingClientRect();
+          var batasBawah = (window.innerHeight || document.documentElement.clientHeight) - 16;
+          if (rect.bottom > batasBawah) {
+            dd.classList.add('kx-media-menu-atas');
+          }
+        }
+      }
       return;
     }
     semuaMenu.forEach(function (m) { m.hidden = true; });
@@ -557,9 +575,13 @@
         card.hidden = !cocok;
       });
       var pesanTakAda = document.getElementById('media-no-results');
+      var gridSemua = document.querySelector('.kx-card-body > .kx-media-grid');
       if (pesanTakAda) {
         var adaYangTampil = Array.prototype.some.call(kartuList, function (c) { return !c.hidden; });
         pesanTakAda.hidden = kartuList.length === 0 || adaYangTampil;
+        if (gridSemua && kartuList.length > 0) {
+          gridSemua.hidden = !adaYangTampil;
+        }
       }
     });
   }

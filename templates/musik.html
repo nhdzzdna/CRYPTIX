@@ -251,6 +251,7 @@
             </div>
           </div>
 
+          {% if semua %}
           <div class="kx-table-wrap">
             <table class="kx-audio-table kx-table">
               <thead>
@@ -267,26 +268,23 @@
                 </tr>
               </thead>
               <tbody id="all-items" data-track-list>
-                {% if semua %}
-                  {% for f in semua %}{{ track_row(f) }}{% endfor %}
-                {% endif %}
+                {% for f in semua %}{{ track_row(f) }}{% endfor %}
               </tbody>
             </table>
           </div>
-
-          <div id="audio-no-results" class="kx-empty" hidden>
-            <div class="kx-empty-icon" aria-hidden="true">{{ ikon('search', 32) }}</div>
-            <p class="kx-empty-title">Trek tidak ditemukan</p>
-            <p class="kx-empty-text">Coba kata kunci pencarian yang lain.</p>
-          </div>
-
-          {% if not semua %}
+          {% else %}
           <div class="kx-empty">
             <div class="kx-empty-icon" aria-hidden="true">{{ ikon('headphones', 32) }}</div>
             <p class="kx-empty-title">Belum ada audio</p>
             <p class="kx-empty-text">Unggah audio untuk mulai memutar audio terenkripsi.</p>
           </div>
           {% endif %}
+
+          <div id="audio-no-results" class="kx-empty" hidden>
+            <div class="kx-empty-icon" aria-hidden="true">{{ ikon('search', 32) }}</div>
+            <p class="kx-empty-title">Trek tidak ditemukan</p>
+            <p class="kx-empty-text">Coba kata kunci pencarian yang lain.</p>
+          </div>
         </div>
       </section>
 
@@ -297,6 +295,7 @@
           <span class="kx-badge kx-badge-ok">{{ unfiled|length }} audio</span>
         </div>
         <div class="kx-card-body">
+          {% if unfiled %}
           <div class="kx-table-wrap">
             <table class="kx-audio-table kx-table">
               <thead>
@@ -311,14 +310,11 @@
                 </tr>
               </thead>
               <tbody id="unfiled-items" data-track-list>
-                {% if unfiled %}
-                  {% for f in unfiled %}{{ track_row(f) }}{% endfor %}
-                {% endif %}
+                {% for f in unfiled %}{{ track_row(f) }}{% endfor %}
               </tbody>
             </table>
           </div>
-
-          {% if not unfiled %}
+          {% elif semua %}
           <div class="kx-empty">
             <div class="kx-empty-icon" aria-hidden="true">{{ ikon('headphones', 32) }}</div>
             <p class="kx-empty-title">{{ msg.unfiled_empty }}</p>

@@ -19,7 +19,12 @@
     <section class="kx-card kx-sn-daftar" aria-labelledby="sn-daftar-title">
       <header class="kx-card-head">
         <h2 class="kx-card-title" id="sn-daftar-title">Catatan tersimpan ({{ notes|length }})</h2>
-        <span class="kx-badge kx-badge-ok">{{ ikon('lock', 13) }}Terenkripsi</span>
+        <div class="kx-row">
+          <span class="kx-badge kx-badge-ok">{{ ikon('lock', 13) }}Terenkripsi</span>
+          <button type="button" class="kx-btn kx-btn-primary kx-btn-sm" data-sn-baru>
+            {{ ikon('plus', 15) }}<span>Catatan baru</span>
+          </button>
+        </div>
       </header>
 
       <div class="kx-card-body kx-sn-daftar-body">
@@ -30,9 +35,6 @@
             <input type="search" class="kx-input" id="sn-cari"
                    placeholder="Cari catatan…" autocomplete="off" />
           </div>
-          <button type="button" class="kx-btn kx-btn-primary kx-btn-sm" data-sn-baru>
-            {{ ikon('plus', 15) }}<span>Catatan baru</span>
-          </button>
         </div>
 
         <div class="kx-sn-lista" id="sn-daftar">
@@ -53,15 +55,16 @@
           {% endfor %}
         </div>
 
-        <p class="kx-sn-tak-cocok" id="sn-tak-cocok" hidden>{{ MSG.NOTES_SEARCH_EMPTY }}</p>
+        <div id="sn-tak-cocok" class="kx-empty" hidden>
+          <div class="kx-empty-icon" aria-hidden="true">{{ ikon('search', 32) }}</div>
+          <p class="kx-empty-title">Tidak ditemukan</p>
+          <p class="kx-empty-text">{{ MSG.NOTES_SEARCH_EMPTY }}</p>
+        </div>
         {% else %}
         <div class="kx-empty kx-sn-kosong-lista">
           <span aria-hidden="true">{{ ikon('file-text', 30) }}</span>
           <p class="kx-empty-title">Belum ada catatan</p>
-          <p>Buat catatan terenkripsi pertama Anda lewat tombol Catatan baru.</p>
-          <button type="button" class="kx-btn kx-btn-primary kx-btn-sm" data-sn-baru>
-            {{ ikon('plus', 15) }}<span>Catatan baru</span>
-          </button>
+          <p class="kx-empty-text">Gunakan tombol Catatan baru di atas untuk membuat catatan terenkripsi pertama Anda.</p>
         </div>
         {% endif %}
       </div>
@@ -73,10 +76,7 @@
         <div class="kx-empty">
           <span aria-hidden="true">{{ ikon('file-text', 30) }}</span>
           <p class="kx-empty-title">Belum ada catatan dipilih</p>
-          <p>Pilih catatan pada daftar untuk membacanya, atau buat catatan baru.</p>
-          <button type="button" class="kx-btn kx-btn-primary kx-btn-sm" data-sn-baru>
-            {{ ikon('plus', 15) }}<span>Catatan baru</span>
-          </button>
+          <p class="kx-empty-text">Pilih catatan pada daftar untuk membacanya, atau gunakan tombol Catatan baru di atas.</p>
         </div>
       </div>
 

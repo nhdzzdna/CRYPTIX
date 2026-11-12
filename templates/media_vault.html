@@ -252,7 +252,7 @@
           <div class="kx-media-grid media-grid">
             {% for f in unfiled %}{{ media_card(f) }}{% endfor %}
           </div>
-          {% else %}
+          {% elif semua %}
           <div class="kx-empty">
             <div class="kx-empty-icon" aria-hidden="true">{{ ikon('image', 32) }}</div>
             <p class="kx-empty-title">Tidak ada berkas di luar album</p>

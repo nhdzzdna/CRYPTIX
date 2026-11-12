@@ -165,6 +165,12 @@
 .kx-sg-tersimpan {
   margin-top: var(--kx-space-4);
 }
+.kx-sg-tersimpan .kx-card-body {
+  overflow: visible;
+}
+.kx-sg-tabel {
+  overflow: visible;
+}
 .kx-sg-nama {
   display: inline-flex;
   align-items: center;
@@ -207,6 +213,10 @@
   border-radius: var(--kx-radius-input);
   background: var(--kx-surface);
   box-shadow: var(--kx-shadow-lg);
+}
+.kx-sg-menu.kx-sg-menu-atas {
+  top: auto;
+  bottom: calc(100% + 6px);
 }
 .kx-sg-menu-item {
   display: flex;
