@@ -326,7 +326,27 @@
       file_ids: ids,
       collection_id: target || null
     }, grant).then(function () {
-      window.location.reload();
+      if (target) {
+        ids.forEach(function (id) {
+          var el = document.querySelector('#unfiled-grid [data-file-id="' + id + '"]');
+          if (el) {
+            el.remove();
+          }
+        });
+        var sisa = document.querySelectorAll('#unfiled-grid [data-media-item]');
+        var kosong = document.getElementById('media-unfiled-empty');
+        if (sisa.length === 0 && kosong) {
+          kosong.hidden = false;
+        }
+        var bilah = document.getElementById('selection-bar');
+        if (bilah) bilah.hidden = true;
+        document.querySelectorAll('[data-select-file]:checked').forEach(function (cb) { cb.checked = false; });
+        if (window.KX && KX.toast) {
+          KX.toast('Media berhasil dipindahkan ke album.', 'ok');
+        }
+      } else {
+        window.location.reload();
+      }
     }).catch(function (err) {
       tampilkanGalat(err.message);
     });
