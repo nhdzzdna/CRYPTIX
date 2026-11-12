@@ -6,7 +6,7 @@
  * - Pilihan checkbox tunggal & semua (select-all).
  * - Integrasi KX.aksiMengambang untuk bar aksi massal.
  * - Pemulihan cepat via fetch + KX.toast.
- * - Hapus permanen ber-grant trash.purge dengan dialog KX.konfirmasiHapus (bebas window.confirm).
+ * - Hapus permanen ber-grant trash.purge dengan dialog KX.konfirmasiHapus (tanpa dialog bawaan peramban).
  * - Pengosongan seluruh sampah ber-grant trash.purge.
  * - Mendukung alur fallback pengiriman form tradisional dan integrasi event cryptix:reauth-grant.
  */
